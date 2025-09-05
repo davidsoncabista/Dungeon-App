@@ -7,7 +7,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 ### 1. Estrutura e Telas
 - **Tela Inicial**: Exibir agenda completa com disponibilidade de salas.
 - **Minhas Reservas**: Listar reservas do usuário (atuais e passadas).
-- **Reservar Sala**: Implementar fluxo de agendamento.
+- **Reservar Sala**: Implementar fluxo de agendamento com horários fixos (08:00, 13:00, 18:00) com 4.5h de duração, garantindo um intervalo de 30 minutos entre sessões, além de um horário especial "Corujão".
 - **Meu Perfil**: Permitir visualização e edição de dados do usuário.
 - **Cobranças**: Exibir status de pagamento e permitir quitação.
 - **Área do Administrador**: Painel para gerenciamento completo do sistema.
@@ -32,3 +32,12 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Gerenciamento de Usuários**: Visualizar, bloquear, aplicar multas e gerenciar níveis de acesso dos usuários.
 - **Gerenciamento de Reservas**: Painel para visualizar e moderar todas as reservas do sistema.
 - **Gerenciamento de Cobranças**: Controle de cobranças avulsas e visualização do histórico financeiro.
+
+## Requisitos Não-Funcionais
+
+### 1. Acessibilidade (WCAG)
+- Garantir que a aplicação seja acessível a todos os usuários, seguindo as diretrizes do WCAG (Web Content Accessibility Guidelines).
+- **Contraste de Cores**: O tema da aplicação deve garantir um contraste adequado entre texto e fundo.
+- **Navegação por Teclado**: Todos os elementos interativos (botões, links, inputs) devem ser totalmente navegáveis e operáveis utilizando apenas o teclado.
+- **Leitores de Tela**: A aplicação deve ser compatível com leitores de tela (como NVDA e VoiceOver), utilizando HTML semântico e atributos ARIA (`aria-label`, `aria-describedby`, etc.) para fornecer contexto adequado.
+- **Rótulos e Descrições**: Todos os campos de formulário e controles devem ter rótulos claros e, quando necessário, descrições.

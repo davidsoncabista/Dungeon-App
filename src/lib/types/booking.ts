@@ -8,7 +8,11 @@ export interface Booking {
   date: string;
   startTime: string;
   endTime: string;
+  title?: string; // Título da sessão
+  description?: string; // Descrição opcional
   participants: User[];
   guests?: number; // Representa não-associados
   status: "Confirmada" | "Pendente" | "Cancelada";
 }
+
+    

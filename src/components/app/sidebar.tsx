@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -26,7 +27,7 @@ import {
 const navItems = [
   { href: "/", label: "Dashboard", icon: Swords },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked },
-  { href: "/book-room", label: "Reservar Sala", icon: CalendarPlus },
+  // { href: "/book-room", label: "Reservar Sala", icon: CalendarPlus }, // Removido
   { href: "/statistics", label: "Estatísticas", icon: BarChart3 },
   { href: "/users", label: "Usuários", icon: Users },
   { href: "/rooms", label: "Salas", icon: DoorOpen },
