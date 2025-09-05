@@ -1,0 +1,30 @@
+# Dungeon App - Sistema de Reserva de Salas da Dungeon Belém
+
+O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de salas para a **Associação Dungeon Belém**, focado em jogadores de RPG, Board Games e Card Games.
+
+## Funcionalidades
+
+### Para Associados
+
+- **Visualização de Disponibilidade**: Uma agenda clara e completa mostra a disponibilidade de todas as salas.
+- **Gerenciamento de Reservas**: Os usuários podem criar novas reservas, visualizar seu histórico e gerenciar participações.
+- **Perfil de Usuário**: Edição de informações pessoais e alteração de senha.
+- **Sistema de Cotas**: As reservas são validadas de acordo com a categoria do associado (Player, Gamer, Master), garantindo o uso justo dos recursos.
+- **Horário Corujão**: Suporte para horários especiais com regras de cota diferenciadas.
+- **Convites**: Adicione outros membros ou convidados às suas sessões, com sistema de cotas para não-associados.
+- **Pagamentos Simplificados**: Gere um QR Code PIX para pagamento rápido e fácil da mensalidade.
+- **Sistema de Avisos**: Receba notificações importantes da administração diretamente no aplicativo.
+- **Confirmação Automatizada**: Lembretes para confirmar a reserva, com cancelamento automático para evitar salas ociosas.
+
+### Para Administradores
+
+- **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema.
+- **Níveis de Acesso**: Controle granular de permissões com três níveis: Administrador, Editor e Revisor.
+- **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação, número de adimplentes e muito mais.
+- **Gerenciamento de Usuários**: Acompanhe a lista de membros, gerencie status de pagamento, aplique advertências e controle níveis de acesso.
+- **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e outras configurações.
+- **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações ou cancelamentos quando necessário.
+- **Comunicação Direta**: Envie avisos para todos os usuários e acompanhe quem já visualizou.
+- **Gestão Financeira**: Gerencie cobranças avulsas e tenha acesso ao histórico de transações de todos os membros.
+
+Este projeto foi construído com Next.js, React, Tailwind CSS e Firebase.
