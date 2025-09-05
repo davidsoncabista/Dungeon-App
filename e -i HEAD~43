@@ -1,0 +1,44 @@
+[33m3834b6d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m temos que adicionar no lg de hoje que fizemos esqueci de mencionar a cri
+[33m720b7a8[m on agora em arquitetura temos que cologar algums lembretes de coisa que
+[33m6ffda8b[m vamos adicionar mais uma entrada no chang log 05/09/2025 18:00, não apag
+[33m3d39671[m acho que ele pode ocupar o expaço debaixo do nivel de usuario sem proble
+[33m045e857[m reparei que os 3 pontinhos não comprime pode fazer isso com ele tbm ?
+[33m775aaa5[m não gostei volta para o que tava o que temos que fazer e comprimir a lis
+[33m774b329[m enves de uma badage com um texto podemos so fazer aparecer uma bolonha c
+[33m04c50f2[m agora eu vi que estala mais como estou em uma tela pequena ela não exibe
+[33mf14a0ca[m ainda não apareceu
+[33m9fbabe1[m a lista tem Membro	Categoria	Status falta acessso ou sei la qual nome pa
+[33m5534c1b[m precisamos mostrar tudo que ja tem la lista de usuarios mesmo e tbm se e
+[33m7344ddd[m vamos dar um pulo agora na pagina de criar usuario vamos criar o modal p
+[33m09b945a[m tive uma ideia melhor o modal pode funcionar com etapas quebrar ele em 2
+[33m5b95e77[m não gostaria de um modal com scrou e possivel emcolher ele para não ser
+[33m65713b6[m eu tive que diminuir a pagina de visualização para 80 % para poder apare
+[33m50d426c[m o modal de reserva fica muito grande não consigo ver os botoes de confir
+[33mf8f7bd8[m coloca um contato no fim dessa msg  meu zap 12 997324548 davidson e colo
+[33m0a49786[m vamos modificar essa msg inicial que aparece Novo Horário Corujão! A par
+[33mb09f8ca[m beleza vamos aos modais de de fazer reservas
+[33m6b79d28[m agora vamos refatorar isso aqui Novo Horário Corujão! A partir da próxim
+[33mc1d1dbd[m olha ai como que esta ainda
+[33m352368e[m tem ums espaçoes em branco imagino que eles deveriam estar mostrando as
+[33m2b2bbe2[m Try fixing this error: `Runtime Error: Error: Cannot read properties of
+[33mb4fe284[m precisamos usar a mesma logica de unição dos quadradinho caso seja do me
+[33m4e10a5e[m agora vamos mexer na parte de visualização por semana cada dia esta most
+[33m8683a14[m pode colocar o 2.5rem para 1.5rem
+[33m7fbdafa[m o espaço entre 07h 08h 09h 10h 11h 12h 13h 14h ainda esta bem brande da
+[33mf15b69b[m na verção para celular precisa mostrar tbm visualização por semana e qui
+[33mcc73764[m não esta bom tem uma barra de rolagem gigantesca na base não e funcional
+[33m2618731[m a visualização aida não esta boa no pc
+[33m5d93b3e[m adicionar o seletor de semanas
+[33m2d5a3ed[m e ta ficando legal mais tenho que lembrar de que isso sera muito usado e
+[33mbb7921b[m então se eu fizer 2 reservas consecutivas a time line vai unir os blocos
+[33m9a93701[m como temos horarios fixos de reserva podemos ja deichar a time line prec
+[33mf5a18b1[m ainda precisa melhorar esta bagunçado
+[33me7279d4[m vamos trabalhar a ui/ux dessa parte de reservas, gostaria que ela ficass
+[33m91a7e15[m agora que vi aqui tenho que acressentar essa informação cada reserva tem
+[33m1e6f7d7[m os horarios possives para reserva vão ser fixo 8 da manha 13h e18h sendo
+[33m0ba4a47[m vamos corrigir, corujão e das 23 as 7 da manha do dia seguinte
+[33m0ced2f1[m cota separada sendo player nenhuma cota, gamer 1 cota e master 3 cotas p
+[33mf288b25[m Master: 16 limite
+[33mc3daf19[m Implementar a validação de cotas por categoria de usuário (Player, Gamer
+[33ma6ed32d[m a janela que aparece a previsualização não esta aparecendo aqui no fireb
+[33m03c8550[m[33m ([m[1;31morigin/main[m[33m)[m Initial commit

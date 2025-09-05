@@ -27,4 +27,15 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Comunicação Direta**: Envie avisos para todos os usuários e acompanhe quem já visualizou.
 - **Gestão Financeira**: Gerencie cobranças avulsas e tenha acesso ao histórico de transações de todos os membros.
 
+## Equipe do Projeto
+
+- **Davidson Santos Conceição**: Project Lead & DevOps Engineer
+- **Heydrigh Leão Ribeiro**: Full Stack Developer
+- **Caio de Oliveira Bastos**: Tesoureiro & Front-end Developer
+- **Thyago Costa (@thyagobib)**: UI/UX Designer
+- **Hermann Duarte Ribeiro Filho**: Homologação (Testes)
+- **Thiago de Castro Araújo**: Homologação (Testes)
+- **Bruno Rafael Viana Oliveira (@brunorvo)**: Consultor de Fluxo e Homologação
+- **Iasmin Oneide Figueira de Castro Leal (Koda) (@Master)**: Homologação (Testes)
+
 Este projeto foi construído com Next.js, React, Tailwind CSS e Firebase.
