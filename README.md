@@ -33,6 +33,7 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Heydrigh Leão Ribeiro**: Full Stack Developer
 - **Caio de Oliveira Bastos**: Tesoureiro & Front-end Developer
 - **Thyago Costa (@thyagobib)**: UI/UX Designer
+- **Luiz Pedro Reis Pinheiro (@luizprp): UI/UX Designer 
 - **Hermann Duarte Ribeiro Filho**: Homologação (Testes)
 - **Thiago de Castro Araújo**: Homologação (Testes)
 - **Bruno Rafael Viana Oliveira (@brunorvo)**: Consultor de Fluxo e Homologação

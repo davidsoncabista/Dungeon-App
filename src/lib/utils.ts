@@ -9,11 +9,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export const getBookingDurationAndEnd = (startTime: string): { duration: number; endTime: string } => {
     if (!startTime || typeof startTime !== 'string') {
-        return { duration: 0, endTime: "" };
+        return { duration: 0, endTime: "00:00" };
     }
     const start = parse(startTime, "HH:mm", new Date());
     if (isNaN(start.getTime())) {
-         return { duration: 0, endTime: "" };
+         return { duration: 0, endTime: "00:00" };
     }
     
     let durationHours;
