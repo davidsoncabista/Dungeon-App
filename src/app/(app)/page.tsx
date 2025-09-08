@@ -1,10 +1,11 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAuthenticatedUser, getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, createBooking, updateBooking } from "@/lib/mock-service"
-import { Clock, Users, User, Calendar as CalendarIcon, PlusCircle, Pencil, Info } from "lucide-react"
+import { Clock, Users, User, Calendar as CalendarIcon, PlusCircle, Pencil, Info, ChevronLeft, ChevronRight } from "lucide-react"
 import { format, parseISO, startOfToday, parse, addHours, differenceInMinutes, isBefore } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React, { useState, useEffect, useMemo } from "react"
@@ -22,6 +23,7 @@ import { BookingEditForm } from "@/components/app/booking-edit-form"
 import { useToast } from "@/hooks/use-toast"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 export const FIXED_SLOTS = ["08:00", "13:00", "18:00", "23:00"];
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
@@ -174,7 +176,7 @@ const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenCha
                 </div>
                  {isOrganizer && (
                     <div className="flex justify-end gap-2">
-                        <EditBookingModal booking={booking} allBookings={allBookings} onBookingUpdated={onBookingUpdated} onOpenChange={handleMyOpenChange}>
+                        <EditBookingModal booking={booking} allBookings={allBookings} onBookingUpdated={onBookingUpdated} onOpenChange={setIsMyModalOpen}>
                             <Button variant="outline"><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
                         </EditBookingModal>
                     </div>
@@ -185,9 +187,10 @@ const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenCha
 }
 
 // --- Componentes da Agenda ---
-const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
+const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated, timelineStartHour }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void, timelineStartHour: number }) => {
+    
     const timeSlots = Array.from({ length: 24 }, (_, i) => {
-        const hour = (i + 7) % 24; // Start from 7 AM
+        const hour = (i + timelineStartHour) % 24;
         return `${String(hour).padStart(2, '0')}:00`;
     });
     
@@ -201,7 +204,7 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
             end = addHours(end, 24);
         }
 
-        const timelineStartMinutes = 7 * 60; // Timeline starts at 07:00
+        const timelineStartMinutes = timelineStartHour * 60;
         
         const startMinutes = start.getHours() * 60 + start.getMinutes();
         const minutesFromStart = (startMinutes - timelineStartMinutes + 1440) % 1440;
@@ -218,55 +221,58 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
     };
 
     return (
-        <div className="grid gap-2 overflow-x-auto">
-            {/* Header da Timeline */}
-            <div className="flex sticky top-0 z-10 bg-card">
-                <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
-                <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(1.5rem, 1fr))`}}>
-                    {timeSlots.map(slot => (
-                        <div key={slot} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2">
-                            {slot.split(":")[0]}h
+        <ScrollArea className="w-full whitespace-nowrap">
+            <div className="grid gap-2 min-w-[1200px]">
+                {/* Header da Timeline */}
+                <div className="flex sticky top-0 z-10 bg-card">
+                    <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
+                    <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(1.5rem, 1fr))`}}>
+                        {timeSlots.map(slot => (
+                            <div key={slot} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2">
+                                {slot.split(":")[0]}h
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Linhas da Timeline por Sala */}
+                <div className="space-y-4">
+                {rooms.map((room: Room, roomIndex) => {
+                    const roomBookings = filteredBookings.filter(b => b.roomId === room.id);
+                    
+                    return (
+                        <div key={room.id} className="flex items-center min-h-[4rem]">
+                            <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
+                            <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(1.5rem, 1fr))`}}>
+                                
+                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
+                                    <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
+                                </BookingModal>
+                            
+                                {roomBookings.map((booking) => {
+                                    const style = calculateBookingStyle(booking.startTime, booking.endTime);
+                                    const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
+                                    const organizer = booking.participants.find(p => p.id === booking.organizerId);
+
+                                    return (
+                                        <div key={booking.id} style={style} className="absolute top-0 h-full p-1 z-10">
+                                            <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
+                                                <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
+                                                    <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
+                                                    <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
+                                                </div>
+                                            </BookingDetailsModal>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    ))}
+                    )
+                })}
                 </div>
             </div>
-
-            {/* Linhas da Timeline por Sala */}
-            <div className="space-y-4">
-            {rooms.map((room: Room, roomIndex) => {
-                const roomBookings = filteredBookings.filter(b => b.roomId === room.id);
-                
-                return (
-                    <div key={room.id} className="flex items-center min-h-[4rem]">
-                        <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
-                        <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(1.5rem, 1fr))`}}>
-                            
-                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
-                                <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
-                            </BookingModal>
-                           
-                            {roomBookings.map((booking) => {
-                                const style = calculateBookingStyle(booking.startTime, booking.endTime);
-                                const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
-                                const organizer = booking.participants.find(p => p.id === booking.organizerId);
-
-                                return (
-                                    <div key={booking.id} style={style} className="absolute top-0 h-full p-1 z-10">
-                                        <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
-                                            <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
-                                                <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
-                                                <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
-                                            </div>
-                                        </BookingDetailsModal>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )
-            })}
-            </div>
-        </div>
+            <ScrollBar orientation="horizontal" />
+        </ScrollArea>
     )
 }
 
@@ -325,6 +331,7 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const { isMobile, isHydrated } = useIsMobile();
   const [unreadNotice, setUnreadNotice] = useState<Notice | null>(null);
+  const [timelineStartHour, setTimelineStartHour] = useState(7); // Início padrão 07:00
 
   // Carrega os dados apenas uma vez
   useEffect(() => {
@@ -358,11 +365,18 @@ export default function DashboardPage() {
   const handleBookingUpdated = (updatedBooking: Booking) => {
     setAllBookings(prevBookings => 
         prevBookings
-            .map(b => b.id === updatedBooking.id ? updatedBooking : b) 
+            .map(b => b.id === updatedBooking.id ? updatedBooking : b)
             .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
     );
-  }
+  };
 
+  const scrollTimeline = (direction: 'forward' | 'backward') => {
+    setTimelineStartHour(prevHour => {
+        const newHour = direction === 'forward' ? prevHour + 4 : prevHour - 4;
+        // Mantém a hora dentro do ciclo de 24h
+        return (newHour + 24) % 24;
+    });
+  }
 
   const renderContent = () => {
     if (!isHydrated) {
@@ -391,6 +405,7 @@ export default function DashboardPage() {
                setModalOpen={setModalOpen}
                onBookingCreated={handleBookingCreated}
                onBookingUpdated={handleBookingUpdated}
+               timelineStartHour={timelineStartHour}
            />
   }
 
@@ -417,6 +432,12 @@ export default function DashboardPage() {
                         </CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('backward')}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('forward')}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
@@ -451,7 +472,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
-
-    
