@@ -103,7 +103,6 @@ const bookings: Booking[] = [
     guests: 1,
     status: 'Confirmada'
   },
-  // Test case for grouping consecutive bookings
   { 
     id: 'booking_gandalf_1', 
     roomId: 'room_taverna', 
@@ -116,57 +115,38 @@ const bookings: Booking[] = [
     guests: 1,
     status: 'Confirmada'
   },
-  { 
-    id: 'booking_gandalf_2', 
-    roomId: 'room_taverna', 
-    organizerId: 'usr_gandalf', 
-    date: todayStr, 
-    startTime: '13:00', 
-    endTime: '17:30', 
-    title: 'Sessão de World of Warcraft RPG',
-    participants: [getUserById('usr_gandalf')!],
-    guests: 1,
-    status: 'Confirmada'
-  },
-   { 
-    id: 'booking_aragorn_1', 
-    roomId: 'room_taverna', 
-    organizerId: 'usr_aragorn', 
-    date: todayStr, 
-    startTime: '18:00', 
-    endTime: '22:30', 
-    title: 'Aventura Solo',
-    participants: [getUserById('usr_aragorn')!],
-    guests: 0,
-    status: 'Confirmada'
-  },
-  // Test case for grouping on Week/Fortnight view
-  { 
-    id: 'booking_gandalf_week_1', 
-    roomId: 'room_arena', 
-    organizerId: 'usr_gandalf', 
-    date: tomorrowStr, 
-    startTime: '08:00', 
-    endTime: '12:30', 
-    title: 'Vampiro: A Máscara',
-    participants: [getUserById('usr_gandalf')!],
-    guests: 1,
-    status: 'Confirmada'
-  },
-  { 
-    id: 'booking_gandalf_week_2', 
-    roomId: 'room_arena', 
-    organizerId: 'usr_gandalf', 
-    date: tomorrowStr, 
-    startTime: '13:00', 
-    endTime: '17:30', 
-    title: 'Vampiro: A Máscara',
-    participants: [getUserById('usr_gandalf')!],
-    guests: 1,
-    status: 'Confirmada'
-  },
 ];
 export const getBookings = (): Booking[] => bookings;
+
+export const createBooking = (data: Omit<Booking, 'id' | 'status'>): Booking => {
+    const newBooking: Booking = {
+        ...data,
+        id: `booking_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        status: 'Confirmada', // Default status for new bookings
+    };
+    bookings.push(newBooking);
+    console.log("New booking added:", newBooking);
+    console.log("All bookings:", bookings);
+    return newBooking;
+};
+
+export const updateBooking = (bookingId: string, data: Partial<Omit<Booking, 'id'>>): Booking | undefined => {
+    const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+    if (bookingIndex === -1) {
+        console.error("Booking not found for update:", bookingId);
+        return undefined;
+    }
+
+    const updatedBooking = {
+        ...bookings[bookingIndex],
+        ...data,
+    };
+
+    bookings[bookingIndex] = updatedBooking;
+    console.log("Booking updated:", updatedBooking);
+    return updatedBooking;
+}
+
 
 // --- NOTICES ---
 const notices: Notice[] = [

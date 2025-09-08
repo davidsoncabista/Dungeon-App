@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -16,18 +17,21 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Check, ChevronsUpDown, Clock, Users, Calendar, AlertCircle } from "lucide-react"
+import { Check, ChevronsUpDown, Users, Calendar, AlertCircle } from "lucide-react"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { getAuthenticatedUser, getUsers } from "@/lib/mock-service"
 import type { Room } from "@/lib/types/room"
-import { format } from "date-fns"
+import type { Booking } from "@/lib/types/booking"
+import { format, parseISO, parse, isBefore, addMinutes, getHours, getMinutes, set } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getBookingDurationAndEnd } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DialogFooter } from "@/components/ui/dialog"
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FIXED_SLOTS } from "@/app/(app)/page"
 
 const allUsers = getUsers();
 const currentUser = getAuthenticatedUser();
@@ -37,21 +41,23 @@ const createBookingFormSchema = (maxCapacity: number) => z.object({
   description: z.string().max(200, {message: "A descrição não pode ter mais de 200 caracteres."}).optional(),
   participants: z.array(z.string()).min(1, { message: "Você deve selecionar pelo menos um participante (você mesmo)." }),
   guests: z.coerce.number().int().min(0, {message: "O número de convidados não pode ser negativo."}).optional().default(0),
+  startTime: z.string({ required_error: "O horário de início é obrigatório."}),
+  endTime: z.string({ required_error: "O horário de fim é obrigatório."}),
 }).refine(data => (data.participants.length + (data.guests ?? 0)) <= maxCapacity, {
     message: `O número total de participantes (membros + convidados) não pode exceder a capacidade da sala (${maxCapacity}).`,
-    path: ["guests"], // O erro será exibido no campo de convidados
+    path: ["guests"],
 });
 
 
 interface BookingFormProps {
     room: Room;
     date: Date;
-    startTime: string;
-    onSuccess: () => void;
+    allBookings: Booking[];
+    onSuccess: (data: Omit<Booking, 'id' | 'status'>) => void;
     onCancel: () => void;
 }
 
-export function BookingForm({ room, date, startTime, onSuccess, onCancel }: BookingFormProps) {
+export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: BookingFormProps) {
   const [step, setStep] = useState(1);
   const bookingFormSchema = createBookingFormSchema(room.capacity);
   type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -67,26 +73,92 @@ export function BookingForm({ room, date, startTime, onSuccess, onCancel }: Book
     },
   })
 
-  const { endTime } = getBookingDurationAndEnd(startTime);
   const formattedDate = format(date, "PPP", { locale: ptBR });
   
+  const { availableStartTimes, availableEndTimes } = useMemo(() => {
+    const bookingsForDayAndRoom = allBookings.filter(b => 
+        b.roomId === room.id && format(parseISO(b.date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
+    );
+
+    const occupiedSlots = new Set<string>();
+    bookingsForDayAndRoom.forEach(booking => {
+        const start = parse(booking.startTime, 'HH:mm', date);
+        const end = parse(booking.endTime, 'HH:mm', date);
+
+        let current = start;
+        while(isBefore(current, end)) {
+            occupiedSlots.add(format(current, 'HH:mm'));
+            current = addMinutes(current, 30);
+        }
+    });
+
+    const allDaySlots = FIXED_SLOTS.flatMap(slot => {
+        const baseTime = parse(slot, 'HH:mm', date);
+        const slotsInBlock = slot === '23:00' ? 16 : 9; // 8h vs 4.5h
+        return Array.from({length: slotsInBlock}, (_, i) => format(addMinutes(baseTime, i * 30), 'HH:mm'));
+    });
+    
+    // Filtra horários de início que não estão ocupados
+    const availableStarts = FIXED_SLOTS.filter(slot => !occupiedSlots.has(slot));
+
+    let availableEnds: { value: string, label: string }[] = [];
+    const selectedStartTime = form.watch("startTime");
+
+    if (selectedStartTime) {
+        const startIdx = allDaySlots.indexOf(selectedStartTime);
+        if (startIdx !== -1) {
+            // Encontra o próximo slot ocupado
+            let nextOccupiedIdx = -1;
+            for(let i = startIdx + 1; i < allDaySlots.length; i++) {
+                if(occupiedSlots.has(allDaySlots[i])) {
+                    nextOccupiedIdx = i;
+                    break;
+                }
+            }
+            
+            // Define o fim do alcance possível
+            const endOfRangeIdx = nextOccupiedIdx === -1 ? allDaySlots.length : nextOccupiedIdx;
+            
+            // Gera os horários de fim possíveis
+            for(let i = startIdx; i < endOfRangeIdx; i++) {
+                const slotTime = allDaySlots[i];
+                const { endTime } = getBookingDurationAndEnd(slotTime);
+                 // Adiciona apenas se for um horário final de um dos blocos fixos
+                const isFixedEnd = FIXED_SLOTS.some(s => getBookingDurationAndEnd(s).endTime === endTime);
+                if (isFixedEnd && !availableEnds.some(e => e.value === endTime)) {
+                   availableEnds.push({ value: endTime, label: endTime });
+                }
+            }
+        }
+    }
+    
+    return { availableStartTimes: availableStarts, availableEndTimes: availableEnds };
+  }, [room.id, date, allBookings, form.watch("startTime")]);
+
+
   const handleNextStep = async () => {
-    const isValid = await form.trigger(["title", "description"]);
+    const isValid = await form.trigger(["title", "description", "startTime", "endTime"]);
     if (isValid) {
         setStep(2);
     }
   }
   
   function onSubmit(data: BookingFormValues) {
-    // Aqui você faria a chamada para a API/serviço para criar a reserva
-    console.log("Booking data submitted:", {
-        ...data,
+    const participantDetails = data.participants.map(id => allUsers.find(u => u.id === id)).filter(Boolean) as any[];
+    
+    const newBooking = {
+        title: data.title,
+        description: data.description,
+        participants: participantDetails,
+        guests: data.guests,
         roomId: room.id,
+        organizerId: currentUser.id,
         date: format(date, "yyyy-MM-dd"),
-        startTime,
-        endTime
-    })
-    onSuccess();
+        startTime: data.startTime,
+        endTime: data.endTime,
+    };
+    
+    onSuccess(newBooking);
   }
 
   const totalParticipants = (form.watch("participants")?.length || 0) + (form.watch("guests") || 0);
@@ -101,15 +173,11 @@ export function BookingForm({ room, date, startTime, onSuccess, onCancel }: Book
                     <span className="font-medium">{formattedDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{startTime} - {endTime}</span>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                        Capacidade: {totalParticipants} / {room.capacity}
+                    </span>
                 </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">
-                    Capacidade: {totalParticipants} / {room.capacity}
-                </span>
             </div>
         </div>
 
@@ -129,6 +197,55 @@ export function BookingForm({ room, date, startTime, onSuccess, onCancel }: Book
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Horário de Início</FormLabel>
+                            <Select onValueChange={(value) => {
+                                field.onChange(value);
+                                form.setValue('endTime', ''); // Reseta o horário de fim ao mudar o início
+                            }} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione..." />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {availableStartTimes.map(time => (
+                                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Horário de Fim</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch("startTime")}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione..." />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {availableEndTimes.map(time => (
+                                        <SelectItem key={time.value} value={time.value}>{time.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
             <FormField
               control={form.control}
               name="description"
