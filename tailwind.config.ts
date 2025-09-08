@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
     extend: {
+      gridTemplateColumns: {
+        '24': 'repeat(24, minmax(0, 1fr))',
+      },
       fontFamily: {
         body: ["'Alegreya'", 'serif'],
         headline: ["'Alegreya'", 'serif'],
@@ -97,3 +100,5 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+
+    

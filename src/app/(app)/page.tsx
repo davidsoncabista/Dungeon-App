@@ -4,9 +4,9 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getAuthenticatedUser, getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, createBooking, updateBooking } from "@/lib/mock-service"
-import { Clock, Users, User, Calendar as CalendarIcon, PlusCircle, Pencil, Info, ChevronLeft, ChevronRight } from "lucide-react"
-import { format, parseISO, startOfToday, parse, addHours, differenceInMinutes, isBefore } from "date-fns"
+import { getAuthenticatedUser, getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, createBooking, updateBooking, getUserById } from "@/lib/mock-service"
+import { Clock, Users, User, Calendar as CalendarIcon, PlusCircle, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter } from "lucide-react"
+import { format, parseISO, startOfToday, parse, addHours, differenceInMinutes, isBefore, addDays, subDays, eachDayOfInterval, startOfWeek, endOfWeek, getHours, setHours, setMinutes, startOfMonth, endOfMonth, subMonths, isWithinInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React, { useState, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
@@ -15,15 +15,17 @@ import type { Booking } from "@/lib/types/booking"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { NoticeModal } from "@/components/app/notice-modal"
 import type { Notice } from "@/lib/types/notice"
 import { BookingForm } from "@/components/app/booking-form"
 import { BookingEditForm } from "@/components/app/booking-edit-form"
 import { useToast } from "@/hooks/use-toast"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 
 export const FIXED_SLOTS = ["08:00", "13:00", "18:00", "23:00"];
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
@@ -186,167 +188,126 @@ const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenCha
     )
 }
 
-// --- Componentes da Agenda ---
-const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated, timelineStartHour }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void, timelineStartHour: number }) => {
+// --- Componente da Agenda ---
+const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
     
-    const timeSlots = Array.from({ length: 24 }, (_, i) => {
-        const hour = (i + timelineStartHour) % 24;
-        return `${String(hour).padStart(2, '0')}:00`;
-    });
-    
-    const filteredBookings = bookings.filter(b => format(parseISO(b.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'));
+    const totalHours = 24;
+    const hourColumns = 4; // Cada hora tem 4 colunas (intervalos de 15 min)
+    const totalColumns = totalHours * hourColumns;
+    const hours = Array.from({ length: totalHours }, (_, i) => i); 
 
-    const calculateBookingStyle = (startTime: string, endTime: string) => {
-        const start = parse(startTime, "HH:mm", new Date());
-        let end = parse(endTime, "HH:mm", new Date());
+    const calculateBookingStyle = (booking: Booking) => {
+        const bookingDate = parseISO(booking.date);
+        const bookingDay = format(bookingDate, 'yyyy-MM-dd');
+        const selectedDay = format(selectedDate, 'yyyy-MM-dd');
+        
+        const startTime = parse(booking.startTime, 'HH:mm', new Date());
+        const endTime = parse(booking.endTime, 'HH:mm', new Date());
+        
+        let startHour = startTime.getHours() + startTime.getMinutes() / 60;
+        let endHour = endTime.getHours() + endTime.getMinutes() / 60;
 
-        if (isBefore(end, start)) {
-            end = addHours(end, 24);
+        // Se a reserva começou no dia anterior, ela deve começar na coluna 0 da grade do dia atual
+        if (bookingDay < selectedDay) {
+            startHour = 0;
         }
 
-        const timelineStartMinutes = timelineStartHour * 60;
-        
-        const startMinutes = start.getHours() * 60 + start.getMinutes();
-        let minutesFromStart = startMinutes - timelineStartMinutes;
-
-        // Handle case where booking wraps around midnight from the timeline's perspective
-        if (minutesFromStart < 0) {
-            minutesFromStart += 24 * 60;
+        // Se a reserva atravessa a meia-noite e está sendo visualizada no dia em que começa
+        if (isBefore(endTime, startTime) && bookingDay === selectedDay) {
+            endHour = 24; // Faz a reserva terminar no final da grade
         }
-
-        const startPercent = (minutesFromStart / (24 * 60)) * 100;
         
-        const durationMinutes = differenceInMinutes(end, start);
-        
-        const widthPercent = (durationMinutes / (24 * 60)) * 100;
+        const startColumn = Math.floor(startHour * hourColumns) + 1;
+        const endColumn = Math.floor(endHour * hourColumns) + 1;
+        const columnSpan = endColumn - startColumn;
 
         return {
-            left: `${startPercent}%`,
-            width: `${widthPercent}%`,
+            gridColumnStart: startColumn,
+            gridColumnEnd: `span ${columnSpan > 0 ? columnSpan : 0}`,
         };
     };
 
     return (
-        <ScrollArea className="w-full whitespace-nowrap">
-            <div className="grid gap-2 min-w-[1000px] lg:min-w-[1200px]">
-                {/* Header da Timeline */}
-                <div className="flex sticky top-0 z-10 bg-card">
-                    <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
-                    <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(24, minmax(0, 1fr))`}}>
-                        {timeSlots.map(slot => (
-                            <div key={slot} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2">
-                                {slot.split(":")[0]}h
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Linhas da Timeline por Sala */}
-                <div className="space-y-4">
-                {rooms.map((room: Room, roomIndex) => {
-                    const roomBookings = filteredBookings.filter(b => b.roomId === room.id);
-                    
-                    return (
-                        <div key={room.id} className="flex items-center min-h-[4rem]">
-                            <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
-                            <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(24, minmax(0, 1fr))`}}>
-                                
-                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
-                                    <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
-                                </BookingModal>
-                            
-                                {roomBookings.map((booking) => {
-                                    const style = calculateBookingStyle(booking.startTime, booking.endTime);
-                                    const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
-                                    const organizer = booking.participants.find(p => p.id === booking.organizerId);
-
-                                    return (
-                                        <div key={booking.id} style={style} className="absolute top-0 h-full p-1 z-10">
-                                            <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
-                                                <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
-                                                    <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
-                                                    <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
-                                                </div>
-                                            </BookingDetailsModal>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+        <div className="relative overflow-hidden">
+            {/* Header da Timeline */}
+            <div className="flex sticky top-0 z-20 bg-background">
+                <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
+                <div className="grid flex-1" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
+                    {hours.map(hour => (
+                        <div key={hour} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2 col-span-4">
+                            {String(hour).padStart(2, '0')}h
                         </div>
-                    )
-                })}
+                    ))}
                 </div>
             </div>
-            <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-    )
-}
 
-const MobileSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
-    
-    const filteredBookings = bookings.filter(b => format(parseISO(b.date), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'));
-
-    return (
-        <Accordion type="single" collapsible className="w-full" >
-            {rooms.map((room: Room) => {
-                 const roomBookings = filteredBookings.filter(b => b.roomId === room.id);
+            {/* Linhas da Timeline por Sala */}
+            <div className="space-y-4 relative">
+            {rooms.map((room: Room, roomIndex) => {
+                const roomBookings = bookings.filter(b => b.roomId === room.id);
+                
                 return (
-                    <AccordionItem value={room.id} key={room.id}>
-                        <AccordionTrigger>
-                            {room.name}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                           <div className="space-y-2 pt-2">
-                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
-                                    <Button size="sm" className="w-full">
-                                        <PlusCircle className="mr-2"/>
-                                        Nova Reserva nesta Sala
-                                    </Button>
-                                </BookingModal>
-                                {roomBookings.length > 0 ? roomBookings.map(booking => {
-                                    const organizer = booking?.participants.find(p => p.id === booking.organizerId);
-                                    return (
-                                        <div key={booking.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                            <div>
-                                                <p className="font-semibold">{booking.startTime} - {booking.endTime}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Reservado por {booking.title || organizer?.name.split(" ")[0]}
-                                                </p>
+                    <div key={room.id} className="flex items-center min-h-[4rem]">
+                        <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
+                        <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative overflow-hidden" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
+                            
+                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
+                                <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
+                            </BookingModal>
+                        
+                            {roomBookings.map((booking) => {
+                                const style = calculateBookingStyle(booking);
+                                const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
+                                const organizer = booking.participants.find(p => p.id === booking.organizerId);
+
+                                return (
+                                    <div key={booking.id} style={style} className="h-full p-1 z-10">
+                                        <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
+                                            <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
+                                                <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
+                                                <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
                                             </div>
-                                            <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
-                                                <Button variant="outline" size="sm">Ver</Button>
-                                            </BookingDetailsModal>
-                                        </div>
-                                    )
-                                }) : <p className="text-center text-sm text-muted-foreground py-4">Nenhuma reserva para esta sala hoje.</p>}
-                           </div>
-                        </AccordionContent>
-                    </AccordionItem>
+                                        </BookingDetailsModal>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 )
             })}
-        </Accordion>
+            </div>
+        </div>
     )
 }
+
+type SortableBookingKey = 'title' | 'roomName' | 'organizerName' | 'date';
+type SortDirection = 'ascending' | 'descending';
+type DateRangePreset = 'next7' | 'next15' | 'last7';
+
+const dateRangeOptions: { value: DateRangePreset; label: string }[] = [
+    { value: 'next15', label: 'Próximos 15 dias' },
+    { value: 'next7', label: 'Próximos 7 dias' },
+    { value: 'last7', label: 'Últimos 7 dias' },
+];
 
 export default function DashboardPage() {
   const user = getAuthenticatedUser();
-  const allNotices = getNotices();
+  const allRawNotices = getNotices();
+  const allRawBookings = getBookings(); 
+  
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedDate, setSelectedDate] = useState(startOfToday());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const { isMobile, isHydrated } = useIsMobile();
+  const [isHydrated, setIsHydrated] = useState(false);
   const [unreadNotice, setUnreadNotice] = useState<Notice | null>(null);
-  const [timelineStartHour, setTimelineStartHour] = useState(7); // Início padrão 07:00
+  const [sortConfig, setSortConfig] = useState<{ key: SortableBookingKey; direction: SortDirection } | null>({ key: 'date', direction: 'ascending' });
+  const [dateRange, setDateRange] = useState<DateRangePreset>('next15');
 
-  // Carrega os dados apenas uma vez
-  useEffect(() => {
-    setAllBookings(getBookings());
-    setRooms(getRooms().filter(r => r.status === "Disponível"));
-  }, []);
 
+  // Handle notices
   useEffect(() => {
-    const noticesForUser = allNotices.filter(notice => 
+    const noticesForUser = allRawNotices.filter(notice => 
         !notice.targetUserId || notice.targetUserId === user.id
     );
     const firstUnread = noticesForUser.find(notice => 
@@ -355,7 +316,16 @@ export default function DashboardPage() {
     if(firstUnread && !modalOpen) {
         setUnreadNotice(firstUnread);
     }
-  }, [allNotices, user.id, modalOpen]);
+  }, [allRawNotices, user.id, modalOpen]);
+
+  // Load initial data
+  useEffect(() => {
+    setSelectedDate(startOfToday());
+    setAllBookings(allRawBookings.sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime()));
+    setRooms(getRooms().filter(r => r.status === "Disponível"));
+    setIsHydrated(true);
+  }, []); // Dependência vazia para carregar apenas uma vez
+
 
   const handleDismissNotice = (noticeId: string, dismissForever: boolean) => {
     if (dismissForever) {
@@ -369,23 +339,104 @@ export default function DashboardPage() {
   }
 
   const handleBookingUpdated = (updatedBooking: Booking) => {
-    setAllBookings(prevBookings => 
-        prevBookings
-            .map(b => b.id === updatedBooking.id ? updatedBooking : b)
-            .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
-    );
+      setAllBookings(prevBookings => 
+          prevBookings
+              .map(b => b.id === updatedBooking.id ? updatedBooking : b)
+              .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
+      );
   };
+  
+  const bookingsForSelectedDay = useMemo(() => {
+    if (!selectedDate) return [];
+    const selectedDay = format(selectedDate, "yyyy-MM-dd");
+    const previousDay = format(subDays(selectedDate, 1), "yyyy-MM-dd");
 
-  const scrollTimeline = (direction: 'forward' | 'backward') => {
-    setTimelineStartHour(prevHour => {
-        const newHour = direction === 'forward' ? 4 : -4;
-        // Mantém a hora dentro do ciclo de 24h
-        return (prevHour + newHour + 24) % 24;
+    const filtered = allBookings.filter(b => {
+      const bookingDay = format(parseISO(b.date), "yyyy-MM-dd");
+      
+      const isOvernight = isBefore(parse(b.endTime, 'HH:mm', new Date()), parse(b.startTime, 'HH:mm', new Date()));
+
+      if (bookingDay === selectedDay) {
+        return true;
+      }
+      if (bookingDay === previousDay && isOvernight) {
+        return true;
+      }
+      return false;
     });
+    
+    return Array.from(new Map(filtered.map(b => [b.id, b])).values());
+  }, [allBookings, selectedDate]);
+
+  const bookingsForPeriod = useMemo(() => {
+    const today = startOfToday();
+    let start: Date;
+    let end: Date;
+
+    switch (dateRange) {
+        case 'next15':
+            start = today;
+            end = addDays(today, 15);
+            break;
+        case 'next7':
+            start = today;
+            end = addDays(today, 7);
+            break;
+        case 'last7':
+            start = subDays(today, 7);
+            end = today;
+            break;
+    }
+
+    return allBookings.filter(b => {
+        const bookingDate = parseISO(b.date);
+        return isWithinInterval(bookingDate, { start, end });
+    });
+  }, [allBookings, dateRange]);
+
+
+  const sortedBookings = useMemo(() => {
+    const sortableItems = bookingsForPeriod.map(b => {
+        const room = getRoomById(b.roomId);
+        const organizer = getUserById(b.organizerId);
+        return {
+            ...b,
+            roomName: room?.name ?? 'N/A',
+            organizerName: organizer?.name ?? 'N/A',
+            title: b.title || 'Reserva Rápida'
+        }
+    });
+
+    if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+            if (sortConfig.key === 'date') {
+                 const dateA = new Date(`${a.date}T${a.startTime}`);
+                 const dateB = new Date(`${b.date}T${b.startTime}`);
+                 return sortConfig.direction === 'ascending' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+            }
+
+            if (a[sortConfig.key] < b[sortConfig.key]) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (a[sortConfig.key] > b[sortConfig.key]) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+    }
+    return sortableItems;
+  }, [bookingsForPeriod, sortConfig]);
+
+  const requestSort = (key: SortableBookingKey) => {
+    let direction: SortDirection = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+    }
+    setSortConfig({ key, direction });
   }
 
   const renderContent = () => {
-    if (!isHydrated) {
+    if (!isHydrated || !selectedDate) {
         return <div className="space-y-4">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-48 w-full" />
@@ -393,27 +444,31 @@ export default function DashboardPage() {
         </div>;
     }
 
-    if (isMobile) {
-        return <MobileSchedule 
-                    rooms={rooms} 
-                    bookings={allBookings} 
-                    selectedDate={selectedDate} 
-                    setModalOpen={setModalOpen}
-                    onBookingCreated={handleBookingCreated}
-                    onBookingUpdated={handleBookingUpdated}
-                />
-    }
-    
-    return <DesktopSchedule 
+    return (
+        <ScrollArea className="w-full whitespace-nowrap">
+            <ScheduleView 
                rooms={rooms}
-               bookings={allBookings}
+               bookings={bookingsForSelectedDay}
                selectedDate={selectedDate}
                setModalOpen={setModalOpen}
                onBookingCreated={handleBookingCreated}
                onBookingUpdated={handleBookingUpdated}
-               timelineStartHour={timelineStartHour}
            />
+           <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+    );
   }
+
+  const getSortIcon = (key: SortableBookingKey) => {
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+        return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    return <ArrowUpDown className="ml-2 h-4 w-4" />;
+  };
+
 
   return (
     <div className="grid gap-8">
@@ -425,7 +480,10 @@ export default function DashboardPage() {
         )}
         <div className="flex flex-col gap-4">
             <h1 className="text-3xl font-bold tracking-tight font-headline">Seja bem-vindo, {user.name.split(' ')[0]}!</h1>
-            <p className="text-muted-foreground">Gerencie as reservas de salas de forma rápida e visual.</p>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Gerencie as reservas de salas de forma rápida e visual.
+            </p>
         </div>
 
         <Card>
@@ -438,11 +496,8 @@ export default function DashboardPage() {
                         </CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('backward')} disabled={isMobile}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('forward')} disabled={isMobile}>
-                            <ChevronRight className="h-4 w-4" />
+                        <Button variant="outline" size="icon" onClick={() => selectedDate && setSelectedDate(subDays(selectedDate, 1))}>
+                          <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -460,18 +515,133 @@ export default function DashboardPage() {
                             <PopoverContent className="w-auto p-0" align="end">
                                 <Calendar
                                 mode="single"
-                                selected={selectedDate}
+                                selected={selectedDate || undefined}
                                 onSelect={(date) => date && setSelectedDate(date)}
                                 initialFocus
                                 locale={ptBR}
                                 />
                             </PopoverContent>
                         </Popover>
+                         <Button variant="outline" size="icon" onClick={() => selectedDate && setSelectedDate(addDays(selectedDate, 1))}>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
               {renderContent()}
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                     <div>
+                        <CardTitle>Extrato de Reservas</CardTitle>
+                        <CardDescription>
+                            Visualize o histórico de reservas. Clique nos cabeçalhos para ordenar.
+                        </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <Select value={dateRange} onValueChange={(value: DateRangePreset) => setDateRange(value)}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Selecione um período" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {dateRangeOptions.map(option => (
+                                     <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>
+                                <Button variant="ghost" onClick={() => requestSort('title')}>
+                                    Reserva
+                                    {getSortIcon('title')}
+                                </Button>
+                            </TableHead>
+                            <TableHead className="hidden md:table-cell">
+                                <Button variant="ghost" onClick={() => requestSort('roomName')}>
+                                    Sala
+                                    {getSortIcon('roomName')}
+                                </Button>
+                            </TableHead>
+                             <TableHead className="hidden sm:table-cell">
+                                <Button variant="ghost" onClick={() => requestSort('date')}>
+                                    Data e Horário
+                                    {getSortIcon('date')}
+                                </Button>
+                            </TableHead>
+                            <TableHead className="hidden lg:table-cell">
+                                <Button variant="ghost" onClick={() => requestSort('organizerName')}>
+                                    Organizador
+                                    {getSortIcon('organizerName')}
+                                 </Button>
+                            </TableHead>
+                            <TableHead className="text-right">Participantes</TableHead>
+                            <TableHead className="text-right">
+                                <span className="sr-only">Ações</span>
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sortedBookings.length > 0 ? sortedBookings.map(booking => {
+                            const isOrganizer = user.id === booking.organizerId;
+                            const isAdmin = user.role === 'Administrador' || user.role === 'Editor';
+                            const canEdit = isOrganizer || isAdmin;
+
+                            return (
+                                <TableRow key={booking.id}>
+                                    <TableCell className="font-medium">{booking.title}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{booking.roomName}</TableCell>
+                                     <TableCell className="hidden sm:table-cell">
+                                        {format(parseISO(booking.date), "dd/MM/yy", { locale: ptBR })}
+                                        <span className="text-muted-foreground ml-2">{booking.startTime}</span>
+                                    </TableCell>
+                                    <TableCell className="hidden lg:table-cell">{booking.organizerName}</TableCell>
+                                    <TableCell className="text-right">{booking.participants.length + (booking.guests || 0)}</TableCell>
+                                    <TableCell className="text-right">
+                                        {canEdit && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Ações</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                    <EditBookingModal 
+                                                        booking={booking} 
+                                                        allBookings={allBookings} 
+                                                        onBookingUpdated={handleBookingUpdated} 
+                                                        onOpenChange={setModalOpen}
+                                                    >
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                                            <Pencil className="mr-2 h-4 w-4" />
+                                                            Editar
+                                                        </DropdownMenuItem>
+                                                    </EditBookingModal>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        }) : (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-24 text-center">Nenhuma reserva encontrada para este período.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
 
