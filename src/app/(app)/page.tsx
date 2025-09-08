@@ -358,8 +358,7 @@ export default function DashboardPage() {
   const handleBookingUpdated = (updatedBooking: Booking) => {
     setAllBookings(prevBookings => 
         prevBookings
-            .filter(b => b.id !== updatedBooking.id) // Remove a reserva antiga
-            .concat(updatedBooking) // Adiciona a reserva atualizada
+            .map(b => b.id === updatedBooking.id ? updatedBooking : b) 
             .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
     );
   }
@@ -441,14 +440,6 @@ export default function DashboardPage() {
                                 />
                             </PopoverContent>
                         </Popover>
-                         {rooms.length > 0 && (
-                            <BookingModal room={rooms[0]} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={handleBookingCreated} allBookings={allBookings}>
-                                <Button className="w-full sm:w-auto">
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Nova Reserva
-                                </Button>
-                            </BookingModal>
-                         )}
                     </div>
                 </div>
             </CardHeader>
@@ -460,5 +451,7 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    
 
     
