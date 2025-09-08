@@ -13,13 +13,14 @@ import type { Booking } from "@/lib/types/booking"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { NoticeModal } from "@/components/app/notice-modal"
 import type { Notice } from "@/lib/types/notice"
 import { BookingForm } from "@/components/app/booking-form"
 import { useToast } from "@/hooks/use-toast"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const BOOKING_COLORS = ["bg-blue-300/70 border-blue-500", "bg-purple-300/70 border-purple-500", "bg-green-300/70 border-green-500", "bg-yellow-300/70 border-yellow-500"];
 const FIXED_SLOTS = ["08:00", "13:00", "18:00", "23:00"];
@@ -525,7 +526,7 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [modalOpen, setModalOpen] = useState(false);
   const [view, setView] = useState<'day' | 'week' | 'fortnight'>('day');
-  const isMobile = useIsMobile();
+  const { isMobile, isHydrated } = useIsMobile();
 
   const [unreadNotice, setUnreadNotice] = useState<Notice | null>(null);
 
@@ -586,6 +587,14 @@ export default function DashboardPage() {
   }, [allBookings, selectedDate])
 
   const renderContent = () => {
+    if (!isHydrated) {
+        return <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+        </div>;
+    }
+
     if (isMobile) {
         return <MobileSchedule rooms={rooms} bookingsByRoom={bookingsByRoom} days={viewDays} setModalOpen={setModalOpen} view={view} />
     }
@@ -665,8 +674,8 @@ export default function DashboardPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                <Tabs value={isMobile ? view : 'desktop-view-wrapper'}>
-                    <TabsContent value={view} forceMount>
+                <Tabs value={isHydrated && isMobile ? view : 'desktop-view-wrapper'}>
+                    <TabsContent value={isHydrated && isMobile ? view : 'desktop-view-wrapper'} forceMount>
                         {renderContent()}
                     </TabsContent>
                 </Tabs>
@@ -676,5 +685,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
