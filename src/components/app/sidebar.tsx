@@ -43,7 +43,7 @@ export function AppSidebar({ isMobile = false, onClose }: AppSidebarProps) {
     : "fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex";
 
   return (
-    <nav className={cn(sidebarClasses)}>
+    <nav className={cn(sidebarClasses)} aria-label="Navegação Principal">
         <div className="flex flex-col h-full">
             <div className={cn(
                 "flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6",
