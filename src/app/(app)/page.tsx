@@ -207,7 +207,13 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
         const timelineStartMinutes = timelineStartHour * 60;
         
         const startMinutes = start.getHours() * 60 + start.getMinutes();
-        const minutesFromStart = (startMinutes - timelineStartMinutes + 1440) % 1440;
+        let minutesFromStart = startMinutes - timelineStartMinutes;
+
+        // Handle case where booking wraps around midnight from the timeline's perspective
+        if (minutesFromStart < 0) {
+            minutesFromStart += 24 * 60;
+        }
+
         const startPercent = (minutesFromStart / (24 * 60)) * 100;
         
         const durationMinutes = differenceInMinutes(end, start);
@@ -226,7 +232,7 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
                 {/* Header da Timeline */}
                 <div className="flex sticky top-0 z-10 bg-card">
                     <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
-                    <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(0, 1fr))`}}>
+                    <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(24, minmax(0, 1fr))`}}>
                         {timeSlots.map(slot => (
                             <div key={slot} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2">
                                 {slot.split(":")[0]}h
@@ -243,7 +249,7 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
                     return (
                         <div key={room.id} className="flex items-center min-h-[4rem]">
                             <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
-                            <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(0, 1fr))`}}>
+                            <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(24, minmax(0, 1fr))`}}>
                                 
                                 <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
                                     <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
@@ -472,5 +478,7 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    
 
     
