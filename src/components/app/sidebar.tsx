@@ -37,21 +37,23 @@ export function AppSidebar({ isMobile = false, onClose }: AppSidebarProps) {
     }
   }
 
+  // Alterado w-14 para w-64 para expandir a sidebar.
   const sidebarClasses = isMobile 
     ? "flex flex-col h-full"
-    : "fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex";
+    : "fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex";
 
   return (
     <nav className={cn(sidebarClasses)}>
         <div className="flex flex-col h-full">
             <div className={cn(
                 "flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6",
-                isMobile && "justify-start gap-3",
-                !isMobile && "justify-center"
+                // Alterado para justify-start para alinhar à esquerda
+                isMobile ? "justify-start gap-3" : ""
             )}>
                  <Link href="/" className="flex items-center gap-3" onClick={handleLinkClick}>
                     <Dices className="h-8 w-8 shrink-0 text-primary" />
-                    <span className={cn("text-2xl font-bold font-headline", !isMobile && "sr-only")}>
+                    {/* Removido o sr-only para o texto aparecer */}
+                    <span className={cn("text-2xl font-bold font-headline")}>
                         Dungeon App
                     </span>
                  </Link>
@@ -66,12 +68,13 @@ export function AppSidebar({ isMobile = false, onClose }: AppSidebarProps) {
                         className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                         (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) && "bg-muted text-primary",
-                        isMobile && "text-lg py-3",
-                        !isMobile && "justify-center"
+                        isMobile && "text-lg py-3"
+                        // Removido justify-center para alinhar itens à esquerda
                         )}
                     >
                         <item.icon className="h-5 w-5" />
-                        <span className={cn(!isMobile && "sr-only")}>{item.label}</span>
+                        {/* Removido o sr-only para os labels aparecerem */}
+                        <span className={cn(!isMobile && "")}>{item.label}</span>
                     </Link>
                     ))}
                 </div>
@@ -82,12 +85,13 @@ export function AppSidebar({ isMobile = false, onClose }: AppSidebarProps) {
                     onClick={handleLinkClick}
                     className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                        isMobile && "text-lg py-3",
-                        !isMobile && "justify-center"
+                        isMobile && "text-lg py-3"
+                        // Removido justify-center para alinhar à esquerda
                     )}
                     >
                     <LogOut className="h-5 w-5" />
-                    <span className={cn(!isMobile && "sr-only")}>Sair</span>
+                    {/* Removido o sr-only para o label aparecer */}
+                    <span className={cn(!isMobile && "")}>Sair</span>
                 </Link>
             </div>
         </div>
