@@ -222,11 +222,11 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
 
     return (
         <ScrollArea className="w-full whitespace-nowrap">
-            <div className="grid gap-2 min-w-[1200px]">
+            <div className="grid gap-2 min-w-[1000px] lg:min-w-[1200px]">
                 {/* Header da Timeline */}
                 <div className="flex sticky top-0 z-10 bg-card">
                     <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
-                    <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(1.5rem, 1fr))`}}>
+                    <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(0, 1fr))`}}>
                         {timeSlots.map(slot => (
                             <div key={slot} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2">
                                 {slot.split(":")[0]}h
@@ -243,7 +243,7 @@ const DesktopSchedule = ({ rooms, bookings, selectedDate, setModalOpen, onBookin
                     return (
                         <div key={room.id} className="flex items-center min-h-[4rem]">
                             <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
-                            <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(1.5rem, 1fr))`}}>
+                            <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative" style={{ gridTemplateColumns: `repeat(${timeSlots.length}, minmax(0, 1fr))`}}>
                                 
                                 <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
                                     <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
@@ -372,9 +372,9 @@ export default function DashboardPage() {
 
   const scrollTimeline = (direction: 'forward' | 'backward') => {
     setTimelineStartHour(prevHour => {
-        const newHour = direction === 'forward' ? prevHour + 4 : prevHour - 4;
+        const newHour = direction === 'forward' ? 4 : -4;
         // Mantém a hora dentro do ciclo de 24h
-        return (newHour + 24) % 24;
+        return (prevHour + newHour + 24) % 24;
     });
   }
 
@@ -432,10 +432,10 @@ export default function DashboardPage() {
                         </CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('backward')}>
+                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('backward')} disabled={isMobile}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('forward')}>
+                        <Button variant="outline" size="icon" onClick={() => scrollTimeline('forward')} disabled={isMobile}>
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                         <Popover>
@@ -472,3 +472,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    
