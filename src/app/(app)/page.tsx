@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAuthenticatedUser, getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, createBooking, updateBooking, getUserById } from "@/lib/mock-service"
 import { Clock, Users, User, Calendar as CalendarIcon, PlusCircle, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter } from "lucide-react"
-import { format, parseISO, startOfToday, parse, addHours, differenceInMinutes, isBefore, addDays, subDays, eachDayOfInterval, startOfWeek, endOfWeek, getHours, setHours, setMinutes, startOfMonth, endOfMonth, subMonths, isWithinInterval } from "date-fns"
+import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React, { useState, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
@@ -25,6 +25,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DateRange } from "react-day-picker"
 
 
 export const FIXED_SLOTS = ["08:00", "13:00", "18:00", "23:00"];
@@ -282,12 +283,13 @@ const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCr
 
 type SortableBookingKey = 'title' | 'roomName' | 'organizerName' | 'date';
 type SortDirection = 'ascending' | 'descending';
-type DateRangePreset = 'next7' | 'next15' | 'last7';
+type DateRangePreset = 'next7' | 'next15' | 'last7' | 'custom';
 
 const dateRangeOptions: { value: DateRangePreset; label: string }[] = [
     { value: 'next15', label: 'Próximos 15 dias' },
     { value: 'next7', label: 'Próximos 7 dias' },
     { value: 'last7', label: 'Últimos 7 dias' },
+    { value: 'custom', label: 'Período Personalizado' },
 ];
 
 export default function DashboardPage() {
@@ -302,7 +304,8 @@ export default function DashboardPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [unreadNotice, setUnreadNotice] = useState<Notice | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: SortableBookingKey; direction: SortDirection } | null>({ key: 'date', direction: 'ascending' });
-  const [dateRange, setDateRange] = useState<DateRangePreset>('next15');
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('next15');
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
 
 
   // Handle notices
@@ -373,7 +376,7 @@ export default function DashboardPage() {
     let start: Date;
     let end: Date;
 
-    switch (dateRange) {
+    switch (dateRangePreset) {
         case 'next15':
             start = today;
             end = addDays(today, 15);
@@ -386,13 +389,23 @@ export default function DashboardPage() {
             start = subDays(today, 7);
             end = today;
             break;
+        case 'custom':
+            start = customDateRange?.from || today;
+            end = customDateRange?.to || addDays(start, 1); // Default to 1 day if 'to' is not set
+            break;
+        default:
+             start = today;
+             end = addDays(today, 15);
     }
+    
+    // Ensure the end date includes the entire day
+    end.setHours(23, 59, 59, 999);
 
     return allBookings.filter(b => {
         const bookingDate = parseISO(b.date);
         return isWithinInterval(bookingDate, { start, end });
     });
-  }, [allBookings, dateRange]);
+  }, [allBookings, dateRangePreset, customDateRange]);
 
 
   const sortedBookings = useMemo(() => {
@@ -542,10 +555,10 @@ export default function DashboardPage() {
                             Visualize o histórico de reservas. Clique nos cabeçalhos para ordenar.
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                         <Filter className="h-4 w-4 text-muted-foreground" />
-                        <Select value={dateRange} onValueChange={(value: DateRangePreset) => setDateRange(value)}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
+                        <Select value={dateRangePreset} onValueChange={(value: DateRangePreset) => setDateRangePreset(value)}>
+                            <SelectTrigger className="w-full sm:w-auto">
                                 <SelectValue placeholder="Selecione um período" />
                             </SelectTrigger>
                             <SelectContent>
@@ -554,6 +567,44 @@ export default function DashboardPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        {dateRangePreset === 'custom' && (
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal sm:w-[280px]",
+                                        !customDateRange && "text-muted-foreground"
+                                    )}
+                                    >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {customDateRange?.from ? (
+                                        customDateRange.to ? (
+                                        <>
+                                            {format(customDateRange.from, "LLL dd, y", { locale: ptBR })} -{" "}
+                                            {format(customDateRange.to, "LLL dd, y", { locale: ptBR })}
+                                        </>
+                                        ) : (
+                                        format(customDateRange.from, "LLL dd, y", { locale: ptBR })
+                                        )
+                                    ) : (
+                                        <span>Selecione o intervalo</span>
+                                    )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={customDateRange?.from}
+                                    selected={customDateRange}
+                                    onSelect={setCustomDateRange}
+                                    numberOfMonths={2}
+                                    locale={ptBR}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        )}
                     </div>
                 </div>
             </CardHeader>
@@ -648,7 +699,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
-
-    
