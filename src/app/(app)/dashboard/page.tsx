@@ -26,6 +26,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateRange } from "react-day-picker"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Badge } from "@/components/ui/badge"
 
 
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
@@ -188,7 +190,7 @@ const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenCha
     )
 }
 
-// --- Componente da Agenda ---
+// --- Componente da Agenda (Timeline - Desktop/Landscape) ---
 const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
     
     const totalHours = 24;
@@ -280,6 +282,53 @@ const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCr
     )
 }
 
+// --- Componente da Agenda (Acordeão - Mobile/Portrait) ---
+const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
+    return (
+        <Accordion type="multiple" className="w-full space-y-2">
+            {rooms.map((room, roomIndex) => {
+                const roomBookings = bookings.filter(b => b.roomId === room.id).sort((a,b) => a.startTime.localeCompare(b.startTime));
+                const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
+
+                return (
+                    <AccordionItem key={room.id} value={room.id} className="border rounded-lg px-4 bg-background">
+                        <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                <div className={cn("w-3 h-3 rounded-full", colorClass)}></div>
+                                <span className="font-bold">{room.name}</span>
+                                <Badge variant="outline">{roomBookings.length} reserva(s)</Badge>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <div className="space-y-4 pt-2">
+                                {roomBookings.length > 0 ? (
+                                    roomBookings.map(booking => (
+                                        <BookingDetailsModal key={booking.id} booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
+                                            <div className="p-3 rounded-md border cursor-pointer hover:bg-muted/50">
+                                                <p className="font-semibold">{booking.title || 'Reserva Rápida'}</p>
+                                                <p className="text-sm text-muted-foreground"><Clock className="inline h-3 w-3 mr-1"/>{booking.startTime} - {booking.endTime}</p>
+                                                <p className="text-sm text-muted-foreground"><Users className="inline h-3 w-3 mr-1"/>{booking.participants.length + (booking.guests || 0)} participante(s)</p>
+                                            </div>
+                                        </BookingDetailsModal>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-center text-muted-foreground py-4">Nenhuma reserva para esta sala hoje.</p>
+                                )}
+                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
+                                    <Button className="w-full mt-2">
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Reservar {room.name}
+                                    </Button>
+                                </BookingModal>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                )
+            })}
+        </Accordion>
+    )
+}
+
 type SortableBookingKey = 'title' | 'roomName' | 'organizerName' | 'date';
 type SortDirection = 'ascending' | 'descending';
 type DateRangePreset = 'next7' | 'next15' | 'last7' | 'custom';
@@ -363,9 +412,9 @@ export default function DashboardPage() {
     });
 
     const combinedBookings = [...todaysBookings, ...overnightBookings];
+    const uniqueBookings = Array.from(new Map(combinedBookings.map(b => [b.id, b])).values());
     
-    // Garantir que não haja duplicatas
-    return Array.from(new Map(combinedBookings.map(b => [b.id, b])).values());
+    return uniqueBookings;
   }, [allBookings, selectedDate]);
 
 
@@ -451,22 +500,35 @@ export default function DashboardPage() {
         return <div className="space-y-4">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
         </div>;
     }
 
     return (
-        <ScrollArea className="w-full whitespace-nowrap">
-            <ScheduleView 
-               rooms={rooms}
-               bookings={bookingsForSelectedDay}
-               selectedDate={selectedDate}
-               setModalOpen={setModalOpen}
-               onBookingCreated={handleBookingCreated}
-               onBookingUpdated={handleBookingUpdated}
-           />
-           <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        <>
+            <div className="hidden sm:block">
+                <ScrollArea className="w-full whitespace-nowrap">
+                    <ScheduleView 
+                       rooms={rooms}
+                       bookings={bookingsForSelectedDay}
+                       selectedDate={selectedDate}
+                       setModalOpen={setModalOpen}
+                       onBookingCreated={handleBookingCreated}
+                       onBookingUpdated={handleBookingUpdated}
+                   />
+                   <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+            </div>
+            <div className="block sm:hidden">
+                 <AccordionScheduleView
+                    rooms={rooms}
+                    bookings={bookingsForSelectedDay}
+                    selectedDate={selectedDate}
+                    setModalOpen={setModalOpen}
+                    onBookingCreated={handleBookingCreated}
+                    onBookingUpdated={handleBookingUpdated}
+                />
+            </div>
+        </>
     );
   }
 
@@ -697,5 +759,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
