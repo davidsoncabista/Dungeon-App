@@ -1,14 +1,27 @@
+
+"use client"
+
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/app/header";
 import { redirect } from 'next/navigation';
-import { getAuthenticatedUser } from "@/lib/mock-service";
+<<<<<<< HEAD
+// import { getAuth } from "firebase/auth";
+// import { app } from "@/lib/firebase";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  // Simula a verificação de autenticação
-  const user = getAuthenticatedUser(); 
-  if (!user) {
-    redirect('/login');
-  }
+  // const auth = getAuth(app);
+  // const user = auth.currentUser;
+
+=======
+// import { getAuthenticatedUser } from "@/lib/mock-service";
+
+export default function AppLayout({ children }: { children: ReactNode }) {
+  // Simula a verificação de autenticação - TEMPORARIAMENTE DESABILITADO
+  // const user = getAuthenticatedUser(); 
+>>>>>>> adfb7d2 (File changes)
+  // if (!user) {
+  //   redirect('/login');
+  // }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">

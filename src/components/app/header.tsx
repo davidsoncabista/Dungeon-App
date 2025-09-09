@@ -3,7 +3,7 @@
 
 import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,9 +16,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getAuthenticatedUser } from "@/lib/mock-service"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { auth } from "@/lib/firebase"
+import { useToast } from "@/hooks/use-toast"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Swords },
@@ -31,7 +32,31 @@ const navItems = [
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+  
+  // Temporariamente usando o mock enquanto o estado de auth não está global
   const user = getAuthenticatedUser();
+  const firebaseUser = auth.currentUser;
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      router.push('/');
+    } catch (error) {
+      console.error("Erro no logout:", error);
+      toast({
+        title: "Erro no Logout",
+        description: "Não foi possível fazer o logout. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -117,15 +142,15 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-              <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person"/>
-              <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarImage src={firebaseUser?.photoURL || user.avatar} alt={firebaseUser?.displayName || user.name} data-ai-hint="person"/>
+              <AvatarFallback>{(firebaseUser?.displayName || user.name).slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
           </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
-              <p>{user.name}</p>
-              <p className="text-xs text-muted-foreground font-normal">{user.email}</p>
+              <p>{firebaseUser?.displayName || user.name}</p>
+              <p className="text-xs text-muted-foreground font-normal">{firebaseUser?.email || user.email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
@@ -136,8 +161,8 @@ export function AppHeader() {
               <span>Configurações</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-              <Link href="/"><LogOut className="mr-2 h-4 w-4" />Sair</Link>
+          <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />Sair
           </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

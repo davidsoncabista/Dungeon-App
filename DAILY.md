@@ -2,25 +2,7 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Sprint Atual: Sprint 3 (Em andamento)
-
-### Foco: Experiência Pública e Autenticação
-
-- [ ] **Criar a Landing Page**:
-  - [x] Desenvolver a estrutura e o conteúdo da página inicial para usuários não logados.
-  - [ ] Garantir que o design seja responsivo e atraente.
-
-- [ ] **Implementar Autenticação com Google**:
-  - [ ] Integrar o Firebase Authentication para permitir o login com contas Google.
-  - [ ] Substituir o fluxo de login simulado por um sistema de autenticação real.
-  - [ ] Gerenciar a sessão do usuário (login/logout).
-
-- [ ] **Controle de Acesso**:
-  - [ ] Implementar a lógica de redirecionamento: usuários não logados veem a landing page; usuários logados são direcionados para o `/dashboard`.
-  - [ ] Proteger todas as rotas da área do aplicativo (`/app`) para que exijam autenticação.
-
-
-## Próximas Etapas: Sprint 4
+## Sprint Atual: Sprint 4 (Iniciando)
 
 ### Foco: Lógica de Negócio e Ferramentas de Admin
 
@@ -36,6 +18,24 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [ ] **Ferramentas de Administrador**:
   - [ ] Implementar as ações de moderação (bloquear usuário, editar/excluir sala).
   - [ ] Criar a interface para o administrador criar e enviar avisos.
+
+
+## Concluído: Sprint 3
+
+### Foco: Experiência Pública e Autenticação
+
+- [x] **Criar a Landing Page**:
+  - [x] Desenvolver a estrutura e o conteúdo da página inicial para usuários não logados.
+  - [x] Garantir que o design seja responsivo e atraente.
+
+- [x] **Implementar Autenticação com Google**:
+  - [x] Integrar o Firebase Authentication para permitir o login com contas Google.
+  - [x] Substituir o fluxo de login simulado por um sistema de autenticação real.
+  - [x] Gerenciar a sessão do usuário (login/logout).
+
+- [x] **Controle de Acesso**:
+  - [x] Implementar a lógica de redirecionamento: usuários não logados veem a landing page; usuários logados são direcionados para o `/dashboard`.
+  - [x] Proteger todas as rotas da área do aplicativo (`/app`) para que exijam autenticação.
 
 
 ## Concluído: Sprint 2
