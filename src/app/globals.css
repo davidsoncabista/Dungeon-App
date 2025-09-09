@@ -38,6 +38,13 @@
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 274 30% 30%;
     --sidebar-ring: 274.4 51.1% 50%;
+
+    --role-admin-bg: hsl(350, 78%, 55%);
+    --role-admin-foreground: hsl(0, 0%, 100%);
+    --role-editor-bg: hsl(210, 85%, 55%);
+    --role-editor-foreground: hsl(0, 0%, 100%);
+    --role-revisor-bg: hsl(45, 90%, 55%);
+    --role-revisor-foreground: hsl(45, 100%, 10%);
   }
 
   .dark {
@@ -74,6 +81,13 @@
     --sidebar-accent-foreground: 274 25% 90%;
     --sidebar-border: 274 20% 20%;
     --sidebar-ring: 274 51.1% 60%;
+
+    --role-admin-bg: hsl(350, 78%, 50%);
+    --role-admin-foreground: hsl(0, 0%, 100%);
+    --role-editor-bg: hsl(210, 85%, 50%);
+    --role-editor-foreground: hsl(0, 0%, 100%);
+    --role-revisor-bg: hsl(45, 90%, 50%);
+    --role-revisor-foreground: hsl(45, 100%, 10%);
   }
 }
 
@@ -83,5 +97,26 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .bg-role-admin {
+    background-color: var(--role-admin-bg) !important;
+  }
+  .text-role-admin-foreground {
+    color: var(--role-admin-foreground) !important;
+  }
+  .bg-role-editor {
+    background-color: var(--role-editor-bg) !important;
+  }
+  .text-role-editor-foreground {
+    color: var(--role-editor-foreground) !important;
+  }
+  .bg-role-revisor {
+    background-color: var(--role-revisor-bg) !important;
+  }
+  .text-role-revisor-foreground {
+    color: var(--role-revisor-foreground) !important;
   }
 }

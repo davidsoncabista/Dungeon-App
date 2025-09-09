@@ -26,11 +26,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { UserForm } from "@/components/app/user-form"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+<<<<<<< HEAD
 import type { AdminRole } from "@/lib/types/user"
 
 
 <<<<<<< HEAD
 =======
+=======
+import type { AdminRole, User } from "@/lib/types/user"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+
+
+>>>>>>> a7c0ffe1 (vamos mudar as cores dos badages  do nivel de acesso deixa diferente das)
 const roleBadgeClass: Record<AdminRole, string> = {
     Administrador: "bg-role-admin text-role-admin-foreground",
     Editor: "bg-role-editor text-role-editor-foreground",
@@ -367,6 +377,7 @@ export default function UsersPage() {
                                 <p>{user.name}</p>
                                 <p className="text-sm text-muted-foreground hidden md:block">{user.email}</p>
                                 {/* Badges e Ações para visualização mobile */}
+<<<<<<< HEAD
                                 <div className="flex flex-col items-start gap-2 mt-1 md:hidden">
                                     <div className="flex items-center gap-2">
                                         <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
@@ -374,6 +385,13 @@ export default function UsersPage() {
                                             <Badge variant={roleBadgeVariant[user.role]}>{user.role}</Badge>
                                         ) : (
                                             <Badge variant="outline">Membro</Badge>
+=======
+                                <div className="flex flex-col items-start gap-2 mt-1 sm:hidden">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline'}>{user.category}</Badge>
+                                        {user.role && (
+                                            <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
+>>>>>>> a7c0ffe1 (vamos mudar as cores dos badages  do nivel de acesso deixa diferente das)
                                         )}
                                     </div>
                                     <div className="sm:hidden">
@@ -407,7 +425,7 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     {user.role ? (
-                        <Badge variant={roleBadgeVariant[user.role]}>{user.role}</Badge>
+                        <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                     ) : (
                        <span className="text-muted-foreground">Membro</span>
                     )}
@@ -454,5 +472,3 @@ export default function UsersPage() {
     </div>
   )
 }
-
-    
