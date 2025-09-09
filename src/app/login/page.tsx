@@ -25,7 +25,6 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            // O usuário foi autenticado com sucesso
             const user = result.user;
             toast({
                 title: `Bem-vindo, ${user.displayName}!`,
@@ -33,6 +32,13 @@ export default function LoginPage() {
             });
             router.push('/dashboard');
         } catch (error: any) {
+            // Se o usuário fechou o popup, não fazemos nada.
+            if (error.code === 'auth/popup-closed-by-user') {
+                console.log("Login cancelado pelo usuário.");
+                return;
+            }
+            
+            // Para todos os outros erros, mostramos uma notificação.
             console.error("Erro na autenticação com Google:", error);
             toast({
                 title: "Erro no Login",
