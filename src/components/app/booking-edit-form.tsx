@@ -31,7 +31,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DialogFooter } from "@/components/ui/dialog"
 import { useState, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FIXED_SLOTS } from "@/app/(app)/page"
 
 const allUsers = getUsers();
 const currentUser = getAuthenticatedUser();
@@ -234,3 +233,5 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
         </Form>
     );
 }
+
+    

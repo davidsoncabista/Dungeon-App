@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.3.0 - 2025-09-10 19:00:00 - davidson.dev.br
+## v0.3.0 - 2025-09-08 21:30:00 - davidson.dev.br
 
 - **Refatoração da Agenda e Introdução do Extrato de Reservas (Etapas 16-20)**:
   - **Agenda Responsiva 24h**: A timeline de reservas foi completamente redesenhada para oferecer uma visualização de 24 horas que se adapta a qualquer tamanho de tela, eliminando a necessidade de rolagem horizontal.

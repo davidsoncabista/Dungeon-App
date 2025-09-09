@@ -28,7 +28,7 @@ export default function LoginPage() {
                 <Input id="password" type="password" required />
               </div>
               <Button asChild className="w-full py-6 text-lg font-bold">
-                <Link href="/">Entrar</Link>
+                <Link href="/dashboard">Entrar</Link>
               </Button>
             </form>
             <div className="mt-6 text-center text-sm">

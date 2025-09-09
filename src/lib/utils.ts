@@ -7,6 +7,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export const FIXED_SLOTS = ["08:00", "13:00", "18:00", "23:00"];
+
 // O segundo parâmetro `isEndTime` é para ajustar o cálculo.
 // Se for um horário de fim, queremos o início do slot que ele representa.
 export const getBookingDurationAndEnd = (time: string, isEndTime: boolean = false): { duration: number; endTime: string } => {
@@ -36,5 +38,7 @@ export const getBookingDurationAndEnd = (time: string, isEndTime: boolean = fals
     const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
     return { duration: durationHours, endTime: format(end, "HH:mm") };
 };
+
+    
 
     

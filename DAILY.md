@@ -2,51 +2,48 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Etapa Atual: Sprint 2 (Em andamento)
+## Sprint Atual: Sprint 3 (Em andamento)
 
-- [x] **Configuração do Ambiente**:
-  - [x] Validar a estrutura de pastas do projeto Next.js.
-  - [x] Configurar o tema visual base com Tailwind CSS e ShadCN.
+### Foco: Experiência Pública e Autenticação
 
-- [x] **Autenticação de Usuário**:
-  - [x] Criar a tela de Login.
-  - [x] Implementar a lógica de autenticação (simulada).
-  - [x] Proteger as rotas da aplicação que exigem login.
+- [ ] **Criar a Landing Page**:
+  - [x] Desenvolver a estrutura e o conteúdo da página inicial para usuários não logados.
+  - [ ] Garantir que o design seja responsivo e atraente.
 
-- [x] **Layout Principal da Aplicação**:
-  - [x] Desenvolver o layout principal com header, sidebar e área de conteúdo.
-  - [x] Criar a navegação principal entre as telas.
+- [ ] **Implementar Autenticação com Google**:
+  - [ ] Integrar o Firebase Authentication para permitir o login com contas Google.
+  - [ ] Substituir o fluxo de login simulado por um sistema de autenticação real.
+  - [ ] Gerenciar a sessão do usuário (login/logout).
 
-- [x] **Telas de CRUD (Interface)**:
-  - [x] Desenvolver a UI das telas "Meu Perfil".
-  - [x] Desenvolver a UI das telas de "Usuários" e "Salas".
-  - [x] Desenvolver a UI da tela "Reservar Sala" e "Minhas Reservas".
-  - [x] Desenvolver a UI da tela "Cobranças" e "Estatísticas".
+- [ ] **Controle de Acesso**:
+  - [ ] Implementar a lógica de redirecionamento: usuários não logados veem a landing page; usuários logados são direcionados para o `/dashboard`.
+  - [ ] Proteger todas as rotas da área do aplicativo (`/app`) para que exijam autenticação.
 
-- [x] **Dinamização com Mock Service**:
-    - [x] Conectar todas as telas a um serviço de dados simulado (`mock-service`).
 
-- [x] **Interatividade do Usuário**:
-  - [x] Implementar a edição e o cancelamento de reservas (com a regra de 6h de antecedência).
+## Próximas Etapas: Sprint 4
+
+### Foco: Lógica de Negócio e Ferramentas de Admin
+
+- [ ] **Lógica de Cotas e Reservas**:
+  - [ ] Implementar a validação de cotas por categoria de usuário (Player, Gamer, Master).
+  - [ ] Implementar a lógica de convidados (associados vs. não-associados) e a geração de cobrança avulsa.
+  - [ ] Implementar as regras para o horário "Corujão".
+
+- [ ] **Interatividade do Usuário**:
   - [ ] Implementar a funcionalidade de "Sair da Reserva".
   - [ ] Simular o fluxo de confirmação e cancelamento automático de reservas.
 
-- [x] **Ferramentas de Administrador**:
-  - [x] Criar o painel para o administrador gerenciar **todas** as reservas (Extrato de Reservas).
+- [ ] **Ferramentas de Administrador**:
   - [ ] Implementar as ações de moderação (bloquear usuário, editar/excluir sala).
   - [ ] Criar a interface para o administrador criar e enviar avisos.
 
 
-## Próximas Etapas: Sprint 3
+## Concluído: Sprint 2
 
-### Sprint 3: Lógica de Negócio e Validações
-
-- [ ] **Lógica de Reservas**:
-  - [ ] Implementar a validação de cotas por categoria de usuário (Player, Gamer, Master).
-  - [ ] Implementar as regras para o horário "Corujão".
-  - [ ] Implementar a lógica de convidados (associados vs. não-associados) e a geração de cobrança avulsa.
-
-- [ ] **Integração com Backend (Firebase/Genkit)**:
-  - [ ] Substituir o `mock-service` por chamadas reais ao backend.
-  - [ ] Implementar a lógica de autenticação com Firebase Auth.
-  - [ ] Criar as funções de CRUD para todas as entidades (Usuários, Salas, Reservas).
+- [x] **Configuração do Ambiente**: Validada a estrutura de pastas e o tema visual.
+- [x] **Layout Principal**: Desenvolvido o layout com header, sidebar e área de conteúdo.
+- [x] **Telas de CRUD (Interface)**: Desenvolvidas as UIs para todas as telas principais.
+- [x] **Dinamização com Mock Service**: Conectadas todas as telas ao serviço de dados simulado.
+- [x] **Refatoração da Agenda**: Timeline de 24h responsiva e com lógica "Corujão".
+- [x] **Extrato de Reservas**: Implementada a lista de reservas com filtros avançados e ordenação.
+- [x] **Ações de Edição**: Adicionado o modal de edição de reservas na lista, com controle de permissão.

@@ -26,12 +26,11 @@ import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
 import { format, parseISO, parse, isBefore, addMinutes, getHours, getMinutes, set } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { getBookingDurationAndEnd } from "@/lib/utils"
+import { getBookingDurationAndEnd, FIXED_SLOTS } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DialogFooter } from "@/components/ui/dialog"
 import { useState, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FIXED_SLOTS } from "@/app/(app)/page"
 
 const allUsers = getUsers();
 const currentUser = getAuthenticatedUser();
@@ -374,3 +373,5 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
     </Form>
   )
 }
+
+    

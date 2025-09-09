@@ -28,7 +28,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRange } from "react-day-picker"
 
 
-export const FIXED_SLOTS = ["08:00", "13:00", "18:00", "23:00"];
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
 
 
@@ -262,7 +261,7 @@ const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCr
                                 const organizer = booking.participants.find(p => p.id === booking.organizerId);
 
                                 return (
-                                    <div key={booking.id} style={style} className="h-full p-1 z-10">
+                                    <div key={`${booking.id}-${booking.date}`} style={style} className="h-full p-1 z-10">
                                         <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
                                             <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
                                                 <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
@@ -351,25 +350,24 @@ export default function DashboardPage() {
   
   const bookingsForSelectedDay = useMemo(() => {
     if (!selectedDate) return [];
+    
     const selectedDay = format(selectedDate, "yyyy-MM-dd");
     const previousDay = format(subDays(selectedDate, 1), "yyyy-MM-dd");
 
-    const filtered = allBookings.filter(b => {
-      const bookingDay = format(parseISO(b.date), "yyyy-MM-dd");
-      
-      const isOvernight = isBefore(parse(b.endTime, 'HH:mm', new Date()), parse(b.startTime, 'HH:mm', new Date()));
-
-      if (bookingDay === selectedDay) {
-        return true;
-      }
-      if (bookingDay === previousDay && isOvernight) {
-        return true;
-      }
-      return false;
-    });
+    const todaysBookings = allBookings.filter(b => format(parseISO(b.date), "yyyy-MM-dd") === selectedDay);
     
-    return Array.from(new Map(filtered.map(b => [b.id, b])).values());
+    const overnightBookings = allBookings.filter(b => {
+        const bookingDay = format(parseISO(b.date), "yyyy-MM-dd");
+        const isOvernight = isBefore(parse(b.endTime, 'HH:mm', new Date()), parse(b.startTime, 'HH:mm', new Date()));
+        return bookingDay === previousDay && isOvernight;
+    });
+
+    const combinedBookings = [...todaysBookings, ...overnightBookings];
+    
+    // Garantir que não haja duplicatas
+    return Array.from(new Map(combinedBookings.map(b => [b.id, b])).values());
   }, [allBookings, selectedDate]);
+
 
   const bookingsForPeriod = useMemo(() => {
     const today = startOfToday();
@@ -699,3 +697,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    

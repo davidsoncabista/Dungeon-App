@@ -5,15 +5,19 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 ## Objetivos Principais
 
 ### 1. Estrutura e Telas
-- **Tela Inicial**: Exibir agenda completa com disponibilidade de salas em formato de timeline e uma lista de reservas com filtros avançados.
+- **Landing Page**: Uma página de apresentação pública para novos usuários, com as principais funcionalidades do sistema e um link para a área de login.
+- **Dashboard**: Exibir agenda completa com disponibilidade de salas em formato de timeline e uma lista de reservas com filtros avançados.
 - **Minhas Reservas**: Listar reservas do usuário (atuais e passadas).
-- **Reservar Sala**: Implementar fluxo de agendamento com horários fixos (08:00, 13:00, 18:00) com 4.5h de duração, garantindo um intervalo de 30 minutos entre sessões, além de um horário especial "Corujão".
+- **Reservar Sala**: Fluxo integrado ao Dashboard para agendamento.
 - **Meu Perfil**: Permitir visualização e edição de dados do usuário.
 - **Cobranças**: Exibir status de pagamento e permitir quitação.
 - **Área do Administrador**: Painel para gerenciamento completo do sistema.
 
 ### 2. Funcionalidades do Usuário (Associado)
-- **Autenticação**: Login e logout seguro para associados.
+- **Autenticação**: Login com Google (OAuth) e gerenciamento de sessão.
+- **Níveis de Acesso**:
+  - **Não Associado**: Acesso apenas à Landing Page.
+  - **Associado (Player, Gamer, Master)**: Acesso completo às funcionalidades de reserva e gerenciamento de perfil.
 - **Sistema de Avisos**: Exibir avisos importantes do administrador após o login.
 - **Gerenciamento de Perfil**: Edição de dados pessoais e alteração de senha.
 - **Sistema de Reservas**: Calendário de salas com validação baseada em cotas, categoria e horários especiais (Corujão).
