@@ -403,6 +403,7 @@ export default function UsersPage() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
 =======
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
@@ -410,6 +411,9 @@ export default function UsersPage() {
 =======
                 <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
 >>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
+=======
+                <TableHead>Nível de Acesso</TableHead>
+>>>>>>> cdf167ff (reparei que so mostra o roler quando eu pego a tela e expremo ela)
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
 =======
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
@@ -448,8 +452,9 @@ export default function UsersPage() {
                                     <div className="flex items-center gap-2 flex-wrap">
 >>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
                                         <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
-                                        {user.role ? (
+                                        {user.role && (
                                             <Badge variant={roleBadgeVariant[user.role]}>{user.role}</Badge>
+<<<<<<< HEAD
                                         ) : (
                                             <Badge variant="outline">Membro</Badge>
 =======
@@ -459,6 +464,8 @@ export default function UsersPage() {
                                         {user.role && (
                                             <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
 >>>>>>> a7c0ffe1 (vamos mudar as cores dos badages  do nivel de acesso deixa diferente das)
+=======
+>>>>>>> cdf167ff (reparei que so mostra o roler quando eu pego a tela e expremo ela)
                                         )}
                                     </div>
                                     <div className="sm:hidden">
@@ -528,14 +535,18 @@ export default function UsersPage() {
                     <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
                   </TableCell>
 <<<<<<< HEAD
+<<<<<<< HEAD
                   <TableCell className="hidden md:table-cell">
 =======
                   <TableCell className="hidden lg:table-cell">
 >>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
+=======
+                  <TableCell>
+>>>>>>> cdf167ff (reparei que so mostra o roler quando eu pego a tela e expremo ela)
                     {user.role ? (
                         <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                     ) : (
-                       <span className="text-muted-foreground">Membro</span>
+                       <span className="text-muted-foreground hidden md:inline">Membro</span>
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-center">
