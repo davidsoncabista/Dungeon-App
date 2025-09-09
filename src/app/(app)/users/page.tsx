@@ -351,7 +351,11 @@ export default function UsersPage() {
                 <TableHead>Membro</TableHead>
                 <TableHead className="hidden md:table-cell">Categoria</TableHead>
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
+=======
+                <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
+>>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
 =======
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
@@ -378,8 +382,13 @@ export default function UsersPage() {
                                 <p className="text-sm text-muted-foreground hidden md:block">{user.email}</p>
                                 {/* Badges e Ações para visualização mobile */}
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 <div className="flex flex-col items-start gap-2 mt-1 md:hidden">
                                     <div className="flex items-center gap-2">
+=======
+                                <div className="flex flex-col items-start gap-2 mt-1 sm:hidden">
+                                    <div className="flex items-center gap-2 flex-wrap">
+>>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
                                         <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
                                         {user.role ? (
                                             <Badge variant={roleBadgeVariant[user.role]}>{user.role}</Badge>
@@ -403,6 +412,7 @@ export default function UsersPage() {
                             </div>
                         </div>
                         <div className="md:hidden">
+<<<<<<< HEAD
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -417,13 +427,44 @@ export default function UsersPage() {
                                     <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10"><Ban className="mr-2 h-4 w-4" />Bloquear Usuário</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+=======
+                             <Dialog>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                        <DialogTrigger asChild>
+                                            <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                        </DialogTrigger>
+                                        <EditRoleDialog user={user} onConfirm={(role) => handleRoleChangeSuccess(user.name, role)} />
+                                        <DropdownMenuSeparator />
+                                        <BlockUserDialog user={user} onConfirm={() => handleBlockSuccess(user.name, user.status !== 'Bloqueado')} />
+                                        <DeleteUserDialog user={user} onConfirm={() => handleDeleteSuccess(user.name)} />
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
+                                        <DialogDescription>
+                                            Atualize as informações do membro abaixo.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <UserForm onSuccess={handleEditSuccess} onCancel={() => {}} isEditMode={true} defaultValues={user} />
+                                </DialogContent>
+                            </Dialog>
+>>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
                         </div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="hidden md:table-cell">
                     {user.role ? (
                         <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                     ) : (
@@ -437,6 +478,7 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="flex justify-end">
+<<<<<<< HEAD
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -451,6 +493,37 @@ export default function UsersPage() {
                             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10"><Ban className="mr-2 h-4 w-4" />Bloquear Usuário</DropdownMenuItem>
                         </DropdownMenuContent>
                         </DropdownMenu>
+=======
+                       <Dialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <EditRoleDialog user={user} onConfirm={(role) => handleRoleChangeSuccess(user.name, role)} />
+                                    <DropdownMenuSeparator />
+                                    <BlockUserDialog user={user} onConfirm={() => handleBlockSuccess(user.name, user.status !== 'Bloqueado')} />
+                                    <DeleteUserDialog user={user} onConfirm={() => handleDeleteSuccess(user.name)} />
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                             <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
+                                    <DialogDescription>
+                                        Atualize as informações do membro abaixo.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <UserForm onSuccess={handleEditSuccess} onCancel={() => {}} isEditMode={true} defaultValues={user} />
+                            </DialogContent>
+                        </Dialog>
+>>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
                     </div>
                   </TableCell>
                 </TableRow>
@@ -472,3 +545,5 @@ export default function UsersPage() {
     </div>
   )
 }
+
+    
