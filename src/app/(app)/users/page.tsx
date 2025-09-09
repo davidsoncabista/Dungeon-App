@@ -437,7 +437,7 @@ export default function UsersPage() {
                             </Avatar>
                             <div className="font-medium">
                                 <p>{user.name}</p>
-                                <p className="text-sm text-muted-foreground hidden md:block">{user.email}</p>
+                                <p className="text-sm text-muted-foreground md:hidden">{user.email}</p>
                                 {/* Badges e Ações para visualização mobile */}
 <<<<<<< HEAD
 <<<<<<< HEAD
