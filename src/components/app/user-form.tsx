@@ -23,7 +23,11 @@ import { useEffect } from "react"
 const userFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+<<<<<<< HEAD
   category: z.enum(["Player", "Gamer", "Master"], { required_error: "A categoria é obrigatória." }),
+=======
+  category: z.enum(["Player", "Gamer", "Master", "Visitante", "Developer"], { required_error: "A categoria é obrigatória." }),
+>>>>>>> 9823830f (vamos criar uma nova categoria de usuario que sera developer)
   status: z.enum(["Ativo", "Pendente", "Bloqueado"], { required_error: "O status é obrigatório." }),
 });
 
@@ -33,6 +37,11 @@ const categories: { value: UserCategory; label: string }[] = [
     { value: "Player", label: "Player" },
     { value: "Gamer", label: "Gamer" },
     { value: "Master", label: "Master" },
+<<<<<<< HEAD
+=======
+    { value: "Visitante", label: "Visitante"},
+    { value: "Developer", label: "Developer"},
+>>>>>>> 9823830f (vamos criar uma nova categoria de usuario que sera developer)
 ];
 
 const statuses: { value: UserStatus; label: string }[] = [
