@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
+import { getAuthenticatedUser } from "@/lib/mock-service"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Swords },
@@ -36,8 +37,7 @@ export function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
   
-  // Temporariamente usando o mock enquanto o estado de auth não está global
-  const user = getAuthenticatedUser();
+  const user = getAuthenticatedUser(); // Fallback
   const firebaseUser = auth.currentUser;
 
   const handleLogout = async () => {
@@ -143,16 +143,22 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-              <AvatarImage src={firebaseUser?.photoURL || user.avatar} alt={firebaseUser?.displayName || user.name} data-ai-hint="person"/>
-              <AvatarFallback>{(firebaseUser?.displayName || user.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                {firebaseUser && (
+                    <>
+                        <AvatarImage src={firebaseUser.photoURL || ''} alt={firebaseUser.displayName || ''} data-ai-hint="person"/>
+                        <AvatarFallback>{(firebaseUser.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </>
+                )}
               </Avatar>
           </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>
-              <p>{firebaseUser?.displayName || user.name}</p>
-              <p className="text-xs text-muted-foreground font-normal">{firebaseUser?.email || user.email}</p>
-          </DropdownMenuLabel>
+            {firebaseUser && (
+                 <DropdownMenuLabel>
+                    <p>{firebaseUser.displayName}</p>
+                    <p className="text-xs text-muted-foreground font-normal">{firebaseUser.email}</p>
+                </DropdownMenuLabel>
+            )}
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
               <Link href="/profile"><User className="mr-2 h-4 w-4" />Perfil</Link>
