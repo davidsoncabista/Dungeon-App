@@ -2,7 +2,7 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Etapa Atual: Sprint 1 (Concluída)
+## Etapa Atual: Sprint 2 (Em andamento)
 
 - [x] **Configuração do Ambiente**:
   - [x] Validar a estrutura de pastas do projeto Next.js.
@@ -26,22 +26,27 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [x] **Dinamização com Mock Service**:
     - [x] Conectar todas as telas a um serviço de dados simulado (`mock-service`).
 
+- [x] **Interatividade do Usuário**:
+  - [x] Implementar a edição e o cancelamento de reservas (com a regra de 6h de antecedência).
+  - [ ] Implementar a funcionalidade de "Sair da Reserva".
+  - [ ] Simular o fluxo de confirmação e cancelamento automático de reservas.
 
-## Próximas Etapas: Sprint 2
+- [x] **Ferramentas de Administrador**:
+  - [x] Criar o painel para o administrador gerenciar **todas** as reservas (Extrato de Reservas).
+  - [ ] Implementar as ações de moderação (bloquear usuário, editar/excluir sala).
+  - [ ] Criar a interface para o administrador criar e enviar avisos.
 
-### Sprint 2: Lógica de Negócio e Interatividade
+
+## Próximas Etapas: Sprint 3
+
+### Sprint 3: Lógica de Negócio e Validações
 
 - [ ] **Lógica de Reservas**:
   - [ ] Implementar a validação de cotas por categoria de usuário (Player, Gamer, Master).
   - [ ] Implementar as regras para o horário "Corujão".
   - [ ] Implementar a lógica de convidados (associados vs. não-associados) e a geração de cobrança avulsa.
 
-- [ ] **Interatividade do Usuário**:
-  - [ ] Implementar a funcionalidade de "Sair da Reserva".
-  - [ ] Implementar a edição e o cancelamento de reservas (com a regra de 6h de antecedência).
-  - [ ] Simular o fluxo de confirmação e cancelamento automático de reservas.
-
-- [ ] **Ferramentas de Administrador**:
-  - [ ] Criar o painel para o administrador gerenciar **todas** as reservas.
-  - [ ] Implementar as ações de moderação (bloquear usuário, editar/excluir sala).
-  - [ ] Criar a interface para o administrador criar e enviar avisos.
+- [ ] **Integração com Backend (Firebase/Genkit)**:
+  - [ ] Substituir o `mock-service` por chamadas reais ao backend.
+  - [ ] Implementar a lógica de autenticação com Firebase Auth.
+  - [ ] Criar as funções de CRUD para todas as entidades (Usuários, Salas, Reservas).

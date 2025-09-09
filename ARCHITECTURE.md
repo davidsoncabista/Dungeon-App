@@ -5,7 +5,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 ## Objetivos Principais
 
 ### 1. Estrutura e Telas
-- **Tela Inicial**: Exibir agenda completa com disponibilidade de salas.
+- **Tela Inicial**: Exibir agenda completa com disponibilidade de salas em formato de timeline e uma lista de reservas com filtros avançados.
 - **Minhas Reservas**: Listar reservas do usuário (atuais e passadas).
 - **Reservar Sala**: Implementar fluxo de agendamento com horários fixos (08:00, 13:00, 18:00) com 4.5h de duração, garantindo um intervalo de 30 minutos entre sessões, além de um horário especial "Corujão".
 - **Meu Perfil**: Permitir visualização e edição de dados do usuário.

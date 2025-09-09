@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3.0 - 2025-09-10 19:00:00 - davidson.dev.br
+
+- **Refatoração da Agenda e Introdução do Extrato de Reservas (Etapas 16-20)**:
+  - **Agenda Responsiva 24h**: A timeline de reservas foi completamente redesenhada para oferecer uma visualização de 24 horas que se adapta a qualquer tamanho de tela, eliminando a necessidade de rolagem horizontal.
+  - **Lógica de Reservas "Corujão"**: Corrigida a lógica de exibição para que reservas que atravessam a meia-noite (Corujão) apareçam corretamente no dia seguinte.
+  - **Novo Extrato de Reservas**: Introduzido um novo card com uma lista tabular de todas as reservas.
+  - **Filtros Avançados**: A lista de reservas agora pode ser filtrada por períodos predefinidos ("Próximos 7 dias", "Próximos 15 dias") ou por um intervalo de datas personalizado.
+  - **Ordenação e Ações Rápidas**: A tabela permite ordenar as reservas por qualquer coluna e inclui um menu de ações para editar um agendamento (disponível para o organizador e administradores).
+
 ## v0.2.0 - 2025-09-05 18:00:00 - davidson.dev.br
 
 - **Refatoração da Experiência de Reserva e Gerenciamento (Etapas 11-15)**:

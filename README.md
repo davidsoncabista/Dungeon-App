@@ -6,8 +6,9 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 
 ### Para Associados
 
-- **Visualização de Disponibilidade**: Uma agenda clara e completa mostra a disponibilidade de todas as salas.
-- **Gerenciamento de Reservas**: Os usuários podem criar novas reservas, visualizar seu histórico e gerenciar participações.
+- **Visualização de Disponibilidade**: Uma agenda clara e responsiva mostra a disponibilidade de todas as salas, com uma timeline de 24 horas que se adapta a qualquer tela.
+- **Gerenciamento de Reservas**: Os usuários podem criar novas reservas e visualizar seu histórico completo na página "Minhas Reservas".
+- **Extrato de Reservas**: Visualize e filtre agendamentos passados e futuros com filtros por período e ordenação de dados.
 - **Perfil de Usuário**: Edição de informações pessoais e alteração de senha.
 - **Sistema de Cotas**: As reservas são validadas de acordo com a categoria do associado (Player, Gamer, Master), garantindo o uso justo dos recursos.
 - **Horário Corujão**: Suporte para horários especiais com regras de cota diferenciadas.
@@ -18,12 +19,12 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 
 ### Para Administradores
 
-- **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema.
+- **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema, incluindo uma timeline visual e um extrato de reservas detalhado com filtros e ações rápidas.
 - **Níveis de Acesso**: Controle granular de permissões com três níveis: Administrador, Editor e Revisor.
 - **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação, número de adimplentes e muito mais.
 - **Gerenciamento de Usuários**: Acompanhe a lista de membros, gerencie status de pagamento, aplique advertências e controle níveis de acesso.
 - **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e outras configurações.
-- **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações ou cancelamentos quando necessário.
+- **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações, edições ou cancelamentos quando necessário.
 - **Comunicação Direta**: Envie avisos para todos os usuários e acompanhe quem já visualizou.
 - **Gestão Financeira**: Gerencie cobranças avulsas e tenha acesso ao histórico de transações de todos os membros.
 
