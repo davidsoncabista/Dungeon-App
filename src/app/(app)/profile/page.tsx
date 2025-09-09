@@ -6,14 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getAuthenticatedUser } from "@/lib/mock-service"
 import { useToast } from "@/hooks/use-toast"
 import { auth } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProfilePage() {
-  const user = getAuthenticatedUser()
+  const [user, loading] = useAuthState(auth);
   const { toast } = useToast()
 
   const handleSaveChanges = () => {
@@ -110,11 +109,11 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome Completo</Label>
-                <Input id="name" defaultValue={user.name} />
+                <Input id="name" defaultValue={user.displayName || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Endereço de E-mail</Label>
-                <Input id="email" type="email" defaultValue={user.email} />
+                <Input id="email" type="email" defaultValue={user.email || ""} disabled />
               </div>
               <Button onClick={handleSaveChanges}>Salvar Alterações</Button>
             </CardContent>
@@ -127,8 +126,8 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                     <Avatar className="h-32 w-32">
-                        <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person" />
-                        <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar'} data-ai-hint="person" />
+                        <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" onClick={handleUpdateAvatar}>Alterar Foto</Button>
                 </CardContent>
