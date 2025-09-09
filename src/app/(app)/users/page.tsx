@@ -1,7 +1,7 @@
 
 "use client"
 
-import { MoreHorizontal, PlusCircle, ShieldCheck, UserCog, Ban, Shield } from "lucide-react"
+import { MoreHorizontal, PlusCircle, ShieldCheck, UserCog, Ban, Shield, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -26,6 +27,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { UserForm } from "@/components/app/user-form"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+<<<<<<< HEAD
 <<<<<<< HEAD
 import type { AdminRole } from "@/lib/types/user"
 
@@ -45,6 +47,18 @@ const roleBadgeClass: Record<AdminRole, string> = {
     Administrador: "bg-role-admin text-role-admin-foreground",
     Editor: "bg-role-editor text-role-editor-foreground",
     Revisor: "bg-role-revisor text-role-revisor-foreground",
+=======
+import type { AdminRole, User } from "@/lib/types/user"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+
+
+const roleBadgeVariant: Record<AdminRole, "default" | "secondary" | "outline"> = {
+    Administrador: 'default',
+    Editor: 'secondary',
+    Revisor: 'outline',
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
 }
 
 // --- Componentes de Modal ---
@@ -162,6 +176,7 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
     );
 }
 
+<<<<<<< HEAD
 // --- Componente da Linha da Tabela ---
 function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, onRoleChangeSuccess }: { user: User; onEditSuccess: () => void; onBlockSuccess: (name: string, isBlocked: boolean) => void; onDeleteSuccess: (name: string) => void; onRoleChangeSuccess: (name: string, role: string) => void; }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -285,13 +300,21 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
 
 // --- Página Principal ---
 >>>>>>> cb79c7dc (no modal o botão de cancelar não esta funcionando ainda)
+=======
+
+// --- Página Principal ---
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
 export default function UsersPage() {
   const users = getUsers();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   const handleSuccess = () => {
+=======
+  const handleCreateSuccess = () => {
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
     setIsModalOpen(false);
 =======
   const handleCreateSuccess = () => {
@@ -302,12 +325,35 @@ export default function UsersPage() {
       description: "O novo membro foi adicionado ao sistema com sucesso.",
     });
   };
+
+  const handleEditSuccess = () => {
+    toast({
+      title: "Usuário Atualizado!",
+      description: "As informações do membro foram salvas.",
+    });
+  };
   
-  const roleBadgeVariant: Record<AdminRole, "default" | "secondary" | "outline"> = {
-    Administrador: 'default',
-    Editor: 'secondary',
-    Revisor: 'outline',
+  const handleBlockSuccess = (userName: string, isBlocked: boolean) => {
+    toast({
+        title: `Usuário ${isBlocked ? 'Bloqueado' : 'Desbloqueado'}!`,
+        description: `${userName} foi ${isBlocked ? 'bloqueado' : 'desbloqueado'} com sucesso.`
+    });
   }
+
+  const handleDeleteSuccess = (userName: string) => {
+    toast({
+        title: "Usuário Excluído!",
+        description: `${userName} foi removido permanentemente do sistema.`
+    });
+  }
+
+  const handleRoleChangeSuccess = (userName: string, newRole: string) => {
+    toast({
+        title: "Nível de Acesso Alterado!",
+        description: `O nível de acesso de ${userName} foi definido como ${newRole}.`
+    });
+  }
+
 
   return (
     <div className="grid gap-8">
@@ -331,10 +377,14 @@ export default function UsersPage() {
                     </DialogDescription>
                 </DialogHeader>
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <UserForm onSuccess={handleSuccess} onCancel={() => setIsModalOpen(false)} />
 =======
                 <UserForm onSuccess={handleCreateSuccess} onCancel={() => setIsCreateModalOpen(false)} />
 >>>>>>> cb79c7dc (no modal o botão de cancelar não esta funcionando ainda)
+=======
+                <UserForm onSuccess={handleCreateSuccess} onCancel={() => setIsModalOpen(false)} />
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
             </DialogContent>
         </Dialog>
       </div>
@@ -352,10 +402,14 @@ export default function UsersPage() {
                 <TableHead className="hidden md:table-cell">Categoria</TableHead>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
 =======
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
 >>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
+=======
+                <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
 =======
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
@@ -384,11 +438,15 @@ export default function UsersPage() {
 <<<<<<< HEAD
 <<<<<<< HEAD
                                 <div className="flex flex-col items-start gap-2 mt-1 md:hidden">
+<<<<<<< HEAD
                                     <div className="flex items-center gap-2">
 =======
                                 <div className="flex flex-col items-start gap-2 mt-1 sm:hidden">
                                     <div className="flex items-center gap-2 flex-wrap">
 >>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
+=======
+                                    <div className="flex items-center gap-2 flex-wrap">
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
                                         <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
                                         {user.role ? (
                                             <Badge variant={roleBadgeVariant[user.role]}>{user.role}</Badge>
@@ -422,9 +480,14 @@ export default function UsersPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                    <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
-                                    <DropdownMenuItem><ShieldCheck className="mr-2 h-4 w-4" />Alterar Nível de Acesso</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10"><Ban className="mr-2 h-4 w-4" />Bloquear Usuário</DropdownMenuItem>
+                                    {/* Ações integradas aqui */}
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <EditRoleDialog user={user} onConfirm={(role) => handleRoleChangeSuccess(user.name, role)} />
+                                    <DropdownMenuSeparator />
+                                    <BlockUserDialog user={user} onConfirm={() => handleBlockSuccess(user.name, user.status !== 'Bloqueado')} />
+                                    <DeleteUserDialog user={user} onConfirm={() => handleDeleteSuccess(user.name)} />
                                 </DropdownMenuContent>
                             </DropdownMenu>
 =======
@@ -464,7 +527,11 @@ export default function UsersPage() {
                   <TableCell className="hidden md:table-cell">
                     <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
                   </TableCell>
+<<<<<<< HEAD
                   <TableCell className="hidden md:table-cell">
+=======
+                  <TableCell className="hidden lg:table-cell">
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
                     {user.role ? (
                         <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                     ) : (
@@ -478,6 +545,7 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="flex justify-end">
+<<<<<<< HEAD
 <<<<<<< HEAD
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -494,6 +562,8 @@ export default function UsersPage() {
                         </DropdownMenuContent>
                         </DropdownMenu>
 =======
+=======
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
                        <Dialog>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -520,10 +590,17 @@ export default function UsersPage() {
                                         Atualize as informações do membro abaixo.
                                     </DialogDescription>
                                 </DialogHeader>
+<<<<<<< HEAD
                                 <UserForm onSuccess={handleEditSuccess} onCancel={() => {}} isEditMode={true} defaultValues={user} />
                             </DialogContent>
                         </Dialog>
 >>>>>>> eabfa384 (depos dessa mudança sumil d novo o ruler)
+=======
+                                {/* O UserForm pode ser adaptado para edição, passando os dados do 'user' */}
+                                <UserForm onSuccess={handleEditSuccess} onCancel={() => {}} isEditMode={true} defaultValues={user} />
+                            </DialogContent>
+                        </Dialog>
+>>>>>>> 02e30932 (ainda falta dar vida as opçoes dos 3 pontinhos)
                     </div>
                   </TableCell>
                 </TableRow>

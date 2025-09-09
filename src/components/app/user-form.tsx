@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogFooter } from "@/components/ui/dialog"
-import type { UserCategory, UserStatus } from "@/lib/types/user"
+import type { UserCategory, UserStatus, User } from "@/lib/types/user"
+import { useEffect } from "react"
 
 const userFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
@@ -43,9 +44,11 @@ const statuses: { value: UserStatus; label: string }[] = [
 interface UserFormProps {
     onSuccess: () => void;
     onCancel: () => void;
+    isEditMode?: boolean;
+    defaultValues?: Partial<User>;
 }
 
-export function UserForm({ onSuccess, onCancel }: UserFormProps) {
+export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValues }: UserFormProps) {
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -53,8 +56,15 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
       email: "",
       category: "Player",
       status: "Pendente",
+      ...defaultValues
     },
   });
+
+  useEffect(() => {
+    if (isEditMode && defaultValues) {
+        form.reset(defaultValues)
+    }
+  }, [isEditMode, defaultValues, form])
 
   function onSubmit(data: UserFormValues) {
     console.log("User data submitted:", data);
@@ -84,8 +94,9 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
             <FormItem>
               <FormLabel>Endereço de E-mail</FormLabel>
               <FormControl>
-                <Input placeholder="membro@adbelem.com" {...field} />
+                <Input placeholder="membro@adbelem.com" {...field} disabled={isEditMode} />
               </FormControl>
+              {isEditMode && <FormDescription>O e-mail não pode ser alterado.</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
@@ -140,7 +151,7 @@ export function UserForm({ onSuccess, onCancel }: UserFormProps) {
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit">Salvar Usuário</Button>
+          <Button type="submit">{isEditMode ? "Salvar Alterações" : "Salvar Usuário"}</Button>
         </DialogFooter>
       </form>
     </Form>
