@@ -13,20 +13,11 @@ const users: User[] = [
   { id: 'usr_aragorn', name: "Aragorn, filho de Arathorn", email: "aragorn@gondor.com", category: "Player", status: "Pendente", role: "Revisor", avatar: "https://picsum.photos/seed/aragorn/40/40" },
   { id: 'usr_legolas', name: "Legolas Greenleaf", email: "legolas@mirkwood.com", category: "Gamer", status: "Ativo", avatar: "https://picsum.photos/seed/legolas/40/40" },
   { id: 'usr_saruman', name: "Saruman, o Branco", email: "saruman@isengard.com", category: "Master", status: "Bloqueado", avatar: "https://picsum.photos/seed/saruman/40/40" },
-<<<<<<< HEAD
 ];
 
 export const getAuthenticatedUser = (): User => {
     // Trocado para Frodo para testar a cota de "Gamer"
     return users.find(u => u.id === 'usr_gandalf')!;
-=======
-  { id: 'usr_dev', name: "Developer", email: "dev@adbelem.com", category: "Developer", status: "Ativo", role: "Administrador", avatar: "https://picsum.photos/seed/developer/40/40" },
-];
-
-export const getAuthenticatedUser = (): User => {
-    // Simula um usuário dev logado.
-    return users.find(u => u.id === 'usr_dev')!;
->>>>>>> 6fe938f8 (ok preciso que meu usuario atual ja sejadefinido como developer para con)
 }
 export const getUsers = (): User[] => users;
 export const getUserById = (id: string): User | undefined => users.find(u => u.id === id);

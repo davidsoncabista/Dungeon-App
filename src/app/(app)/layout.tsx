@@ -1,15 +1,21 @@
 
 "use client"
 
-import { useAuthState } from 'react-firebase-hooks/auth';
 import type { ReactNode } from "react";
+import { usePathname, useRouter, redirect } from 'next/navigation';
 import { AppHeader } from "@/components/app/header";
-import { redirect } from 'next/navigation';
 import { auth } from '@/lib/firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAuthenticatedUser } from "@/lib/mock-service"; // MOCK
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // MOCK: Simula a busca dos dados completos do usuário
+  const appUser = getAuthenticatedUser(); 
 
   if (loading) {
     return (
@@ -31,15 +37,26 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (error) {
-    // Você pode criar um componente de erro mais robusto aqui
     return <div>Error: {error.message}</div>;
   }
   
   if (!user) {
     redirect('/login');
-    return null; // O redirect já cuida disso, mas é bom ter para clareza
+    return null;
   }
 
+  // Lógica de redirecionamento para novos usuários
+  if (appUser.category === 'Visitante' && pathname !== '/subscribe') {
+      redirect('/subscribe');
+      return null;
+  }
+
+  // Impede que visitantes acessem outras páginas além de /subscribe e /profile
+  if (appUser.category === 'Visitante' && pathname !== '/subscribe' && pathname !== '/profile') {
+      redirect('/subscribe');
+      return null;
+  }
+  
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <AppHeader />

@@ -1,5 +1,4 @@
-
-export type UserCategory = "Player" | "Gamer" | "Master" | "Visitante";
+export type UserCategory = "Player" | "Gamer" | "Master";
 export type UserStatus = "Ativo" | "Pendente" | "Bloqueado";
 export type AdminRole = "Administrador" | "Editor" | "Revisor";
 
