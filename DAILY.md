@@ -22,7 +22,7 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 
 ## Concluído: Sprint 3
 
-### Foco: Backend com Firebase e Autenticação Real
+### Foco: Backend com Firebase, Autenticação e Perfis
 
 - [x] **Implementar Autenticação com Google**:
   - [x] Integrar o Firebase Authentication para permitir o login com contas Google.
@@ -31,11 +31,13 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
   - [x] Criar a função `createUserDocument` para registrar novos usuários no Firestore.
   - [x] Criar a função `setAdminClaim` para gerenciar permissões de administrador via `Custom Claims`.
   - [x] Implementar Regras de Segurança (`firestore.rules`) para proteger todo o banco de dados.
-- [x] **Fluxo de Novos Usuários**:
+- [x] **Fluxo de Novos Usuários e Perfis**:
   - [x] Redirecionar novos usuários (`Visitante`) para a página de inscrição (`/subscribe`).
-  - [x] Implementar a lógica para que a seleção de plano atualize o `status` e a `category` do usuário no Firestore.
+  - [x] Implementar a lógica para que a seleção de plano atualize o `status` e a `category` do usuário.
+  - [x] Expandir o modelo de dados do usuário (`User`) com campos adicionais (telefone, preferências, etc.).
+  - [x] Reformular a página de Perfil (`/profile`) para permitir a edição de todos os novos campos.
 - [x] **Dinamização do App**:
-  - [x] Remover o `mock-service` das páginas de Usuários, Layout e Header, substituindo por chamadas reais ao Firestore e `useAuthState`.
+  - [x] Remover o `mock-service` das páginas de Usuários, Layout e Header.
   - [x] Criar a Landing Page pública para usuários não logados.
 
 

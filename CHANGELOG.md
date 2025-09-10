@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.0 - 2025-09-16 10:00:00 - davidson.dev.br
+
+- **Refatoração do Perfil de Usuário e Fluxo de Onboarding**:
+  - **Modelo de Dados Extensível**: O schema do usuário no Firestore foi expandido para incluir novos campos essenciais para a associação e futuras funcionalidades, como `nickname`, `phone`, `cpf`, `rg`, `birthdate`, `socialMedia` e `gameTypes`.
+  - **Fluxo de Onboarding Automatizado**: Removida a funcionalidade de criação manual de usuários. O sistema agora depende exclusivamente do registro via Google, que cria um perfil básico a ser complementado pelo próprio usuário.
+  - **Página de Perfil Completa**: A página "Meu Perfil" foi totalmente reformulada. Agora, ela utiliza um formulário robusto com validação (`react-hook-form` e `zod`) e permite que o usuário edite todas as suas informações, incluindo as novas preferências de jogo e dados pessoais.
+
 ## v0.4.0 - 2025-09-15 14:00:00 - davidson.dev.br
 
 - **Implementação do Backend Real com Firebase (Etapas 21-25)**:

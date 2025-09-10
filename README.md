@@ -10,7 +10,7 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Visualização de Disponibilidade**: Uma agenda clara e responsiva mostra a disponibilidade de todas as salas, com uma timeline de 24 horas que se adapta a qualquer tela.
 - **Gerenciamento de Reservas**: Os usuários podem criar novas reservas e visualizar seu histórico completo na página "Minhas Reservas".
 - **Extrato de Reservas**: Visualize e filtre agendamentos passados e futuros com filtros por período e ordenação de dados.
-- **Perfil de Usuário**: Edição de informações pessoais e alteração de senha.
+- **Perfil de Usuário Completo**: Edite suas informações pessoais, apelido, telefone, documentos (CPF/RG), data de nascimento, redes sociais e até mesmo suas preferências de jogo (RPG, Board Games, Card Games).
 - **Sistema de Cotas**: As reservas são validadas de acordo com a categoria do associado (Player, Gamer, Master), garantindo o uso justo dos recursos.
 - **Horário Corujão**: Suporte para horários especiais com regras de cota diferenciadas.
 - **Convites**: Adicione outros membros ou convidados às suas sessões, com sistema de cotas para não-associados.
@@ -21,9 +21,9 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 ### Para Administradores
 
 - **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema, incluindo uma timeline visual e um extrato de reservas detalhado com filtros e ações rápidas.
-- **Níveis de Acesso**: Controle granular de permissões com três níveis: Administrador, Editor e Revisor.
+- **Níveis de Acesso com Custom Claims**: Controle granular de permissões com três níveis (Administrador, Editor, Revisor), gerenciado de forma segura e eficiente pelo Firebase.
 - **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação, número de adimplentes e muito mais.
-- **Gerenciamento de Usuários**: Acompanhe a lista de membros, gerencie status de pagamento, aplique advertências e controle níveis de acesso.
+- **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros (cadastrados automaticamente via login Google), gerencie status de pagamento, aplique advertências e controle níveis de acesso.
 - **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e outras configurações.
 - **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações, edições ou cancelamentos quando necessário.
 - **Comunicação Direta**: Envie avisos para todos os usuários e acompanhe quem já visualizou.
