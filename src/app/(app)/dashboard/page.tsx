@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getBookings, getRooms, getUserById, deleteBooking } from "@/lib/mock-service"
+import { getBookings, getRooms, getUserById, deleteBooking, getRoomById } from "@/lib/mock-service"
 import { Clock, Users, User, Calendar as CalendarIcon, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter, Trash2 } from "lucide-react"
 import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -512,5 +512,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
