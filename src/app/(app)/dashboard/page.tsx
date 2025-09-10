@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, getUserById, deleteBooking } from "@/lib/mock-service"
+import { getBookings, getRooms, getUserById, deleteBooking } from "@/lib/mock-service"
 import { Clock, Users, User, Calendar as CalendarIcon, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter, Trash2 } from "lucide-react"
 import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -23,7 +23,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateRange } from "react-day-picker"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { auth } from "@/lib/firebase"
+import { auth, app } from "@/lib/firebase"
+import { getFirestore, collection, doc, updateDoc, arrayUnion, query } from "firebase/firestore"
+import { useCollectionData } from "react-firebase-hooks/firestore"
+
 
 import { BookingModal } from "@/components/app/dashboard/booking-modal"
 import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal"
@@ -57,24 +60,29 @@ export default function DashboardPage() {
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('next15');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
 
+  // --- Firestore Data ---
+  const firestore = getFirestore(app);
+  const noticesRef = collection(firestore, 'notices');
+  const noticesQuery = query(noticesRef);
+  const [allNotices, loadingNotices, errorNotices] = useCollectionData<Notice>(noticesQuery, { idField: 'id' });
 
   // Handle notices
   useEffect(() => {
-    if (!user || loadingAuth) return;
+    if (loadingAuth || loadingNotices || !user || !allNotices) return;
 
-    const allRawNotices = getNotices();
-    const noticesForUser = allRawNotices.filter(notice => 
+    const noticesForUser = allNotices.filter(notice => 
         !notice.targetUserId || notice.targetUserId === user.uid
     );
     const firstUnread = noticesForUser.find(notice => 
-        !notice.readBy.includes(user.uid)
+        !notice.readBy?.includes(user.uid)
     );
+
     if(firstUnread && !modalOpen) {
         setUnreadNotice(firstUnread);
     }
-  }, [user, loadingAuth, modalOpen]);
+  }, [user, loadingAuth, allNotices, loadingNotices, modalOpen]);
 
-  // Load initial data
+  // Load initial data (non-firestore)
   useEffect(() => {
     const allRawBookings = getBookings();
     setSelectedDate(startOfToday());
@@ -84,9 +92,21 @@ export default function DashboardPage() {
   }, []); // Dependência vazia para carregar apenas uma vez
 
 
-  const handleDismissNotice = (noticeId: string, dismissForever: boolean) => {
+  const handleDismissNotice = async (noticeId: string, dismissForever: boolean) => {
     if (dismissForever && user) {
-        markNoticeAsRead(noticeId, user.uid);
+        const noticeRef = doc(firestore, "notices", noticeId);
+        try {
+            await updateDoc(noticeRef, {
+                readBy: arrayUnion(user.uid)
+            });
+        } catch (error) {
+            console.error("Erro ao marcar aviso como lido:", error);
+            toast({
+                title: "Erro",
+                description: "Não foi possível salvar sua preferência. O aviso pode aparecer novamente.",
+                variant: "destructive"
+            });
+        }
     }
     setUnreadNotice(null);
   };
@@ -492,3 +512,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    

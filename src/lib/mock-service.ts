@@ -172,43 +172,6 @@ export const deleteBooking = (bookingId: string): boolean => {
     return success;
 }
 
-
-// --- NOTICES ---
-const notices: Notice[] = [
-    {
-        id: 'notice_1',
-        title: 'Bem-vindo à Versão Alfa!',
-        description: "Este é um protótipo inicial para testes. Seu feedback é essencial! Envie suas sugestões para Davidson (Project Lead & DevOps Engineer) no WhatsApp: 12 99732-4548.",
-        createdAt: '2024-09-01T10:00:00Z',
-        readBy: []
-    },
-    {
-        id: 'notice_2',
-        title: 'Manutenção da Sala do Conselho',
-        description: "A Sala do Conselho estará em manutenção nos próximos dias 15 e 16 para a instalação de novos equipamentos de som.",
-        createdAt: '2024-09-10T11:00:00Z',
-        readBy: []
-    },
-    {
-        id: 'notice_gandalf_1',
-        title: 'Aviso de Cota',
-        description: 'Olá, Gandalf! Notamos que você atingiu 80% da sua cota de reservas para este mês. Planeje seus próximos jogos com sabedoria!',
-        createdAt: '2024-09-12T15:00:00Z',
-        targetUserId: 'usr_gandalf', // Aviso específico para Gandalf
-        readBy: []
-    }
-];
-
-export const getNotices = (): Notice[] => notices;
-
-export const markNoticeAsRead = (noticeId: string, userId: string) => {
-    const notice = notices.find(n => n.id === noticeId);
-    if (notice && !notice.readBy.includes(userId)) {
-        notice.readBy.push(userId);
-        console.log(`User ${userId} marked notice ${noticeId} as read. Current readBy:`, notice.readBy);
-    }
-};
-
 // --- TRANSACTIONS ---
 const transactions: Transaction[] = [
   { id: "TRX001", date: "01/09/2024", description: "Mensalidade Setembro/24", amount: "R$ 50,00", status: "Pago" },
@@ -218,3 +181,5 @@ const transactions: Transaction[] = [
 ];
 
 export const getTransactions = (): Transaction[] => transactions;
+
+    

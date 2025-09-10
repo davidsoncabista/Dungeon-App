@@ -1,9 +1,14 @@
+
+import type { Timestamp } from "firebase/firestore";
+
 export interface Notice {
     id: string;
     title: string;
     description: string;
     link?: string;
-    createdAt: string;
-    targetUserId?: string; // ID do usuário específico, se for um aviso individual
-    readBy: string[]; // Array de IDs de usuários que já leram/dispensaram
+    createdAt: Timestamp; // Alterado para Timestamp do Firestore
+    targetUserId?: string; 
+    readBy?: string[]; // Array de UIDs que leram/dispensaram
 }
+
+    
