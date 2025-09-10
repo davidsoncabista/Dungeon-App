@@ -1,10 +1,13 @@
 rules_version = '2';
 
-// Helper function para verificar se o usuário tem uma das roles de admin
+// Helper function to check if the user has an admin role
 function isAdmin() {
+  // This checks the user's custom claim or their document in Firestore.
+  // Using the document is fine for rules, but requires a read operation.
   return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor', 'Revisor'];
 }
 
+// Helper function to check if the user is the owner of the document
 function isOwner(userId) {
   return request.auth.uid == userId;
 }
@@ -12,48 +15,48 @@ function isOwner(userId) {
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // --- Regras para a Coleção de Usuários ---
+    // --- Rules for the Users Collection ---
     match /users/{userId} {
-      // LEITURA:
-      // 1. Um usuário pode ler seu próprio documento.
-      // 2. Um administrador pode ler os dados de qualquer usuário (para a página de gerenciamento).
-      allow read: if request.auth != null && (isOwner(userId) || isAdmin());
+      // PERMISSIONS FOR INDIVIDUAL DOCUMENT ACCESS (get)
+      // A user can read their own document.
+      allow get: if request.auth != null && isOwner(userId);
 
-      // ESCRITA (CRIAR):
-      // Um usuário pode criar seu próprio documento se o ID do documento for o mesmo que seu UID.
+      // PERMISSIONS FOR LISTING DOCUMENTS (list)
+      // Only an admin can fetch the entire list of users.
+      // This is crucial for the user management page.
+      allow list: if request.auth != null && isAdmin();
+
+      // CREATE: A user can create their own document upon signup (handled by Cloud Function).
       allow create: if request.auth != null && isOwner(userId);
 
-      // ESCRITA (ATUALIZAR):
-      // 1. Um usuário pode atualizar seu próprio documento.
-      // 2. Um administrador pode atualizar o documento de qualquer usuário.
+      // UPDATE: A user can update their own profile, or an admin can update any profile.
       allow update: if request.auth != null && (isOwner(userId) || isAdmin());
 
-      // ESCRITA (EXCLUIR):
-      // Apenas administradores podem excluir usuários.
+      // DELETE: Only an admin can delete a user.
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // --- Regras para a Coleção de Salas ---
+    // --- Rules for the Rooms Collection ---
     match /rooms/{roomId} {
-      // LEITURA: Qualquer usuário autenticado pode ver as salas.
+      // READ: Any authenticated user can see the rooms.
       allow read: if request.auth != null;
       
-      // ESCRITA: Apenas administradores e editores podem criar, atualizar ou excluir salas.
+      // WRITE: Only admins and editors can create, update, or delete rooms.
       allow write: if request.auth != null && 
-                      (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor']);
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor'];
     }
 
-    // --- Regras para a Coleção de Reservas ---
+    // --- Rules for the Bookings Collection ---
     match /bookings/{bookingId} {
-      // LEITURA: Qualquer usuário autenticado pode ver as reservas (para a agenda).
+      // READ: Any authenticated user can see the bookings (for the schedule).
       allow read: if request.auth != null;
       
-      // CRIAÇÃO: Um usuário pode criar uma reserva se ele for o organizador.
+      // CREATE: A user can create a booking if they are the organizer.
       allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
       
-      // ATUALIZAÇÃO/EXCLUSÃO:
-      // 1. O organizador da reserva pode atualizar/excluir.
-      // 2. Administradores e Editores podem moderar (atualizar/excluir) qualquer reserva.
+      // UPDATE/DELETE:
+      // 1. The booking organizer can update/delete.
+      // 2. Admins and Editors can moderate (update/delete) any booking.
       allow update, delete: if request.auth != null && 
                               (resource.data.organizerId == request.auth.uid || 
                                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor']);
