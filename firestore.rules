@@ -1,12 +1,22 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite leitura e escrita apenas para usuários autenticados.
-    // Nega todas as operações para usuários não autenticados.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    
+    // Regras para a coleção de usuários
+    // Permite que usuários leiam e atualizem apenas seus próprios perfis.
+    // A criação é permitida para que a Cloud Function possa criar o documento inicial.
+    match /users/{userId} {
+      allow read, update: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
+    }
+
+    // Regras para a coleção de reservas
+    // Qualquer usuário autenticado pode ler as reservas (para a agenda).
+    // Apenas o organizador pode criar, atualizar ou deletar uma reserva.
+    match /bookings/{bookingId} {
+      allow read: if request.auth.uid != null;
+      allow create, update, delete: if request.auth.uid == request.resource.data.organizerId;
     }
   }
 }

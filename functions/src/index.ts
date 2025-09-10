@@ -2,9 +2,9 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 
-// Inicializa o Firebase Admin SDK.
-// As credenciais são obtidas automaticamente do ambiente do Firebase.
-admin.initializeApp();
+// Inicializa o Firebase Admin SDK da maneira recomendada para Cloud Functions.
+// Isso garante que o SDK use automaticamente as credenciais do ambiente.
+admin.initializeApp(functions.config().firebase);
 
 /**
  * Gatilho do Authentication que cria um documento de usuário no Firestore
@@ -14,6 +14,8 @@ export const createUserDocument = functions
   .region("southamerica-east1") // Garante que a função rode na mesma região do seu Firestore
   .auth.user()
   .onCreate(async (user) => {
+    console.log(`Função acionada para o usuário UID: ${user.uid}, Email: ${user.email}`);
+
     // Busca o banco de dados do Firestore
     const firestore = admin.firestore();
     
