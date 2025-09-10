@@ -1,7 +1,15 @@
+
+"use client"
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Dices } from "lucide-react";
-import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/lib/firebase";
+import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import type { UserCategory } from "@/lib/types/user";
 
 const plans = [
     {
@@ -22,6 +30,46 @@ const plans = [
 ]
 
 export default function SubscribePage() {
+  const { toast } = useToast();
+  const [user] = useAuthState(auth);
+  const router = useRouter();
+
+  const handleSelectPlan = async (planName: UserCategory) => {
+    if (!user) {
+        toast({
+            title: "Erro de Autenticação",
+            description: "Você precisa estar logado para selecionar um plano.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    try {
+        const firestore = getFirestore();
+        const userDocRef = doc(firestore, "users", user.uid);
+        
+        await updateDoc(userDocRef, {
+            category: planName,
+            status: "Ativo"
+        });
+
+        toast({
+            title: "Plano Selecionado!",
+            description: `Bem-vindo à categoria ${planName}! Você foi redirecionado para o dashboard.`
+        });
+        
+        router.push("/dashboard");
+
+    } catch (error) {
+        console.error("Erro ao atualizar o plano do usuário:", error);
+        toast({
+            title: "Erro ao Salvar",
+            description: "Não foi possível selecionar o plano. Por favor, tente novamente.",
+            variant: "destructive"
+        });
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-full text-center p-4">
         <Dices className="h-16 w-16 text-primary mb-4" />
@@ -46,8 +94,8 @@ export default function SubscribePage() {
                                 </li>
                             ))}
                         </ul>
-                        <Button className="w-full">
-                            <Link href="/dashboard">Selecionar Plano</Link>
+                        <Button className="w-full" onClick={() => handleSelectPlan(plan.name as UserCategory)}>
+                            Selecionar Plano
                         </Button>
                     </CardContent>
                 </Card>
