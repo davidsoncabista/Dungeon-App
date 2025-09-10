@@ -1,65 +1,12 @@
 rules_version = '2';
 
-// Helper function to check if the user has an admin role
-function isAdmin() {
-  // This checks the user's custom claim or their document in Firestore.
-  // Using the document is fine for rules, but requires a read operation.
-  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor', 'Revisor'];
-}
-
-// Helper function to check if the user is the owner of the document
-function isOwner(userId) {
-  return request.auth.uid == userId;
-}
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // --- Rules for the Users Collection ---
-    match /users/{userId} {
-      // PERMISSIONS FOR INDIVIDUAL DOCUMENT ACCESS (get)
-      // A user can read their own document.
-      allow get: if request.auth != null && isOwner(userId);
-
-      // PERMISSIONS FOR LISTING DOCUMENTS (list)
-      // Only an admin can fetch the entire list of users.
-      // This is crucial for the user management page.
-      allow list: if request.auth != null && isAdmin();
-
-      // CREATE: A user can create their own document upon signup (handled by Cloud Function).
-      allow create: if request.auth != null && isOwner(userId);
-
-      // UPDATE: A user can update their own profile, or an admin can update any profile.
-      allow update: if request.auth != null && (isOwner(userId) || isAdmin());
-
-      // DELETE: Only an admin can delete a user.
-      allow delete: if request.auth != null && isAdmin();
-    }
-
-    // --- Rules for the Rooms Collection ---
-    match /rooms/{roomId} {
-      // READ: Any authenticated user can see the rooms.
-      allow read: if request.auth != null;
-      
-      // WRITE: Only admins and editors can create, update, or delete rooms.
-      allow write: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor'];
-    }
-
-    // --- Rules for the Bookings Collection ---
-    match /bookings/{bookingId} {
-      // READ: Any authenticated user can see the bookings (for the schedule).
-      allow read: if request.auth != null;
-      
-      // CREATE: A user can create a booking if they are the organizer.
-      allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
-      
-      // UPDATE/DELETE:
-      // 1. The booking organizer can update/delete.
-      // 2. Admins and Editors can moderate (update/delete) any booking.
-      allow update, delete: if request.auth != null && 
-                              (resource.data.organizerId == request.auth.uid || 
-                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor']);
+    match /{document=**} {
+      // ATENÇÃO: Regras abertas apenas para teste.
+      // Permite que qualquer usuário autenticado leia e escreva em todo o banco.
+      // NÃO USE EM PRODUÇÃO.
+      allow read, write: if request.auth != null;
     }
   }
 }
