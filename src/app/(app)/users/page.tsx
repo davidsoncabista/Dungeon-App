@@ -31,15 +31,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { app } from "@/lib/firebase"
-import { getFirestore, collection } from "firebase/firestore"
-import { useCollection } from "react-firebase-hooks/firestore"
+import { app, auth } from "@/lib/firebase"
+import { getFirestore, collection, query, where } from "firebase/firestore"
+import { useCollectionData } from "react-firebase-hooks/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuthState } from "react-firebase-hooks/auth"
 
 const roleBadgeClass: Record<AdminRole, string> = {
     Administrador: "bg-role-admin text-role-admin-foreground",
     Editor: "bg-role-editor text-role-editor-foreground",
     Revisor: "bg-role-revisor text-role-revisor-foreground",
+    Membro: "hidden", // Não mostra badge para 'Membro'
 }
 
 // --- Componentes de Modal ---
@@ -108,12 +110,12 @@ function DeleteUserDialog({ user, onConfirm }: { user: User, onConfirm: () => vo
 }
 
 // Modal para Alterar Nível de Acesso
-function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: AdminRole | 'Membro') => void }) {
+function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: AdminRole) => void }) {
     const [selectedRole, setSelectedRole] = useState(user.role || 'Membro');
     const [isOpen, setIsOpen] = useState(false);
 
     const handleConfirm = () => {
-        onConfirm(selectedRole as AdminRole | 'Membro');
+        onConfirm(selectedRole as AdminRole);
         setIsOpen(false);
     }
 
@@ -136,7 +138,7 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
                 </DialogHeader>
                 <div className="py-4">
                     <Label htmlFor="role-select">Nível de Acesso</Label>
-                    <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as AdminRole)}>
                         <SelectTrigger id="role-select" className="w-full mt-2">
                             <SelectValue placeholder="Selecione um nível" />
                         </SelectTrigger>
@@ -181,7 +183,7 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
                             <div className="flex flex-col items-start gap-2 mt-1 sm:hidden">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline'}>{user.category}</Badge>
-                                    {user.role && (
+                                    {user.role && user.role !== 'Membro' && (
                                         <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                                     )}
                                 </div>
@@ -230,7 +232,7 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
                 <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
             </TableCell>
             <TableCell className="hidden md:table-cell">
-                {user.role ? (
+                {user.role && user.role !== 'Membro' ? (
                     <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                 ) : (
                    <span className="text-muted-foreground">Membro</span>
@@ -283,13 +285,11 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
 export default function UsersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
+  const [user, authLoading] = useAuthState(auth);
 
   const firestore = getFirestore(app);
-  const [value, loading, error] = useCollection(
-    collection(firestore, 'users')
-  );
-
-  const users = value?.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)) || [];
+  const usersRef = collection(firestore, 'users');
+  const [users, loading, error] = useCollectionData<User>(usersRef);
 
 
   const handleCreateSuccess = () => {
@@ -329,7 +329,7 @@ export default function UsersPage() {
   }
 
   const renderContent = () => {
-    if (loading) {
+    if (loading || authLoading) {
         return Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
                 <TableCell>
@@ -353,13 +353,13 @@ export default function UsersPage() {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar usuários: {error.message}</TableCell></TableRow>;
     }
 
-    if (users.length === 0) {
+    if (!users || users.length === 0) {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>;
     }
 
     return users.map(user => (
         <UserTableRow
-            key={user.id}
+            key={user.uid}
             user={user}
             onEditSuccess={handleEditSuccess}
             onBlockSuccess={handleBlockSuccess}
@@ -423,5 +423,3 @@ export default function UsersPage() {
     </div>
   )
 }
-
-    

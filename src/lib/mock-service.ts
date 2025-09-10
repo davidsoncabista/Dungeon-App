@@ -7,39 +7,44 @@ import type { Transaction } from './types/transaction';
 import { auth } from './firebase';
 
 // --- USERS ---
-const users: User[] = [
-  { id: 'usr_admin', name: "Aventureiro Mestre", email: "admin@adbelem.com", category: "Master", status: "Ativo", role: "Administrador", avatar: "https://picsum.photos/seed/admin/100/100" },
-  { id: 'usr_gandalf', name: "Gandalf, o Cinzento", email: "gandalf@istari.com", category: "Master", status: "Ativo", role: "Editor", avatar: "https://picsum.photos/seed/gandalf/40/40" },
-  { id: 'usr_frodo', name: "Frodo Bolseiro", email: "frodo@shire.com", category: "Gamer", status: "Ativo", avatar: "https://picsum.photos/seed/frodo/40/40" },
-  { id: 'usr_aragorn', name: "Aragorn, filho de Arathorn", email: "aragorn@gondor.com", category: "Player", status: "Pendente", role: "Revisor", avatar: "https://picsum.photos/seed/aragorn/40/40" },
-  { id: 'usr_legolas', name: "Legolas Greenleaf", email: "legolas@mirkwood.com", category: "Gamer", status: "Ativo", avatar: "https://picsum.photos/seed/legolas/40/40" },
-  { id: 'usr_saruman', name: "Saruman, o Branco", email: "saruman@isengard.com", category: "Master", status: "Bloqueado", avatar: "https://picsum.photos/seed/saruman/40/40" },
-];
+const users: User[] = []; // Os usuários agora virão do Firestore
 
 export const getAuthenticatedUser = (): User => {
-    // Esta função agora deve ser usada com cautela.
-    // O ideal é buscar os dados do usuário autenticado diretamente do Firestore
-    // ou usar as informações do objeto `auth.currentUser`.
+    // ESTA FUNÇÃO ESTÁ DEPRECIADA E SÓ DEVE SER USADA EM CONTEXTOS SEM ACESSO A HOOKS.
+    // O ideal é buscar os dados do usuário autenticado diretamente do Firestore.
     const firebaseUser = auth.currentUser;
     if (firebaseUser) {
-        const foundUser = users.find(u => u.id === firebaseUser.uid || u.email === firebaseUser.email);
-        if (foundUser) return foundUser;
-
-        // Fallback se o usuário do Firebase não estiver na nossa lista mock
         return {
           id: firebaseUser.uid,
+          uid: firebaseUser.uid,
           name: firebaseUser.displayName || 'Novo Aventureiro',
           email: firebaseUser.email!,
           avatar: firebaseUser.photoURL || `https://picsum.photos/seed/${firebaseUser.uid}/40/40`,
           category: 'Visitante',
           status: 'Pendente',
+          role: 'Membro'
         };
     }
-    // Fallback para o usuário admin se não houver usuário Firebase (cenário de teste inicial)
-    return users.find(u => u.id === 'usr_admin')!;
+    // Fallback para um usuário genérico se não houver usuário Firebase.
+    return {
+        id: 'usr_placeholder',
+        uid: 'usr_placeholder',
+        name: "Usuário Desconhecido",
+        email: "placeholder@example.com",
+        category: "Visitante",
+        status: "Pendente",
+        role: "Membro",
+        avatar: "https://picsum.photos/seed/placeholder/100/100"
+    };
 }
-export const getUsers = (): User[] => users;
-export const getUserById = (id: string): User | undefined => users.find(u => u.id === id);
+export const getUsers = (): User[] => {
+    console.warn("getUsers() do mock-service está sendo chamado. Use a busca do Firestore em vez disso.");
+    return [];
+};
+export const getUserById = (id: string): User | undefined => {
+    console.warn("getUserById() do mock-service está sendo chamado. Use a busca do Firestore em vez disso.");
+    return undefined;
+}
 
 
 // --- ROOMS ---
@@ -72,10 +77,7 @@ const bookings: Booking[] = [
     endTime: '22:30', 
     title: 'A Sociedade do Anel',
     description: 'Continuar a jornada para destruir o Um Anel.',
-    participants: [
-        getUserById('usr_frodo')!,
-        getUserById('usr_gandalf')!,
-    ],
+    participants: [], // Será preenchido dinamicamente
     guests: 1,
     status: 'Confirmada'
   },
@@ -87,12 +89,7 @@ const bookings: Booking[] = [
     startTime: '18:00', 
     endTime: '22:00', 
     title: 'Torneio de Card Game',
-    participants: [
-        getUserById('usr_admin')!,
-        getUserById('usr_aragorn')!,
-        getUserById('usr_legolas')!,
-        getUserById('usr_frodo')!,
-    ],
+    participants: [],
     guests: 2,
     status: 'Confirmada'
   },
@@ -103,10 +100,7 @@ const bookings: Booking[] = [
     date: '2024-09-15', 
     startTime: '20:00', 
     endTime: '23:30', 
-    participants: [
-        getUserById('usr_aragorn')!,
-        getUserById('usr_legolas')!,
-    ],
+    participants: [],
     guests: 0,
     status: 'Confirmada'
   },
@@ -118,7 +112,7 @@ const bookings: Booking[] = [
     startTime: '23:00', 
     endTime: '07:00', 
     title: 'Corujão de Testes',
-    participants: [getUserById('usr_gandalf')!],
+    participants: [],
     guests: 1,
     status: 'Confirmada'
   },
@@ -130,7 +124,7 @@ const bookings: Booking[] = [
     startTime: '08:00', 
     endTime: '12:30', 
     title: 'Sessão de World of Warcraft RPG',
-    participants: [getUserById('usr_gandalf')!],
+    participants: [],
     guests: 1,
     status: 'Confirmada'
   },
@@ -212,5 +206,3 @@ const transactions: Transaction[] = [
 ];
 
 export const getTransactions = (): Transaction[] => transactions;
-
-    

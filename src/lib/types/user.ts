@@ -1,13 +1,15 @@
-export type UserCategory = "Player" | "Gamer" | "Master";
+
+export type UserCategory = "Player" | "Gamer" | "Master" | "Visitante";
 export type UserStatus = "Ativo" | "Pendente" | "Bloqueado";
-export type AdminRole = "Administrador" | "Editor" | "Revisor";
+export type AdminRole = "Administrador" | "Editor" | "Revisor" | "Membro";
 
 export interface User {
-  id: string;
+  id: string; // Corresponde ao UID do Firebase Auth
+  uid: string; // UID do Firebase Auth
   name: string;
   email: string;
   avatar?: string;
   category: UserCategory;
   status: UserStatus;
-  role?: AdminRole;
+  role: AdminRole;
 }

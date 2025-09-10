@@ -4,6 +4,7 @@
 import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, Construction } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import type { User as FirebaseUser } from "firebase/auth"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +21,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
-import { getAuthenticatedUser } from "@/lib/mock-service"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Swords },
@@ -32,14 +32,15 @@ const navItems = [
   { href: "/test", label: "Testes", icon: Construction },
 ]
 
-export function AppHeader() {
+interface AppHeaderProps {
+    user: FirebaseUser | null;
+}
+
+export function AppHeader({ user }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
   
-  const user = getAuthenticatedUser(); // Fallback
-  const firebaseUser = auth.currentUser;
-
   const handleLogout = async () => {
     try {
       await auth.signOut();
@@ -143,20 +144,20 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                {firebaseUser && (
+                {user && (
                     <>
-                        <AvatarImage src={firebaseUser.photoURL || ''} alt={firebaseUser.displayName || ''} data-ai-hint="person"/>
-                        <AvatarFallback>{(firebaseUser.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={user.photoURL || ''} alt={user.displayName || ''} data-ai-hint="person"/>
+                        <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
                     </>
                 )}
               </Avatar>
           </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            {firebaseUser && (
+            {user && (
                  <DropdownMenuLabel>
-                    <p>{firebaseUser.displayName}</p>
-                    <p className="text-xs text-muted-foreground font-normal">{firebaseUser.email}</p>
+                    <p>{user.displayName}</p>
+                    <p className="text-xs text-muted-foreground font-normal">{user.email}</p>
                 </DropdownMenuLabel>
             )}
           <DropdownMenuSeparator />
