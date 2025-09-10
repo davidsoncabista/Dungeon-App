@@ -31,11 +31,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { app, auth } from "@/lib/firebase"
-import { getFirestore, collection, doc, updateDoc, deleteDoc } from "firebase/firestore"
+import { app } from "@/lib/firebase"
+import { getFirestore, collection, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuthState } from "react-firebase-hooks/auth"
 
 const roleBadgeClass: Record<AdminRole, string> = {
     Administrador: "bg-role-admin text-role-admin-foreground",
@@ -179,9 +178,13 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
         }
     };
     
-    const handleEditSuccess = () => {
+    const handleEditSuccess = (data: Partial<User>) => {
+        handleAction(
+            () => updateDoc(doc(firestore, "users", user.uid), data),
+            "Usuário Atualizado!",
+            `As informações de ${user.name} foram salvas.`
+        );
         setIsEditModalOpen(false);
-        onActionSuccess("Usuário Atualizado!", `As informações de ${user.name} foram salvas.`);
     };
 
     const handleBlockUser = () => handleAction(
@@ -209,7 +212,7 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
                     <div className="flex items-center gap-3">
                         <Avatar>
                             <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person" />
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{user.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="font-medium">
                             <p>{user.name}</p>
@@ -249,7 +252,7 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
                                     <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <DialogContent>
+                            <DialogContent className="sm:max-w-lg">
                                 <DialogHeader>
                                     <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
                                     <DialogDescription>
@@ -298,7 +301,7 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
                                 <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />
                             </DropdownMenuContent>
                         </DropdownMenu>
-                         <DialogContent>
+                         <DialogContent className="sm:max-w-lg">
                             <DialogHeader>
                                 <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
                                 <DialogDescription>
@@ -318,20 +321,18 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
 // --- Página Principal ---
 export default function UsersPage() {
   const { toast } = useToast();
-  const [authUser, authLoading] = useAuthState(auth);
-
+  
   const firestore = getFirestore(app);
   const usersRef = collection(firestore, 'users');
-  // Ordena os usuários por nome para uma exibição consistente
-  const usersQuery = usersRef;
-  const [users, loading, error] = useCollectionData<User>(usersQuery);
+  const usersQuery = query(usersRef, orderBy("name"));
+  const [users, loading, error] = useCollectionData<User>(usersQuery, { idField: 'id' });
 
   const handleActionSuccess = (title: string, description: string) => {
       toast({ title, description });
   };
   
   const renderContent = () => {
-    if (loading || authLoading) {
+    if (loading) {
         return Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
                 <TableCell>
@@ -359,10 +360,7 @@ export default function UsersPage() {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>;
     }
     
-    // Ordena os usuários por nome no cliente
-    const sortedUsers = [...users].sort((a, b) => a.name.localeCompare(b.name));
-
-    return sortedUsers.map(user => (
+    return users.map(user => (
         <UserTableRow
             key={user.uid}
             user={user}

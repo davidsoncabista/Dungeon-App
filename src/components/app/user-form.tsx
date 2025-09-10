@@ -17,14 +17,31 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogFooter } from "@/components/ui/dialog"
-import type { UserCategory, UserStatus, User } from "@/lib/types/user"
+import type { UserCategory, UserStatus, User, GameType } from "@/lib/types/user"
 import { useEffect } from "react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { CalendarIcon } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { format, parseISO } from "date-fns"
+
+const gameTypes: { id: GameType; label: string }[] = [
+  { id: 'RPG', label: 'RPG de Mesa' },
+  { id: 'Board Game', label: 'Board Game' },
+  { id: 'Card Game', label: 'Card Game' },
+] as const;
+
 
 const userFormSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-  category: z.enum(["Player", "Gamer", "Master"], { required_error: "A categoria é obrigatória." }),
+  category: z.enum(["Player", "Gamer", "Master", "Visitante"], { required_error: "A categoria é obrigatória." }),
   status: z.enum(["Ativo", "Pendente", "Bloqueado"], { required_error: "O status é obrigatório." }),
+  nickname: z.string().optional(),
+  phone: z.string().optional(),
+  birthdate: z.date().optional(),
+  gameTypes: z.array(z.string()).optional(),
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -33,6 +50,7 @@ const categories: { value: UserCategory; label: string }[] = [
     { value: "Player", label: "Player" },
     { value: "Gamer", label: "Gamer" },
     { value: "Master", label: "Master" },
+    { value: "Visitante", label: "Visitante" },
 ];
 
 const statuses: { value: UserStatus; label: string }[] = [
@@ -42,33 +60,43 @@ const statuses: { value: UserStatus; label: string }[] = [
 ];
 
 interface UserFormProps {
-    onSuccess: () => void;
+    onSuccess: (data: Partial<User>) => void;
     onCancel: () => void;
     isEditMode?: boolean;
     defaultValues?: Partial<User>;
 }
 
 export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValues }: UserFormProps) {
+  
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: {
+    defaultValues: isEditMode ? {
+        ...defaultValues,
+        birthdate: defaultValues?.birthdate ? parseISO(defaultValues.birthdate) : undefined,
+    } : {
       name: "",
       email: "",
       category: "Player",
       status: "Pendente",
-      ...defaultValues
+      gameTypes: []
     },
   });
 
   useEffect(() => {
     if (isEditMode && defaultValues) {
-        form.reset(defaultValues)
+        form.reset({
+            ...defaultValues,
+            birthdate: defaultValues.birthdate ? parseISO(defaultValues.birthdate) : undefined
+        })
     }
   }, [isEditMode, defaultValues, form])
 
   function onSubmit(data: UserFormValues) {
-    console.log("User data submitted:", data);
-    onSuccess();
+    const dataToSave = {
+        ...data,
+        birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
+    };
+    onSuccess(dataToSave as Partial<User>);
   }
 
   return (
@@ -100,6 +128,71 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
               <FormMessage />
             </FormItem>
           )}
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <FormField
+              control={form.control}
+              name="nickname"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Apelido</FormLabel>
+                  <FormControl><Input placeholder="Como a galera o conhece?" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone</FormLabel>
+                  <FormControl><Input placeholder="(91) 99999-9999" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+        <FormField
+            control={form.control}
+            name="birthdate"
+            render={({ field }) => (
+                <FormItem className="flex flex-col">
+                <FormLabel>Data de Nascimento</FormLabel>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <FormControl>
+                        <Button
+                        variant={"outline"}
+                        className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                        )}
+                        >
+                        {field.value ? (
+                            format(field.value, "PPP")
+                        ) : (
+                            <span>Escolha uma data</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                    </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                    />
+                    </PopoverContent>
+                </Popover>
+                <FormMessage />
+                </FormItem>
+            )}
         />
         <div className="grid grid-cols-2 gap-4">
           <FormField
@@ -147,6 +240,51 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
             )}
           />
         </div>
+        <FormField
+            control={form.control}
+            name="gameTypes"
+            render={() => (
+                <FormItem>
+                    <FormLabel>Preferências de Jogo</FormLabel>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    {gameTypes.map((item) => (
+                        <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="gameTypes"
+                        render={({ field }) => {
+                            return (
+                            <FormItem
+                                key={item.id}
+                                className="flex flex-row items-center space-x-3 space-y-0"
+                            >
+                                <FormControl>
+                                <Checkbox
+                                    checked={field.value?.includes(item.id)}
+                                    onCheckedChange={(checked) => {
+                                    return checked
+                                        ? field.onChange([...(field.value || []), item.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                            (value) => value !== item.id
+                                            )
+                                        )
+                                    }}
+                                />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                {item.label}
+                                </FormLabel>
+                            </FormItem>
+                            )
+                        }}
+                        />
+                    ))}
+                    </div>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancelar
