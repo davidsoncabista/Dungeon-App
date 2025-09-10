@@ -33,7 +33,6 @@ const adminNavItems = [
     { href: "/users", label: "Usuários", icon: UsersIcon },
     { href: "/rooms", label: "Salas", icon: DoorOpen },
     { href: "/notices", label: "Avisos", icon: Megaphone },
-    { href: "/test", label: "Testes", icon: Construction },
 ]
 
 interface AppHeaderProps {
