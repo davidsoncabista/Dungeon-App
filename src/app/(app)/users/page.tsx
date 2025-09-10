@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { app, auth } from "@/lib/firebase"
-import { getFirestore, collection, query, where } from "firebase/firestore"
+import { getFirestore, collection, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthState } from "react-firebase-hooks/auth"
@@ -160,13 +160,47 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
 }
 
 // --- Componente da Linha da Tabela ---
-function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, onRoleChangeSuccess }: { user: User; onEditSuccess: () => void; onBlockSuccess: (name: string, isBlocked: boolean) => void; onDeleteSuccess: (name: string) => void; onRoleChangeSuccess: (name: string, role: string) => void; }) {
+function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: (title: string, description: string) => void; }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const firestore = getFirestore(app);
+    const { toast } = useToast();
+
+    const handleAction = async (action: () => Promise<void>, title: string, description: string) => {
+        try {
+            await action();
+            onActionSuccess(title, description);
+        } catch (error: any) {
+            console.error(`Erro ao executar ação: ${title}`, error);
+            toast({
+                title: "Erro na Operação",
+                description: error.message || "Não foi possível completar a ação.",
+                variant: "destructive"
+            });
+        }
+    };
     
     const handleEditSuccess = () => {
         setIsEditModalOpen(false);
-        onEditSuccess();
-    }
+        onActionSuccess("Usuário Atualizado!", `As informações de ${user.name} foram salvas.`);
+    };
+
+    const handleBlockUser = () => handleAction(
+        () => updateDoc(doc(firestore, "users", user.uid), { status: user.status === 'Bloqueado' ? 'Ativo' : 'Bloqueado' }),
+        `Usuário ${user.status === 'Bloqueado' ? 'Desbloqueado' : 'Bloqueado'}!`,
+        `${user.name} foi ${user.status === 'Bloqueado' ? 'desbloqueado' : 'bloqueado'} com sucesso.`
+    );
+
+    const handleDeleteUser = () => handleAction(
+        () => deleteDoc(doc(firestore, "users", user.uid)),
+        "Usuário Excluído!",
+        `${user.name} foi removido permanentemente do sistema.`
+    );
+
+    const handleRoleChange = (newRole: AdminRole) => handleAction(
+        () => updateDoc(doc(firestore, "users", user.uid), { role: newRole }),
+        "Nível de Acesso Alterado!",
+        `O nível de acesso de ${user.name} foi definido como ${newRole}.`
+    );
 
     return (
         <TableRow>
@@ -209,10 +243,10 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
                                     <DialogTrigger asChild>
                                         <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
                                     </DialogTrigger>
-                                    <EditRoleDialog user={user} onConfirm={(role) => onRoleChangeSuccess(user.name, role)} />
+                                    <EditRoleDialog user={user} onConfirm={handleRoleChange} />
                                     <DropdownMenuSeparator />
-                                    <BlockUserDialog user={user} onConfirm={() => onBlockSuccess(user.name, user.status !== 'Bloqueado')} />
-                                    <DeleteUserDialog user={user} onConfirm={() => onDeleteSuccess(user.name)} />
+                                    <BlockUserDialog user={user} onConfirm={handleBlockUser} />
+                                    <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <DialogContent>
@@ -258,10 +292,10 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
                                 <DialogTrigger asChild>
                                     <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
                                 </DialogTrigger>
-                                <EditRoleDialog user={user} onConfirm={(role) => onRoleChangeSuccess(user.name, role)} />
+                                <EditRoleDialog user={user} onConfirm={handleRoleChange} />
                                 <DropdownMenuSeparator />
-                                <BlockUserDialog user={user} onConfirm={() => onBlockSuccess(user.name, user.status !== 'Bloqueado')} />
-                                <DeleteUserDialog user={user} onConfirm={() => onDeleteSuccess(user.name)} />
+                                <BlockUserDialog user={user} onConfirm={handleBlockUser} />
+                                <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />
                             </DropdownMenuContent>
                         </DropdownMenu>
                          <DialogContent>
@@ -285,48 +319,22 @@ function UserTableRow({ user, onEditSuccess, onBlockSuccess, onDeleteSuccess, on
 export default function UsersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
-  const [user, authLoading] = useAuthState(auth);
+  const [authUser, authLoading] = useAuthState(auth);
 
   const firestore = getFirestore(app);
   const usersRef = collection(firestore, 'users');
-  const [users, loading, error] = useCollectionData<User>(usersRef);
+  // Ordena os usuários por nome para uma exibição consistente
+  const usersQuery = usersRef;
+  const [users, loading, error] = useCollectionData<User>(usersQuery);
 
+  const handleActionSuccess = (title: string, description: string) => {
+      toast({ title, description });
+  };
 
   const handleCreateSuccess = () => {
-    setIsCreateModalOpen(false);
-    toast({
-      title: "Usuário Criado!",
-      description: "O novo membro foi adicionado ao sistema com sucesso.",
-    });
+      setIsCreateModalOpen(false);
+      handleActionSuccess("Usuário Criado!", "O novo membro foi adicionado ao sistema com sucesso.");
   };
-
-  const handleEditSuccess = () => {
-    toast({
-      title: "Usuário Atualizado!",
-      description: "As informações do membro foram salvas.",
-    });
-  };
-  
-  const handleBlockSuccess = (userName: string, isBlocked: boolean) => {
-    toast({
-        title: `Usuário ${isBlocked ? 'Bloqueado' : 'Desbloqueado'}!`,
-        description: `${userName} foi ${isBlocked ? 'bloqueado' : 'desbloqueado'} com sucesso.`
-    });
-  }
-
-  const handleDeleteSuccess = (userName: string) => {
-    toast({
-        title: "Usuário Excluído!",
-        description: `${userName} foi removido permanentemente do sistema.`
-    });
-  }
-
-  const handleRoleChangeSuccess = (userName: string, newRole: string) => {
-    toast({
-        title: "Nível de Acesso Alterado!",
-        description: `O nível de acesso de ${userName} foi definido como ${newRole}.`
-    });
-  }
 
   const renderContent = () => {
     if (loading || authLoading) {
@@ -350,21 +358,21 @@ export default function UsersPage() {
     }
 
     if (error) {
-        return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar usuários: {error.message}</TableCell></TableRow>;
+        return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar usuários: {error.message}. Verifique as regras de segurança do Firestore.</TableCell></TableRow>;
     }
 
     if (!users || users.length === 0) {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>;
     }
+    
+    // Ordena os usuários por nome no cliente
+    const sortedUsers = [...users].sort((a, b) => a.name.localeCompare(b.name));
 
-    return users.map(user => (
+    return sortedUsers.map(user => (
         <UserTableRow
             key={user.uid}
             user={user}
-            onEditSuccess={handleEditSuccess}
-            onBlockSuccess={handleBlockSuccess}
-            onDeleteSuccess={handleDeleteSuccess}
-            onRoleChangeSuccess={handleRoleChangeSuccess}
+            onActionSuccess={handleActionSuccess}
         />
     ));
   }
@@ -423,3 +431,4 @@ export default function UsersPage() {
     </div>
   )
 }
+ 
