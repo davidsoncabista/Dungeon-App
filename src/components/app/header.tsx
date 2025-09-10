@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard } from "lucide-react"
+import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, Construction } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
@@ -28,6 +28,7 @@ const navItems = [
   { href: "/users", label: "Usuários", icon: UsersIcon },
   { href: "/rooms", label: "Salas", icon: DoorOpen },
   { href: "/billing", label: "Cobrança", icon: CreditCard },
+  { href: "/test", label: "Testes", icon: Construction },
 ]
 
 export function AppHeader() {
