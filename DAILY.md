@@ -22,20 +22,21 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 
 ## Concluído: Sprint 3
 
-### Foco: Experiência Pública e Autenticação
-
-- [x] **Criar a Landing Page**:
-  - [x] Desenvolver a estrutura e o conteúdo da página inicial para usuários não logados.
-  - [x] Garantir que o design seja responsivo e atraente.
+### Foco: Backend com Firebase e Autenticação Real
 
 - [x] **Implementar Autenticação com Google**:
   - [x] Integrar o Firebase Authentication para permitir o login com contas Google.
-  - [x] Substituir o fluxo de login simulado por um sistema de autenticação real.
   - [x] Gerenciar a sessão do usuário (login/logout).
-
-- [x] **Controle de Acesso**:
-  - [x] Implementar a lógica de redirecionamento: usuários não logados veem a landing page; usuários logados são direcionados para o `/dashboard`.
-  - [x] Proteger todas as rotas da área do aplicativo (`/app`) para que exijam autenticação.
+- [x] **Controle de Acesso com Firestore e Cloud Functions**:
+  - [x] Criar a função `createUserDocument` para registrar novos usuários no Firestore.
+  - [x] Criar a função `setAdminClaim` para gerenciar permissões de administrador via `Custom Claims`.
+  - [x] Implementar Regras de Segurança (`firestore.rules`) para proteger todo o banco de dados.
+- [x] **Fluxo de Novos Usuários**:
+  - [x] Redirecionar novos usuários (`Visitante`) para a página de inscrição (`/subscribe`).
+  - [x] Implementar a lógica para que a seleção de plano atualize o `status` e a `category` do usuário no Firestore.
+- [x] **Dinamização do App**:
+  - [x] Remover o `mock-service` das páginas de Usuários, Layout e Header, substituindo por chamadas reais ao Firestore e `useAuthState`.
+  - [x] Criar a Landing Page pública para usuários não logados.
 
 
 ## Concluído: Sprint 2

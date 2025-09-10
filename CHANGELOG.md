@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.0 - 2025-09-15 14:00:00 - davidson.dev.br
+
+- **Implementação do Backend Real com Firebase (Etapas 21-25)**:
+  - **Autenticação Real**: Substituído o sistema de login simulado pelo Firebase Authentication com provedor Google, incluindo um fluxo completo de login e logout.
+  - **Gerenciamento de Usuários no Firestore**: A página "Gerenciamento de Usuários" agora é totalmente dinâmica, buscando e atualizando dados diretamente do Firestore.
+  - **Controle de Acesso com Regras de Segurança**: Implementadas regras de segurança robustas no Firestore para proteger as coleções `users`, `rooms` e `bookings`, garantindo que apenas usuários autorizados possam ler ou escrever dados.
+  - **Automação de Permissões com Cloud Functions**:
+    - Criada a função `createUserDocument`, que gera um perfil de usuário no Firestore automaticamente após o registro.
+    - Criada a função `setAdminClaim`, que atribui ou remove permissões de administrador (`Custom Claims`) com base no campo `role` do usuário, integrando-se perfeitamente com as regras de segurança.
+  - **Fluxo de Novos Usuários**: Implementado o redirecionamento para a página `/subscribe` para novos usuários. A seleção de plano agora atualiza o status e a categoria do usuário no Firestore, concedendo acesso ao aplicativo.
+
 ## v0.3.0 - 2025-09-08 21:30:00 - davidson.dev.br
 
 - **Refatoração da Agenda e Introdução do Extrato de Reservas (Etapas 16-20)**:
