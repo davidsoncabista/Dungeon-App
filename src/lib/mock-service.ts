@@ -4,6 +4,7 @@ import type { Room } from './types/room';
 import type { Booking } from './types/booking';
 import type { Notice } from './types/notice';
 import type { Transaction } from './types/transaction';
+import { auth } from './firebase';
 
 // --- USERS ---
 const users: User[] = [
@@ -16,7 +17,25 @@ const users: User[] = [
 ];
 
 export const getAuthenticatedUser = (): User => {
-    // Mudei para admin para testar as regras de segurança
+    // Esta função agora deve ser usada com cautela.
+    // O ideal é buscar os dados do usuário autenticado diretamente do Firestore
+    // ou usar as informações do objeto `auth.currentUser`.
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser) {
+        const foundUser = users.find(u => u.id === firebaseUser.uid || u.email === firebaseUser.email);
+        if (foundUser) return foundUser;
+
+        // Fallback se o usuário do Firebase não estiver na nossa lista mock
+        return {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Novo Aventureiro',
+          email: firebaseUser.email!,
+          avatar: firebaseUser.photoURL || `https://picsum.photos/seed/${firebaseUser.uid}/40/40`,
+          category: 'Visitante',
+          status: 'Pendente',
+        };
+    }
+    // Fallback para o usuário admin se não houver usuário Firebase (cenário de teste inicial)
     return users.find(u => u.id === 'usr_admin')!;
 }
 export const getUsers = (): User[] => users;
@@ -193,3 +212,5 @@ const transactions: Transaction[] = [
 ];
 
 export const getTransactions = (): Transaction[] => transactions;
+
+    
