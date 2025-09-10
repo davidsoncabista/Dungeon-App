@@ -1,65 +1,40 @@
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getAuthenticatedUser, getBookings, getRoomById } from "@/lib/mock-service"
-import { format, parseISO, isFuture, isPast } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { CalendarPlus, CalendarX, Clock, Users, Eye } from "lucide-react"
+import { getAuthenticatedUser, getBookings } from "@/lib/mock-service"
+import { isFuture, isPast } from "date-fns"
+import { CalendarPlus, CalendarX } from "lucide-react"
+import { BookingRow } from "@/components/app/my-bookings/booking-row"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
+import { useEffect, useState } from "react"
+import type { Booking } from "@/lib/types/booking"
 
 export default function MyBookingsPage() {
-  const user = getAuthenticatedUser()
-  const allUserBookings = getBookings()
-    .filter(b => b.participants.some(p => p.id === user.id))
-    .sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime());
-
-  const upcomingBookings = allUserBookings.filter(b => isFuture(new Date(`${b.date}T${b.startTime}`)));
-  const pastBookings = allUserBookings.filter(b => isPast(new Date(`${b.date}T${b.startTime}`)));
-
-  const BookingRow = ({ booking }: { booking: typeof allUserBookings[0] }) => {
-    const room = getRoomById(booking.roomId);
-    const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
-    const totalParticipants = booking.participants.length + (booking.guests ?? 0);
-    
-    const statusVariant: { [key: string]: "secondary" | "destructive" | "outline" } = {
-        'Confirmada': 'secondary',
-        'Cancelada': 'destructive',
-        'Pendente': 'outline'
+  const [user] = useAuthState(auth);
+  const [allUserBookings, setAllUserBookings] = useState<Booking[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
+  const [pastBookings, setPastBookings] = useState<Booking[]>([]);
+  
+  useEffect(() => {
+    if(user) {
+      const bookings = getBookings()
+        .filter(b => b.participants.some(p => p.uid === user.uid))
+        .sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime());
+      
+      setAllUserBookings(bookings);
+      setUpcomingBookings(bookings.filter(b => isFuture(new Date(`${b.date}T${b.startTime}`))));
+      setPastBookings(bookings.filter(b => isPast(new Date(`${b.date}T${b.startTime}`))));
     }
+  }, [user]);
 
-    return (
-      <TableRow>
-        <TableCell>
-            <div className="font-medium">{room?.name}</div>
-            <div className="text-sm text-muted-foreground">{formattedDate}</div>
-        </TableCell>
-        <TableCell className="hidden md:table-cell">
-            <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground"/>
-                <span>{booking.startTime} - {booking.endTime}</span>
-            </div>
-        </TableCell>
-        <TableCell className="hidden lg:table-cell">
-        <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground"/>
-                <span>{totalParticipants} participante(s)</span>
-            </div>
-        </TableCell>
-        <TableCell>
-          <Badge variant={statusVariant[booking.status] || 'default'} className={booking.status === 'Confirmada' ? 'bg-green-100 text-green-800' : ''}>
-            {booking.status}
-          </Badge>
-        </TableCell>
-        <TableCell className="text-right">
-          <Button variant="outline" size="sm">
-            <Eye className="mr-2 h-4 w-4" />
-            Detalhes
-          </Button>
-        </TableCell>
-      </TableRow>
-    );
-  };
+  if (!user) {
+    // Pode mostrar um loader ou uma mensagem
+    return <div>Carregando suas reservas...</div>;
+  }
   
   return (
     <div className="grid gap-8">
@@ -89,11 +64,11 @@ export default function MyBookingsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Sala e Data</TableHead>
-                    <TableHead className="hidden md:table-cell">Horário</TableHead>
-                    <TableHead className="hidden lg:table-cell">Participantes</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead><span className="sr-only">Ações</span></TableHead>
+                    <th className="p-4 text-left font-medium text-muted-foreground">Sala e Data</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground hidden md:table-cell">Horário</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground hidden lg:table-cell">Participantes</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground">Status</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground"><span className="sr-only">Ações</span></th>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -101,9 +76,9 @@ export default function MyBookingsPage() {
                     upcomingBookings.map(booking => <BookingRow key={booking.id} booking={booking} />)
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
+                      <td colSpan={5} className="h-24 text-center p-4 align-middle">
                         Você não possui nenhuma reserva futura.
-                      </TableCell>
+                      </td>
                     </TableRow>
                   )}
                 </TableBody>
@@ -121,11 +96,11 @@ export default function MyBookingsPage() {
             <Table>
                 <TableHeader>
                   <TableRow>
-                  <TableHead>Sala e Data</TableHead>
-                    <TableHead className="hidden md:table-cell">Horário</TableHead>
-                    <TableHead className="hidden lg:table-cell">Participantes</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead><span className="sr-only">Ações</span></TableHead>
+                    <th className="p-4 text-left font-medium text-muted-foreground">Sala e Data</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground hidden md:table-cell">Horário</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground hidden lg:table-cell">Participantes</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground">Status</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground"><span className="sr-only">Ações</span></th>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -133,9 +108,9 @@ export default function MyBookingsPage() {
                     pastBookings.map(booking => <BookingRow key={booking.id} booking={booking} />)
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
+                      <td colSpan={5} className="h-24 text-center p-4 align-middle">
                         Nenhuma reserva encontrada no seu histórico.
-                      </TableCell>
+                      </td>
                     </TableRow>
                   )}
                 </TableBody>

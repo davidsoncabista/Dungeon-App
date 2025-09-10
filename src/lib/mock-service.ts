@@ -67,7 +67,7 @@ tomorrow.setDate(tomorrow.getDate() + 1);
 const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
 
-const bookings: Booking[] = [
+let bookings: Booking[] = [
   { 
     id: 'booking_1', 
     roomId: 'room_ghalmaraz', 
@@ -84,7 +84,7 @@ const bookings: Booking[] = [
   { 
     id: 'booking_2', 
     roomId: 'room_arena', 
-    organizerId: 'usr_admin', 
+    organizerId: 'aj6dlsAG8CXFm85ccNtivvAafia2',
     date: '2024-09-28', 
     startTime: '18:00', 
     endTime: '22:00', 
@@ -158,6 +158,18 @@ export const updateBooking = (bookingId: string, data: Partial<Omit<Booking, 'id
     bookings[bookingIndex] = updatedBooking;
     console.log("Booking updated:", updatedBooking);
     return updatedBooking;
+}
+
+export const deleteBooking = (bookingId: string): boolean => {
+    const initialLength = bookings.length;
+    bookings = bookings.filter(b => b.id !== bookingId);
+    const success = bookings.length < initialLength;
+    if(success) {
+        console.log("Booking deleted:", bookingId);
+    } else {
+        console.error("Booking not found for deletion:", bookingId);
+    }
+    return success;
 }
 
 

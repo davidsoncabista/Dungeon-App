@@ -1,335 +1,36 @@
 
-
 "use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getAuthenticatedUser, getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, createBooking, updateBooking, getUserById } from "@/lib/mock-service"
-import { Clock, Users, User, Calendar as CalendarIcon, PlusCircle, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter } from "lucide-react"
+import { getBookings, getNotices, getRoomById, getRooms, markNoticeAsRead, getUserById, deleteBooking } from "@/lib/mock-service"
+import { Clock, Users, User, Calendar as CalendarIcon, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter, Trash2 } from "lucide-react"
 import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React, { useState, useEffect, useMemo } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
-import type { Room } from "@/lib/types/room"
-import type { Booking } from "@/lib/types/booking"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { NoticeModal } from "@/components/app/notice-modal"
 import type { Notice } from "@/lib/types/notice"
-import { BookingForm } from "@/components/app/booking-form"
-import { BookingEditForm } from "@/components/app/booking-edit-form"
+import type { Room } from "@/lib/types/room"
+import type { Booking } from "@/lib/types/booking"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateRange } from "react-day-picker"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
 
+import { BookingModal } from "@/components/app/dashboard/booking-modal"
+import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal"
+import { AccordionScheduleView } from "@/components/app/dashboard/accordion-schedule-view"
+import { ScheduleView } from "@/components/app/dashboard/schedule-view"
+import { DeleteBookingDialog } from "@/components/app/dashboard/delete-booking-dialog"
 
-const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
-
-
-// --- Componente de Reserva (Modal) ---
-const BookingModal = ({ room, date, onOpenChange, onBookingCreated, allBookings, children }: { room: Room, date: Date, onOpenChange: (open: boolean) => void, onBookingCreated: (newBookings: Booking) => void, allBookings: Booking[], children: React.ReactNode }) => {
-    const { toast } = useToast();
-    const [isOpen, setIsOpen] = useState(false);
-
-    const handleOpenChange = (open: boolean) => {
-        setIsOpen(open);
-        onOpenChange(open);
-    }
-    
-    const handleSuccess = (data: Omit<Booking, 'id' | 'status'>) => {
-        const createdBooking = createBooking(data);
-        
-        handleOpenChange(false);
-        toast({
-            title: "Reserva Confirmada!",
-            description: `Sua reserva para a ${room.name} foi agendada com sucesso.`,
-        });
-        onBookingCreated(createdBooking);
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Reservar {room.name}</DialogTitle>
-                    <DialogDescription>
-                        Preencha as informações para agendar sua sessão.
-                    </DialogDescription>
-                </DialogHeader>
-                <BookingForm 
-                    room={room} 
-                    date={date} 
-                    allBookings={allBookings} 
-                    onSuccess={handleSuccess}
-                    onCancel={() => handleOpenChange(false)}
-                />
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-// --- Componente de Edição de Reserva (Modal) ---
-const EditBookingModal = ({ booking, allBookings, onBookingUpdated, onOpenChange, children }: { booking: Booking; allBookings: Booking[]; onBookingUpdated: (updatedBooking: Booking) => void; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => {
-    const { toast } = useToast();
-    const [isOpen, setIsOpen] = useState(false);
-    const room = getRoomById(booking.roomId);
-
-    const handleOpenChange = (open: boolean) => {
-        setIsOpen(open);
-        onOpenChange(open);
-    };
-
-    const handleSuccess = (data: Partial<Omit<Booking, 'id' | 'status'>>) => {
-        const updatedBooking = updateBooking(booking.id, data);
-        if (updatedBooking) {
-            onBookingUpdated(updatedBooking);
-            toast({
-                title: "Reserva Atualizada!",
-                description: `Sua reserva para a ${room?.name} foi modificada.`,
-            });
-        } else {
-            toast({
-                title: "Erro!",
-                description: "Não foi possível atualizar a reserva.",
-                variant: "destructive",
-            });
-        }
-        handleOpenChange(false);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Editar Reserva</DialogTitle>
-                    <DialogDescription>Modifique as informações da sua sessão para a sala {room?.name}.</DialogDescription>
-                </DialogHeader>
-                {room && (
-                    <BookingEditForm
-                        booking={booking}
-                        room={room}
-                        allBookings={allBookings}
-                        onSuccess={handleSuccess}
-                        onCancel={() => handleOpenChange(false)}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-
-// --- Componente de Detalhes da Reserva (Modal) ---
-const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenChange, children }: { booking: Booking, allBookings: Booking[], onBookingUpdated: (booking: Booking) => void, children: React.ReactNode, onOpenChange: (open: boolean) => void }) => {
-    const room = getRoomById(booking.roomId);
-    const organizer = booking.participants.find(p => p.uid === booking.organizerId);
-    const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
-    const [user] = useAuthState(auth);
-    const isOrganizer = user?.uid === organizer?.uid;
-    const [isMyModalOpen, setIsMyModalOpen] = useState(false);
-
-    const handleMyOpenChange = (open: boolean) => {
-        setIsMyModalOpen(open);
-        onOpenChange(open);
-    }
-    
-    return (
-        <Dialog open={isMyModalOpen} onOpenChange={handleMyOpenChange}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{booking.title || 'Detalhes da Reserva'}</DialogTitle>
-                    <DialogDescription>{room?.name} - {formattedDate}</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                   {booking.description && (
-                     <div className="space-y-2">
-                       <h3 className="font-semibold flex items-center gap-2"><Info className="h-4 w-4"/> Descrição</h3>
-                       <p className="text-sm text-muted-foreground">{booking.description}</p>
-                   </div>
-                   )}
-                   <div className="space-y-2">
-                       <h3 className="font-semibold flex items-center gap-2"><Clock className="h-4 w-4"/> Horário</h3>
-                       <p className="text-sm">{booking.startTime} - {booking.endTime}</p>
-                   </div>
-                   <div className="space-y-2">
-                       <h3 className="font-semibold flex items-center gap-2"><User className="h-4 w-4"/> Organizador</h3>
-                       <p className="text-sm">{organizer?.name}</p>
-                   </div>
-                   <div className="space-y-2">
-                       <h3 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4"/> Participantes ({booking.participants.length})</h3>
-                       <ul className="list-disc list-inside text-sm pl-4">
-                           {booking.participants.map(p => <li key={p.uid}>{p.name}</li>)}
-                       </ul>
-                   </div>
-                   {booking.guests && booking.guests > 0 ? (
-                    <div className="space-y-2">
-                       <h3 className="font-semibold">Convidados</h3>
-                       <p className="text-sm">{booking.guests} convidado(s)</p>
-                   </div>
-                   ) : null}
-                </div>
-                 {isOrganizer && (
-                    <div className="flex justify-end gap-2">
-                        <EditBookingModal booking={booking} allBookings={allBookings} onBookingUpdated={onBookingUpdated} onOpenChange={setIsMyModalOpen}>
-                            <Button variant="outline"><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
-                        </EditBookingModal>
-                    </div>
-                )}
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-// --- Componente da Agenda (Timeline - Desktop/Landscape) ---
-const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
-    
-    const totalHours = 24;
-    const hourColumns = 4; // Cada hora tem 4 colunas (intervalos de 15 min)
-    const totalColumns = totalHours * hourColumns;
-    const hours = Array.from({ length: totalHours }, (_, i) => i); 
-
-    const calculateBookingStyle = (booking: Booking) => {
-        const bookingDate = parseISO(booking.date);
-        const bookingDay = format(bookingDate, 'yyyy-MM-dd');
-        const selectedDay = format(selectedDate, 'yyyy-MM-dd');
-        
-        const startTime = parse(booking.startTime, 'HH:mm', new Date());
-        const endTime = parse(booking.endTime, 'HH:mm', new Date());
-        
-        let startHour = startTime.getHours() + startTime.getMinutes() / 60;
-        let endHour = endTime.getHours() + endTime.getMinutes() / 60;
-
-        // Se a reserva começou no dia anterior, ela deve começar na coluna 0 da grade do dia atual
-        if (bookingDay < selectedDay) {
-            startHour = 0;
-        }
-
-        // Se a reserva atravessa a meia-noite e está sendo visualizada no dia em que começa
-        if (isBefore(endTime, startTime) && bookingDay === selectedDay) {
-            endHour = 24; // Faz a reserva terminar no final da grade
-        }
-        
-        const startColumn = Math.floor(startHour * hourColumns) + 1;
-        const endColumn = Math.floor(endHour * hourColumns) + 1;
-        const columnSpan = endColumn - startColumn;
-
-        return {
-            gridColumnStart: startColumn,
-            gridColumnEnd: `span ${columnSpan > 0 ? columnSpan : 0}`,
-        };
-    };
-
-    return (
-        <div className="relative overflow-hidden">
-            {/* Header da Timeline */}
-            <div className="flex sticky top-0 z-20 bg-background">
-                <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
-                <div className="grid flex-1" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
-                    {hours.map(hour => (
-                        <div key={hour} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2 col-span-4">
-                            {String(hour).padStart(2, '0')}h
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Linhas da Timeline por Sala */}
-            <div className="space-y-4 relative">
-            {rooms.map((room: Room, roomIndex) => {
-                const roomBookings = bookings.filter(b => b.roomId === room.id);
-                
-                return (
-                    <div key={room.id} className="flex items-center min-h-[4rem]">
-                        <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
-                        <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative overflow-hidden" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
-                            
-                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
-                                <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
-                            </BookingModal>
-                        
-                            {roomBookings.map((booking) => {
-                                const style = calculateBookingStyle(booking);
-                                const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
-                                const organizer = booking.participants.find(p => p.uid === booking.organizerId);
-
-                                return (
-                                    <div key={`${booking.id}-${booking.date}`} style={style} className="h-full p-1 z-10">
-                                        <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
-                                            <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
-                                                <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
-                                                <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
-                                            </div>
-                                        </BookingDetailsModal>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )
-            })}
-            </div>
-        </div>
-    )
-}
-
-// --- Componente da Agenda (Acordeão - Mobile/Portrait) ---
-const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
-    return (
-        <Accordion type="multiple" className="w-full space-y-2">
-            {rooms.map((room, roomIndex) => {
-                const roomBookings = bookings.filter(b => b.roomId === room.id).sort((a,b) => a.startTime.localeCompare(b.startTime));
-                const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
-
-                return (
-                    <AccordionItem key={room.id} value={room.id} className="border rounded-lg px-4 bg-background">
-                        <AccordionTrigger className="hover:no-underline">
-                            <div className="flex items-center gap-2">
-                                <div className={cn("w-3 h-3 rounded-full", colorClass)}></div>
-                                <span className="font-bold">{room.name}</span>
-                                <Badge variant="outline">{roomBookings.length} reserva(s)</Badge>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                            <div className="space-y-4 pt-2">
-                                {roomBookings.length > 0 ? (
-                                    roomBookings.map(booking => (
-                                        <BookingDetailsModal key={booking.id} booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
-                                            <div className="p-3 rounded-md border cursor-pointer hover:bg-muted/50">
-                                                <p className="font-semibold">{booking.title || 'Reserva Rápida'}</p>
-                                                <p className="text-sm text-muted-foreground"><Clock className="inline h-3 w-3 mr-1"/>{booking.startTime} - {booking.endTime}</p>
-                                                <p className="text-sm text-muted-foreground"><Users className="inline h-3 w-3 mr-1"/>{booking.participants.length + (booking.guests || 0)} participante(s)</p>
-                                            </div>
-                                        </BookingDetailsModal>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-center text-muted-foreground py-4">Nenhuma reserva para esta sala hoje.</p>
-                                )}
-                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
-                                    <Button className="w-full mt-2">
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Reservar {room.name}
-                                    </Button>
-                                </BookingModal>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                )
-            })}
-        </Accordion>
-    )
-}
 
 type SortableBookingKey = 'title' | 'roomName' | 'organizerName' | 'date';
 type SortDirection = 'ascending' | 'descending';
@@ -344,8 +45,7 @@ const dateRangeOptions: { value: DateRangePreset; label: string }[] = [
 
 export default function DashboardPage() {
   const [user, loadingAuth] = useAuthState(auth);
-  const allRawNotices = getNotices();
-  const allRawBookings = getBookings(); 
+  const { toast } = useToast();
   
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -362,6 +62,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user || loadingAuth) return;
 
+    const allRawNotices = getNotices();
     const noticesForUser = allRawNotices.filter(notice => 
         !notice.targetUserId || notice.targetUserId === user.uid
     );
@@ -371,10 +72,11 @@ export default function DashboardPage() {
     if(firstUnread && !modalOpen) {
         setUnreadNotice(firstUnread);
     }
-  }, [allRawNotices, user, loadingAuth, modalOpen]);
+  }, [user, loadingAuth, modalOpen]);
 
   // Load initial data
   useEffect(() => {
+    const allRawBookings = getBookings();
     setSelectedDate(startOfToday());
     setAllBookings(allRawBookings.sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime()));
     setRooms(getRooms().filter(r => r.status === "Disponível"));
@@ -400,6 +102,23 @@ export default function DashboardPage() {
               .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
       );
   };
+
+  const handleBookingDeleted = (bookingId: string) => {
+    const success = deleteBooking(bookingId);
+    if(success) {
+      setAllBookings(prev => prev.filter(b => b.id !== bookingId));
+      toast({
+        title: "Reserva Cancelada!",
+        description: "A reserva foi cancelada com sucesso.",
+      });
+    } else {
+       toast({
+        title: "Erro!",
+        description: "Não foi possível cancelar a reserva.",
+        variant: "destructive",
+      });
+    }
+  }
   
   const bookingsForSelectedDay = useMemo(() => {
     if (!selectedDate) return [];
@@ -462,11 +181,11 @@ export default function DashboardPage() {
   const sortedBookings = useMemo(() => {
     const sortableItems = bookingsForPeriod.map(b => {
         const room = getRoomById(b.roomId);
-        const organizer = getUserById(b.organizerId);
+        const organizer = getUserById(b.organizerId); // This might fail as users are not in mock-service
         return {
             ...b,
             roomName: room?.name ?? 'N/A',
-            organizerName: organizer?.name ?? 'N/A',
+            organizerName: organizer?.name ?? (b.organizerId === user?.uid ? user.displayName : 'Desconhecido'),
             title: b.title || 'Reserva Rápida'
         }
     });
@@ -489,7 +208,7 @@ export default function DashboardPage() {
         });
     }
     return sortableItems;
-  }, [bookingsForPeriod, sortConfig]);
+  }, [bookingsForPeriod, sortConfig, user]);
 
   const requestSort = (key: SortableBookingKey) => {
     let direction: SortDirection = 'ascending';
@@ -546,7 +265,7 @@ export default function DashboardPage() {
     return <ArrowUpDown className="ml-2 h-4 w-4" />;
   };
 
-  if (!user) {
+  if (loadingAuth || !user) {
     return null
   }
 
@@ -747,6 +466,13 @@ export default function DashboardPage() {
                                                             Editar
                                                         </DropdownMenuItem>
                                                     </EditBookingModal>
+                                                    <DropdownMenuSeparator />
+                                                     <DeleteBookingDialog onConfirm={() => handleBookingDeleted(booking.id)}>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Cancelar Reserva
+                                                        </DropdownMenuItem>
+                                                     </DeleteBookingDialog>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         )}
