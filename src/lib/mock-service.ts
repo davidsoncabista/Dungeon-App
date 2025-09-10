@@ -175,7 +175,7 @@ const notices: Notice[] = [
         title: 'Manutenção da Sala do Conselho',
         description: "A Sala do Conselho estará em manutenção nos próximos dias 15 e 16 para a instalação de novos equipamentos de som.",
         createdAt: '2024-09-10T11:00:00Z',
-        readBy: [] // Ninguém leu este ainda.
+        readBy: []
     },
     {
         id: 'notice_gandalf_1',

@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, Construction } from "lucide-react"
+import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, Construction, Megaphone } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
@@ -25,11 +25,15 @@ import { useToast } from "@/hooks/use-toast"
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Swords },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked },
-  { href: "/statistics", label: "Estatísticas", icon: BarChart3 },
-  { href: "/users", label: "Usuários", icon: UsersIcon },
-  { href: "/rooms", label: "Salas", icon: DoorOpen },
   { href: "/billing", label: "Cobrança", icon: CreditCard },
-  { href: "/test", label: "Testes", icon: Construction },
+];
+
+const adminNavItems = [
+    { href: "/statistics", label: "Estatísticas", icon: BarChart3 },
+    { href: "/users", label: "Usuários", icon: UsersIcon },
+    { href: "/rooms", label: "Salas", icon: DoorOpen },
+    { href: "/notices", label: "Avisos", icon: Megaphone },
+    { href: "/test", label: "Testes", icon: Construction },
 ]
 
 interface AppHeaderProps {
@@ -82,6 +86,18 @@ export function AppHeader({ user }: AppHeaderProps) {
             {item.label}
           </Link>
         ))}
+         {adminNavItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+                "text-muted-foreground transition-colors hover:text-foreground",
+                pathname === item.href && "text-foreground font-semibold"
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
       </nav>
       
       {/* Mobile Menu */}
@@ -108,7 +124,7 @@ export function AppHeader({ user }: AppHeaderProps) {
               <Dices className="h-6 w-6 text-primary" />
               <span className="">Dungeon App</span>
             </Link>
-            {navItems.map((item) => (
+            {[...navItems, ...adminNavItems].map((item) => (
                 <Link
                 key={item.href}
                 href={item.href}
@@ -136,9 +152,11 @@ export function AppHeader({ user }: AppHeaderProps) {
             />
           </div>
         </form>
-        <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notificações</span>
+        <Button variant="ghost" size="icon" className="rounded-full" asChild>
+            <Link href="/notices">
+              <Bell className="h-5 w-5" />
+              <span className="sr-only">Notificações</span>
+            </Link>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -28,6 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRange } from "react-day-picker"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
 
 
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
@@ -131,10 +133,10 @@ const EditBookingModal = ({ booking, allBookings, onBookingUpdated, onOpenChange
 // --- Componente de Detalhes da Reserva (Modal) ---
 const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenChange, children }: { booking: Booking, allBookings: Booking[], onBookingUpdated: (booking: Booking) => void, children: React.ReactNode, onOpenChange: (open: boolean) => void }) => {
     const room = getRoomById(booking.roomId);
-    const organizer = booking.participants.find(p => p.id === booking.organizerId);
+    const organizer = booking.participants.find(p => p.uid === booking.organizerId);
     const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
-    const user = getAuthenticatedUser();
-    const isOrganizer = user.id === organizer?.id;
+    const [user] = useAuthState(auth);
+    const isOrganizer = user?.uid === organizer?.uid;
     const [isMyModalOpen, setIsMyModalOpen] = useState(false);
 
     const handleMyOpenChange = (open: boolean) => {
@@ -168,7 +170,7 @@ const BookingDetailsModal = ({ booking, allBookings, onBookingUpdated, onOpenCha
                    <div className="space-y-2">
                        <h3 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4"/> Participantes ({booking.participants.length})</h3>
                        <ul className="list-disc list-inside text-sm pl-4">
-                           {booking.participants.map(p => <li key={p.id}>{p.name}</li>)}
+                           {booking.participants.map(p => <li key={p.uid}>{p.name}</li>)}
                        </ul>
                    </div>
                    {booking.guests && booking.guests > 0 ? (
@@ -260,7 +262,7 @@ const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCr
                             {roomBookings.map((booking) => {
                                 const style = calculateBookingStyle(booking);
                                 const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
-                                const organizer = booking.participants.find(p => p.id === booking.organizerId);
+                                const organizer = booking.participants.find(p => p.uid === booking.organizerId);
 
                                 return (
                                     <div key={`${booking.id}-${booking.date}`} style={style} className="h-full p-1 z-10">
@@ -341,7 +343,7 @@ const dateRangeOptions: { value: DateRangePreset; label: string }[] = [
 ];
 
 export default function DashboardPage() {
-  const user = getAuthenticatedUser();
+  const [user, loadingAuth] = useAuthState(auth);
   const allRawNotices = getNotices();
   const allRawBookings = getBookings(); 
   
@@ -358,16 +360,18 @@ export default function DashboardPage() {
 
   // Handle notices
   useEffect(() => {
+    if (!user || loadingAuth) return;
+
     const noticesForUser = allRawNotices.filter(notice => 
-        !notice.targetUserId || notice.targetUserId === user.id
+        !notice.targetUserId || notice.targetUserId === user.uid
     );
     const firstUnread = noticesForUser.find(notice => 
-        !notice.readBy.includes(user.id)
+        !notice.readBy.includes(user.uid)
     );
     if(firstUnread && !modalOpen) {
         setUnreadNotice(firstUnread);
     }
-  }, [allRawNotices, user.id, modalOpen]);
+  }, [allRawNotices, user, loadingAuth, modalOpen]);
 
   // Load initial data
   useEffect(() => {
@@ -379,8 +383,8 @@ export default function DashboardPage() {
 
 
   const handleDismissNotice = (noticeId: string, dismissForever: boolean) => {
-    if (dismissForever) {
-        markNoticeAsRead(noticeId, user.id);
+    if (dismissForever && user) {
+        markNoticeAsRead(noticeId, user.uid);
     }
     setUnreadNotice(null);
   };
@@ -542,6 +546,10 @@ export default function DashboardPage() {
     return <ArrowUpDown className="ml-2 h-4 w-4" />;
   };
 
+  if (!user) {
+    return null
+  }
+
 
   return (
     <div className="grid gap-8">
@@ -552,7 +560,7 @@ export default function DashboardPage() {
             />
         )}
         <div className="flex flex-col gap-4">
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Seja bem-vindo, {user.name.split(' ')[0]}!</h1>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Seja bem-vindo, {user.displayName?.split(' ')[0]}!</h1>
             <p className="text-muted-foreground flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               Gerencie as reservas de salas de forma rápida e visual.
@@ -704,9 +712,8 @@ export default function DashboardPage() {
                     </TableHeader>
                     <TableBody>
                         {sortedBookings.length > 0 ? sortedBookings.map(booking => {
-                            const isOrganizer = user.id === booking.organizerId;
-                            const isAdmin = user.role === 'Administrador' || user.role === 'Editor';
-                            const canEdit = isOrganizer || isAdmin;
+                            const isAdmin = false; // Substituir pela lógica de role do usuário
+                            const canEdit = user?.uid === booking.organizerId || isAdmin;
 
                             return (
                                 <TableRow key={booking.id}>
