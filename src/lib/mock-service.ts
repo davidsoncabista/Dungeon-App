@@ -16,8 +16,8 @@ const users: User[] = [
 ];
 
 export const getAuthenticatedUser = (): User => {
-    // Trocado para Frodo para testar a cota de "Gamer"
-    return users.find(u => u.id === 'usr_gandalf')!;
+    // Mudei para admin para testar as regras de segurança
+    return users.find(u => u.id === 'usr_admin')!;
 }
 export const getUsers = (): User[] => users;
 export const getUserById = (id: string): User | undefined => users.find(u => u.id === id);

@@ -1,22 +1,62 @@
 rules_version = '2';
 
+// Helper function para verificar se o usuário tem uma das roles de admin
+function isAdmin() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor', 'Revisor'];
+}
+
+function isOwner(userId) {
+  return request.auth.uid == userId;
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Regras para a coleção de usuários
-    // Permite que usuários leiam e atualizem apenas seus próprios perfis.
-    // A criação é permitida para que a Cloud Function possa criar o documento inicial.
+    // --- Regras para a Coleção de Usuários ---
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId;
-      allow create: if request.auth.uid != null;
+      // LEITURA:
+      // 1. Um usuário pode ler seu próprio documento.
+      // 2. Um administrador pode ler os dados de qualquer usuário (para a página de gerenciamento).
+      allow read: if request.auth != null && (isOwner(userId) || isAdmin());
+
+      // ESCRITA (CRIAR):
+      // Um usuário pode criar seu próprio documento se o ID do documento for o mesmo que seu UID.
+      allow create: if request.auth != null && isOwner(userId);
+
+      // ESCRITA (ATUALIZAR):
+      // 1. Um usuário pode atualizar seu próprio documento.
+      // 2. Um administrador pode atualizar o documento de qualquer usuário.
+      allow update: if request.auth != null && (isOwner(userId) || isAdmin());
+
+      // ESCRITA (EXCLUIR):
+      // Apenas administradores podem excluir usuários.
+      allow delete: if request.auth != null && isAdmin();
     }
 
-    // Regras para a coleção de reservas
-    // Qualquer usuário autenticado pode ler as reservas (para a agenda).
-    // Apenas o organizador pode criar, atualizar ou deletar uma reserva.
+    // --- Regras para a Coleção de Salas ---
+    match /rooms/{roomId} {
+      // LEITURA: Qualquer usuário autenticado pode ver as salas.
+      allow read: if request.auth != null;
+      
+      // ESCRITA: Apenas administradores e editores podem criar, atualizar ou excluir salas.
+      allow write: if request.auth != null && 
+                      (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor']);
+    }
+
+    // --- Regras para a Coleção de Reservas ---
     match /bookings/{bookingId} {
-      allow read: if request.auth.uid != null;
-      allow create, update, delete: if request.auth.uid == request.resource.data.organizerId;
+      // LEITURA: Qualquer usuário autenticado pode ver as reservas (para a agenda).
+      allow read: if request.auth != null;
+      
+      // CRIAÇÃO: Um usuário pode criar uma reserva se ele for o organizador.
+      allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
+      
+      // ATUALIZAÇÃO/EXCLUSÃO:
+      // 1. O organizador da reserva pode atualizar/excluir.
+      // 2. Administradores e Editores podem moderar (atualizar/excluir) qualquer reserva.
+      allow update, delete: if request.auth != null && 
+                              (resource.data.organizerId == request.auth.uid || 
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Administrador', 'Editor']);
     }
   }
 }
