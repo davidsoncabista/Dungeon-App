@@ -4,8 +4,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- Helper Functions ---
-    // Verifica se o usuário tem a custom claim de 'admin'.
-    // Esta é a forma mais performática e segura de verificar permissões de administrador.
+    // Verifica se o usuário tem a claim de 'admin' no seu token de autenticação.
+    // Esta é a forma correta e performática de verificar permissões de administrador.
     function isAdmin() {
       return request.auth.token.admin == true;
     }
@@ -16,44 +16,41 @@ service cloud.firestore {
 
     // --- Regras para a Coleção de Usuários (`users`) ---
     match /users/{userId} {
-      // LEITURA (LISTA): Apenas administradores podem listar todos os usuários.
-      // Esta regra agora funciona porque não depende de uma leitura (get) externa.
+      // LEITURA (LISTA): Administradores podem listar todos os usuários.
       allow list: if isAdmin();
       
-      // LEITURA (DOCUMENTO ÚNICO): Um usuário pode ler seu próprio documento, ou um admin pode ler qualquer um.
+      // LEITURA (GET): Um usuário pode ler seu próprio documento. Admins podem ler qualquer um.
       allow get: if isOwner(userId) || isAdmin();
 
-      // ATUALIZAÇÃO: Um usuário pode atualizar seu próprio perfil, ou um admin pode atualizar qualquer um.
+      // ESCRITA (ATUALIZAR): Um usuário pode atualizar seu próprio perfil. Admins podem atualizar qualquer um.
       allow update: if isOwner(userId) || isAdmin();
       
-      // EXCLUSÃO: Apenas administradores podem excluir usuários.
+      // ESCRITA (EXCLUIR): Apenas administradores podem excluir usuários.
       allow delete: if isAdmin();
 
-      // CRIAÇÃO: A criação de documento de usuário é feita por uma Cloud Function, 
-      // que opera com privilégios de administrador e ignora estas regras.
-      // Por segurança, não permitimos a criação pelo lado do cliente.
-      allow create: if false;
+      // A criação de documentos de usuário é feita pela Cloud Function.
     }
 
     // --- Regras para a Coleção de Salas (`rooms`) ---
     match /rooms/{roomId} {
-      // LEITURA: Qualquer usuário autenticado pode ver as salas.
+      // Qualquer usuário logado pode ler as salas.
       allow read: if request.auth != null;
       
-      // ESCRITA: Apenas administradores podem criar, atualizar ou excluir salas.
+      // Apenas administradores podem escrever/editar salas.
+      // (Simplificado para usar a mesma claim de admin)
       allow write: if isAdmin();
     }
 
     // --- Regras para a Coleção de Reservas (`bookings`) ---
     match /bookings/{bookingId} {
-      // LEITURA: Qualquer usuário autenticado pode ver as reservas (para a agenda).
+      // Qualquer usuário logado pode ler as reservas (para a agenda).
       allow read: if request.auth != null;
       
-      // CRIAÇÃO: Um usuário pode criar uma reserva se ele for o organizador.
-      allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
+      // Um usuário pode criar uma reserva se for o organizador.
+      allow create: if request.resource.data.organizerId == request.auth.uid;
       
-      // ATUALIZAÇÃO/EXCLUSÃO: O organizador da reserva ou um admin pode moderar.
-      allow update, delete: if request.auth != null && (resource.data.organizerId == request.auth.uid || isAdmin());
+      // O organizador ou um admin pode atualizar/excluir a reserva.
+      allow update, delete: if resource.data.organizerId == request.auth.uid || isAdmin();
     }
   }
 }
