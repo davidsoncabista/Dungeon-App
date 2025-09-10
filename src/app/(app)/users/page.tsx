@@ -1,7 +1,7 @@
 
 "use client"
 
-import { MoreHorizontal, PlusCircle, ShieldCheck, UserCog, Ban, Trash2 } from "lucide-react"
+import { MoreHorizontal, ShieldCheck, UserCog, Ban, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -317,7 +317,6 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
 
 // --- Página Principal ---
 export default function UsersPage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
   const [authUser, authLoading] = useAuthState(auth);
 
@@ -330,12 +329,7 @@ export default function UsersPage() {
   const handleActionSuccess = (title: string, description: string) => {
       toast({ title, description });
   };
-
-  const handleCreateSuccess = () => {
-      setIsCreateModalOpen(false);
-      handleActionSuccess("Usuário Criado!", "O novo membro foi adicionado ao sistema com sucesso.");
-  };
-
+  
   const renderContent = () => {
     if (loading || authLoading) {
         return Array.from({ length: 5 }).map((_, i) => (
@@ -385,29 +379,12 @@ export default function UsersPage() {
           <h1 className="text-3xl font-bold tracking-tight font-headline">Gerenciamento de Usuários</h1>
           <p className="text-muted-foreground">Visualize e gerencie os membros da associação.</p>
         </div>
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Novo Usuário
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Adicionar Novo Membro</DialogTitle>
-                    <DialogDescription>
-                        Preencha os detalhes abaixo para cadastrar um novo usuário no sistema.
-                    </DialogDescription>
-                </DialogHeader>
-                <UserForm onSuccess={handleCreateSuccess} onCancel={() => setIsCreateModalOpen(false)} />
-            </DialogContent>
-        </Dialog>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Membros</CardTitle>
-          <CardDescription>Uma lista de todos os usuários cadastrados no sistema.</CardDescription>
+          <CardDescription>Uma lista de todos os usuários cadastrados no sistema. A criação de novos usuários é feita automaticamente quando eles logam com o Google pela primeira vez.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

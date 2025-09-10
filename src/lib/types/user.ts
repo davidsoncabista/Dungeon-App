@@ -2,6 +2,7 @@
 export type UserCategory = "Player" | "Gamer" | "Master" | "Visitante";
 export type UserStatus = "Ativo" | "Pendente" | "Bloqueado";
 export type AdminRole = "Administrador" | "Editor" | "Revisor" | "Membro";
+export type GameType = "RPG" | "Board Game" | "Card Game";
 
 export interface User {
   id: string; // Corresponde ao UID do Firebase Auth
@@ -12,4 +13,13 @@ export interface User {
   category: UserCategory;
   status: UserStatus;
   role: AdminRole;
+
+  // Novos campos
+  nickname?: string;
+  phone?: string;
+  cpf?: string;
+  rg?: string;
+  birthdate?: string; // Formato YYYY-MM-DD
+  socialMedia?: string;
+  gameTypes?: GameType[];
 }
