@@ -8,7 +8,7 @@ import { auth } from '@/lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { doc, getFirestore } from "firebase/firestore";
+import { collection, getFirestore } from "firebase/firestore";
 import type { User } from "@/lib/types/user";
 
 
@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   // Busca os dados completos do usuário do Firestore
   const [appUser, userLoading, userError] = useCollectionData<User>(
-    user ? collection(getFirestore(), 'users').where('uid', '==', user.uid) : null
+    user ? collection(getFirestore(), 'users').where('uid', '==', user.uid) as any : null
   );
   
   const currentUser = appUser?.[0];
