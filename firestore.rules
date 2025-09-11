@@ -16,22 +16,16 @@ service cloud.firestore {
 
     // --- Regras para a Coleção de Usuários (`users`) ---
     match /users/{userId} {
-      // LEITURA (LISTA): Administradores podem listar todos os usuários.
-      allow list: if isAdmin();
-      
-      // LEITURA (GET): Um usuário pode ler seu próprio documento. Admins podem ler qualquer um.
-      allow get: if isOwner(userId) || isAdmin();
-
-      // ESCRITA (ATUALIZAR): Um usuário pode atualizar seu próprio perfil. Admins podem atualizar qualquer um.
-      allow update: if isOwner(userId) || isAdmin();
-      
-      // ESCRITA (EXCLUIR): Apenas administradores podem excluir usuários.
-      allow delete: if isAdmin();
-
-      // A criação de documentos de usuário é feita pela Cloud Function.
+      allow read: if request.auth != null;
+      allow update: if request.auth.uid == userId || request.auth.token.admin == true;
+      allow create: if request.auth.uid == userId;
+      // Excluir usuários deve ser feito com cuidado, talvez apenas por administradores
+      allow delete: if request.auth.token.admin == true;
     }
 
-    // --- Regras para a Coleção de Salas (`rooms`) ---
+    // Coleção `rooms`
+    // Permite que qualquer usuário autenticado leia as salas, mas apenas
+    // administradores podem criar, editar ou excluir.
     match /rooms/{roomId} {
       // Qualquer usuário logado pode ler as salas.
       allow read: if request.auth != null;
