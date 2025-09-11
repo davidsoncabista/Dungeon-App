@@ -31,7 +31,7 @@ import { useMemo } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { app, auth } from "@/lib/firebase"
-import { getFirestore, collection, query, orderBy } from "firebase/firestore"
+import { getFirestore, collection, query, orderBy, where } from "firebase/firestore"
 import type { User } from "@/lib/types/user"
 import { Skeleton } from "../ui/skeleton"
 
@@ -39,8 +39,8 @@ const editBookingFormSchema = (maxCapacity: number) => z.object({
   title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }).max(50, { message: "O título não pode ter mais de 50 caracteres."}),
   description: z.string().max(200, {message: "A descrição não pode ter mais de 200 caracteres."}).optional(),
   participants: z.array(z.string()).min(1, { message: "Você deve selecionar pelo menos um participante (você mesmo)." }),
-  guests: z.coerce.number().int().min(0, {message: "O número de convidados não pode ser negativo."}).optional().default(0),
-}).refine(data => (data.participants.length + (data.guests ?? 0)) <= maxCapacity, {
+  guests: z.array(z.string()).optional().default([]),
+}).refine(data => (data.participants.length + (data.guests?.length ?? 0)) <= maxCapacity, {
     message: `O número total de participantes (membros + convidados) não pode exceder a capacidade da sala (${maxCapacity}).`,
     path: ["guests"],
 });
@@ -56,8 +56,9 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
     const [user] = useAuthState(auth);
     const firestore = getFirestore(app);
     const usersRef = collection(firestore, 'users');
-    const usersQuery = query(usersRef, orderBy("name"));
-    const [allUsers, loadingUsers] = useCollectionData<User>(usersQuery, { idField: 'id' });
+    
+    // Busca todos os usuários para popular os seletores
+    const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy("name")), { idField: 'id' });
 
     const formSchema = editBookingFormSchema(room.capacity);
     type BookingFormValues = z.infer<typeof formSchema>;
@@ -68,17 +69,32 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
             title: booking.title || "",
             description: booking.description || "",
             participants: booking.participants || [],
-            guests: booking.guests || 0,
+            guests: booking.guests || [],
         },
     });
 
     const formattedDate = format(parseISO(booking.date), "PPP", { locale: ptBR });
-    const totalParticipants = (form.watch("participants")?.length || 0) + (form.watch("guests") || 0);
+    const totalParticipants = (form.watch("participants")?.length || 0) + (form.watch("guests")?.length || 0);
 
-    const selectedParticipantDetails = useMemo(() => {
+    const { activeMembers, potentialGuests } = useMemo(() => {
+        if (!allUsers) return { activeMembers: [], potentialGuests: [] };
+        return {
+            activeMembers: allUsers.filter(u => u.status === 'Ativo' && u.category !== 'Visitante'),
+            potentialGuests: allUsers.filter(u => u.status !== 'Ativo' || u.category === 'Visitante')
+        };
+    }, [allUsers]);
+
+
+    const selectedParticipants = useMemo(() => {
         if (!allUsers || !form.watch("participants")) return [];
         return form.watch("participants").map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
     }, [allUsers, form.watch("participants")]);
+
+    const selectedGuests = useMemo(() => {
+        if (!allUsers || !form.watch("guests")) return [];
+        return form.watch("guests").map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
+    }, [allUsers, form.watch("guests")]);
+
 
     function onSubmit(data: BookingFormValues) {
         onSuccess(data);
@@ -156,7 +172,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                     name="participants"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Participantes (Membros)</FormLabel>
+                        <FormLabel>Participantes (Membros Ativos)</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <FormControl>
@@ -169,7 +185,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                                     )}
                                     >
                                         <div className="flex gap-1 flex-wrap">
-                                            {selectedParticipantDetails.map(p => (
+                                            {selectedParticipants.map(p => (
                                                 <Badge variant="secondary" key={p.uid}>{p.name.split(" ")[0]}</Badge>
                                             ))}
                                             {field.value.length === 0 && "Selecione os participantes"}
@@ -184,7 +200,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                                     <CommandList>
                                         <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
                                         <CommandGroup>
-                                            {allUsers.map((u) => (
+                                            {activeMembers.map((u) => (
                                             <CommandItem
                                                 value={u.name}
                                                 key={u.uid}
@@ -195,7 +211,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                                                         : [...currentValues, u.uid];
                                                     field.onChange(newValue);
                                                 }}
-                                                disabled={u.uid === user?.uid}
+                                                disabled={u.uid === user?.uid} // O organizador (usuário atual) não pode ser removido
                                             >
                                                 <Check
                                                 className={cn(
@@ -221,11 +237,62 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                     name="guests"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Convidados (Não-Membros)</FormLabel>
-                        <FormControl>
-                            <Input type="number" min="0" {...field} />
-                        </FormControl>
-                        <FormDescription>Número de participantes que não são membros.</FormDescription>
+                        <FormLabel>Convidados (Visitantes ou Inativos)</FormLabel>
+                        <Popover>
+                             <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                        "w-full justify-between h-auto min-h-10",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                        <div className="flex gap-1 flex-wrap">
+                                            {selectedGuests.map(p => (
+                                                <Badge variant="outline" key={p.uid}>{p.name.split(" ")[0]}</Badge>
+                                            ))}
+                                            {field.value.length === 0 && "Selecione os convidados"}
+                                        </div>
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                     <CommandInput placeholder="Buscar convidado..." />
+                                     <CommandList>
+                                        <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                                        <CommandGroup>
+                                            {potentialGuests.map((u) => (
+                                                <CommandItem
+                                                    value={u.name}
+                                                    key={u.uid}
+                                                    onSelect={() => {
+                                                        const currentValues = field.value || [];
+                                                        const newValue = currentValues.includes(u.uid)
+                                                            ? currentValues.filter(id => id !== u.uid)
+                                                            : [...currentValues, u.uid];
+                                                        field.onChange(newValue);
+                                                    }}
+                                                >
+                                                    <Check
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        field.value.includes(u.uid) ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                    />
+                                                    {u.name}
+                                                    <span className="ml-2 text-xs text-muted-foreground">({u.category})</span>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                     </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                        <FormDescription>Participantes que não são membros ativos.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -249,5 +316,3 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
         </Form>
     );
 }
-
-    

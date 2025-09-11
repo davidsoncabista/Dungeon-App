@@ -4,27 +4,44 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { getRoomById } from "@/lib/mock-service"
 import type { Booking } from "@/lib/types/booking"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Clock, Users, Eye } from "lucide-react"
+import { useDocumentData } from "react-firebase-hooks/firestore"
+import { doc, getFirestore } from "firebase/firestore"
+import { app } from "@/lib/firebase"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Room } from "@/lib/types/room"
 
 export const BookingRow = ({ booking }: { booking: Booking }) => {
-    const room = getRoomById(booking.roomId);
+    const firestore = getFirestore(app);
+    const roomRef = doc(firestore, 'rooms', booking.roomId);
+    const [room, loadingRoom] = useDocumentData<Room>(roomRef);
+
     const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
-    const totalParticipants = booking.participants.length + (booking.guests ?? 0);
+    const totalParticipants = booking.participants.length + (booking.guests?.length ?? 0);
     
     const statusVariant: { [key: string]: "secondary" | "destructive" | "outline" } = {
         'Confirmada': 'secondary',
         'Cancelada': 'destructive',
         'Pendente': 'outline'
     }
+    
+    if (loadingRoom) {
+        return (
+             <TableRow>
+                <TableCell colSpan={5}>
+                    <Skeleton className="h-16 w-full" />
+                </TableCell>
+            </TableRow>
+        )
+    }
 
     return (
       <TableRow>
         <TableCell>
-            <div className="font-medium">{room?.name}</div>
+            <div className="font-medium">{room?.name || "Sala não encontrada"}</div>
             <div className="text-sm text-muted-foreground">{formattedDate}</div>
         </TableCell>
         <TableCell className="hidden md:table-cell">

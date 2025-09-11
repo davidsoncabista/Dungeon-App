@@ -492,7 +492,7 @@ export default function DashboardPage() {
                                         <span className="text-muted-foreground ml-2">{booking.startTime}</span>
                                     </TableCell>
                                     <TableCell className="hidden lg:table-cell">{booking.organizerName}</TableCell>
-                                    <TableCell className="text-right">{booking.participants.length + (booking.guests || 0)}</TableCell>
+                                    <TableCell className="text-right">{booking.participants.length + (booking.guests?.length || 0)}</TableCell>
                                     <TableCell className="text-right">
                                         {canEdit && (
                                             <DropdownMenu>
@@ -539,5 +539,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    

@@ -49,10 +49,10 @@ export const getUserById = (id: string): User | undefined => {
 
 // --- ROOMS ---
 const rooms: Room[] = [
-  { id: 'room_ghalmaraz', name: "Sala Ghal-Maraz", capacity: 8, status: "Disponível", description: "Sala temática de fantasia medieval.", image: "https://picsum.photos/seed/ghalmaraz/200/100" },
-  { id: 'room_conselho', name: "Sala do Conselho", capacity: 12, status: "Em Manutenção", description: "Sala ampla para grandes grupos e eventos.", image: "https://picsum.photos/seed/conselho/200/100" },
-  { id: 'room_arena', name: "Arena Imperial", capacity: 6, status: "Disponível", description: "Sala com temática de ficção científica.", image: "https://picsum.photos/seed/arena/200/100" },
-  { id: 'room_taverna', name: "Taverna do Anão", capacity: 4, status: "Disponível", description: "Sala aconchegante para jogos de cartas.", image: "https://picsum.photos/seed/taverna/200/100" },
+  { id: 'room_ghalmaraz', uid: 'room_ghalmaraz', name: "Sala Ghal-Maraz", capacity: 8, status: "Disponível", description: "Sala temática de fantasia medieval.", image: "https://picsum.photos/seed/ghalmaraz/200/100" },
+  { id: 'room_conselho', uid: 'room_conselho', name: "Sala do Conselho", capacity: 12, status: "Em Manutenção", description: "Sala ampla para grandes grupos e eventos.", image: "https://picsum.photos/seed/conselho/200/100" },
+  { id: 'room_arena', uid: 'room_arena', name: "Arena Imperial", capacity: 6, status: "Disponível", description: "Sala com temática de ficção científica.", image: "https://picsum.photos/seed/arena/200/100" },
+  { id: 'room_taverna', uid: 'room_taverna', name: "Taverna do Anão", capacity: 4, status: "Disponível", description: "Sala aconchegante para jogos de cartas.", image: "https://picsum.photos/seed/taverna/200/100" },
 ];
 
 export const getRooms = (): Room[] => rooms;
@@ -78,7 +78,7 @@ let bookings: Booking[] = [
     title: 'A Sociedade do Anel',
     description: 'Continuar a jornada para destruir o Um Anel.',
     participants: [], // Será preenchido dinamicamente
-    guests: 1,
+    guests: [],
     status: 'Confirmada'
   },
   { 
@@ -90,7 +90,7 @@ let bookings: Booking[] = [
     endTime: '22:00', 
     title: 'Torneio de Card Game',
     participants: [],
-    guests: 2,
+    guests: [],
     status: 'Confirmada'
   },
   { 
@@ -101,7 +101,7 @@ let bookings: Booking[] = [
     startTime: '20:00', 
     endTime: '23:30', 
     participants: [],
-    guests: 0,
+    guests: [],
     status: 'Confirmada'
   },
   { 
@@ -113,7 +113,7 @@ let bookings: Booking[] = [
     endTime: '07:00', 
     title: 'Corujão de Testes',
     participants: [],
-    guests: 1,
+    guests: [],
     status: 'Confirmada'
   },
   { 
@@ -125,7 +125,7 @@ let bookings: Booking[] = [
     endTime: '12:30', 
     title: 'Sessão de World of Warcraft RPG',
     participants: [],
-    guests: 1,
+    guests: [],
     status: 'Confirmada'
   },
 ];
@@ -181,5 +181,3 @@ const transactions: Transaction[] = [
 ];
 
 export const getTransactions = (): Transaction[] => transactions;
-
-    

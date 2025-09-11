@@ -12,8 +12,6 @@ export interface Booking {
   title?: string; // Título da sessão
   description?: string; // Descrição opcional
   participants: string[]; // Array de UIDs dos participantes
-  guests?: number; // Representa não-associados
+  guests: string[]; // Array de UIDs dos convidados (visitantes ou inativos)
   status: "Confirmada" | "Pendente" | "Cancelada";
 }
-
-    
