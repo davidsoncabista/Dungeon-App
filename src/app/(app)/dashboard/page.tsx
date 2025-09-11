@@ -348,6 +348,7 @@ export default function DashboardPage() {
                                 mode="single"
                                 selected={selectedDate || undefined}
                                 onSelect={(date) => date && setSelectedDate(date)}
+                                disabled={{ after: addDays(new Date(), 15) }}
                                 initialFocus
                                 locale={ptBR}
                                 />
