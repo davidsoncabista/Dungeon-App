@@ -10,11 +10,12 @@ import { BookingDetailsModal } from "./booking-details-modal"
 import { BookingModal } from "./booking-modal"
 import type { Booking } from "@/lib/types/booking"
 import type { Room } from "@/lib/types/room"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
 
 // --- Componente da Agenda (Acordeão - Mobile/Portrait) ---
-export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[] }) => {
+export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings, canBook }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[], canBook: boolean | undefined }) => {
     return (
         <Accordion type="multiple" className="w-full space-y-2">
             {rooms.map((room, roomIndex) => {
@@ -45,12 +46,25 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
                                 ) : (
                                     <p className="text-sm text-center text-muted-foreground py-4">Nenhuma reserva para esta sala hoje.</p>
                                 )}
-                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
-                                    <Button className="w-full mt-2">
-                                        <PlusCircle className="mr-2 h-4 w-4" />
-                                        Reservar {room.name}
-                                    </Button>
-                                </BookingModal>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="w-full">
+                                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
+                                                    <Button className="w-full mt-2" disabled={!canBook}>
+                                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                                        Reservar {room.name}
+                                                    </Button>
+                                                </BookingModal>
+                                            </div>
+                                        </TooltipTrigger>
+                                        {!canBook && (
+                                            <TooltipContent>
+                                                <p>Apenas membros ativos podem fazer reservas.</p>
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                         </AccordionContent>
                     </AccordionItem>

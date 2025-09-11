@@ -6,11 +6,13 @@ import { BookingDetailsModal } from "./booking-details-modal"
 import { BookingModal } from "./booking-modal"
 import type { Booking } from "@/lib/types/booking"
 import type { Room } from "@/lib/types/room"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
 
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
 
 // --- Componente da Agenda (Timeline - Desktop/Landscape) ---
-export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[] }) => {
+export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings, canBook }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[], canBook: boolean | undefined }) => {
     
     const totalHours = 24;
     const hourColumns = 4; // Cada hora tem 4 colunas (intervalos de 15 min)
@@ -72,9 +74,27 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
                         <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
                         <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative overflow-hidden" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
                             
-                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
-                                <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
-                            </BookingModal>
+                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div>
+                                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
+                                                <button 
+                                                    className="absolute inset-0 w-full h-full z-0" 
+                                                    aria-label={`Reservar ${room.name}`}
+                                                    disabled={!canBook}
+                                                />
+                                            </BookingModal>
+                                        </div>
+                                    </TooltipTrigger>
+                                    {!canBook && (
+                                        <TooltipContent side="top" align="center">
+                                            <p>Apenas membros ativos podem fazer reservas.</p>
+                                        </TooltipContent>
+                                    )}
+                                </Tooltip>
+                             </TooltipProvider>
+
                         
                             {roomBookings.map((booking) => {
                                 const style = calculateBookingStyle(booking);

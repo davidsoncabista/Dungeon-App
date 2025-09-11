@@ -25,6 +25,7 @@ import { useAuthState } from "react-firebase-hooks/auth"
 import { auth, app } from "@/lib/firebase"
 import { getFirestore, collection, doc, updateDoc, arrayUnion, query, where, orderBy, deleteDoc } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
+import type { User as AppUser } from "@/lib/types/user";
 
 
 import { BookingModal } from "@/components/app/dashboard/booking-modal"
@@ -74,7 +75,12 @@ export default function DashboardPage() {
 
   // Users
   const usersRef = collection(firestore, 'users');
-  const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy('name')), { idField: 'id' });
+  const [allUsers, loadingUsers] = useCollectionData<AppUser>(query(usersRef, orderBy('name')), { idField: 'id' });
+  
+  // Current User Data
+  const currentUserQuery = useMemo(() => user ? query(usersRef, where('uid', '==', user.uid)) : null, [user, usersRef]);
+  const [currentUserData, loadingCurrentUser] = useCollectionData<AppUser>(currentUserQuery);
+  const currentUser = currentUserData?.[0];
 
 
   // Handle notices
@@ -241,13 +247,15 @@ export default function DashboardPage() {
   }
 
   const renderContent = () => {
-    if (!isHydrated || !selectedDate || loadingRooms || loadingBookings) {
+    if (!isHydrated || !selectedDate || loadingRooms || loadingBookings || loadingCurrentUser) {
         return <div className="space-y-4">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-48 w-full" />
         </div>;
     }
     const availableRooms = allRooms?.filter(r => r.status === "Disponível") ?? [];
+    const canBook = currentUser?.status === 'Ativo' && currentUser?.category !== 'Visitante';
+
 
     return (
         <>
@@ -259,6 +267,7 @@ export default function DashboardPage() {
                        selectedDate={selectedDate}
                        setModalOpen={setModalOpen}
                        allBookings={allBookings ?? []}
+                       canBook={canBook}
                    />
                    <ScrollBar orientation="horizontal" />
                 </ScrollArea>
@@ -270,6 +279,7 @@ export default function DashboardPage() {
                     selectedDate={selectedDate}
                     setModalOpen={setModalOpen}
                     allBookings={allBookings ?? []}
+                    canBook={canBook}
                 />
             </div>
         </>
@@ -463,7 +473,7 @@ export default function DashboardPage() {
                                 </TableRow>
                             ))
                         ) : sortedBookings.length > 0 ? sortedBookings.map(booking => {
-                            const isAdmin = false; // Substituir pela lógica de role do usuário
+                            const isAdmin = currentUser?.role === 'Administrador';
                             const canEdit = user?.uid === booking.organizerId || isAdmin;
 
                             return (
