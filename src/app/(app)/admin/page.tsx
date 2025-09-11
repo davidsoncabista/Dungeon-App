@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+<<<<<<< HEAD
 import { DollarSign, Ticket, CalendarCheck, Save } from "lucide-react"
 
 const plans = [
@@ -14,6 +15,21 @@ const plans = [
     { name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
     { name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
 ]
+=======
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert } from "lucide-react"
+import { useState, useEffect, ChangeEvent } from "react"
+import type { Plan } from "@/lib/types/plan"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { PlanForm } from "@/components/app/admin/plan-form"
+import { useCollectionData } from "react-firebase-hooks/firestore"
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { app } from "@/lib/firebase"
+import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+
+>>>>>>> 8ea4c320 (vamos fazer o crude da pagina de administração)
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -310,12 +326,19 @@ export default function AdminPage() {
 
 
       <div className="flex justify-end mt-4">
+<<<<<<< HEAD
         <Button size="lg">
             <Save className="mr-2 h-4 w-4" />
             Salvar Todas as Alterações
+=======
+        <Button size="lg" onClick={handleSaveAllChanges} disabled={isSaving}>
+            {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
+>>>>>>> 8ea4c320 (vamos fazer o crude da pagina de administração)
         </Button>
       </div>
 
     </div>
   )
 }
+
+    
