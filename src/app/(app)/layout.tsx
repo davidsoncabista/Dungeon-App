@@ -15,6 +15,7 @@ import type { User } from "@/lib/types/user";
 const adminRoutes = ["/statistics", "/users", "/rooms", "/admin"];
 const editorRoutes = ["/statistics", "/users", "/rooms"];
 const memberRoutes = ["/dashboard", "/my-bookings", "/notices", "/profile", "/subscribe"];
+// Rotas que um visitante (perfil preenchido, mas sem plano) pode acessar.
 const visitorRoutes = ["/subscribe", "/profile", "/my-bookings"];
 
 
@@ -30,38 +31,43 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const currentUser = appUser?.[0];
 
   useEffect(() => {
+    // Se o usuário não está logado, manda para a página de login.
     if (!loading && !user) {
       router.push('/login');
       return;
     }
 
+    // Se os dados do usuário carregaram
     if (!userLoading && currentUser) {
-        // Regra 1: Forçar preenchimento do perfil para novos usuários
-        // Se o status é Pendente (novo usuário) e ele não está na página de perfil, force-o para lá.
+        // REGRA 1: CADASTRO INCOMPLETO
+        // Se o status é 'Pendente', o usuário está "preso" na página de perfil até completá-lo.
         if (currentUser.status === 'Pendente' && pathname !== '/profile') {
             router.push('/profile');
             return;
         }
 
-        // Regra 2: Controle de Acesso para Visitantes
-        // Se o status já não é mais pendente (perfil preenchido) mas a categoria é Visitante
-        if (currentUser.status !== 'Pendente' && currentUser.category === 'Visitante') {
+        // REGRA 2: MATRÍCULA PENDENTE
+        // Se o cadastro está completo (status 'Ativo') mas ele ainda é 'Visitante' (não escolheu um plano),
+        // ele fica "preso" na página de matrícula.
+        if (currentUser.status === 'Ativo' && currentUser.category === 'Visitante') {
+            // Permite acesso apenas às rotas definidas para visitantes.
             if (!visitorRoutes.includes(pathname)) {
                 router.push('/subscribe');
                 return;
             }
         }
         
-        // Regra 3: Controle de Acesso para Membros
+        // REGRA 3: CONTROLE DE ACESSO DE MEMBRO
+        // Se é um membro comum, bloqueia o acesso às rotas de admin.
         if (currentUser.role === 'Membro') {
-            const allowedRoutes = [...memberRoutes, ...visitorRoutes];
             if (adminRoutes.some(p => pathname.startsWith(p))) {
                  router.push('/dashboard');
                  return;
             }
         }
         
-        // Regra 4: Controle de acesso para Admin/Editor/Revisor
+        // REGRA 4: CONTROLE DE ACESSO DE ADMIN/EDITOR/REVISOR
+        // Se for Editor ou Revisor, bloqueia o acesso à página /admin.
         if (currentUser.role === 'Editor' || currentUser.role === 'Revisor') {
              if (pathname === '/admin') {
                 router.push('/dashboard');

@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import type { AdminRole } from "@/lib/types/user";
 
+// Objeto que serve como documentação viva das regras de acesso do sistema.
 const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
     Administrador: {
         description: "Acesso total. Pode gerenciar planos, usuários, salas e as configurações do sistema.",
@@ -39,8 +40,9 @@ const accessRules: Record<AdminRole | 'Visitante', { description: string; pages:
         description: "Acesso padrão para associados. Pode fazer reservas e gerenciar seu perfil.",
         pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil"]
     },
+    // Regra para usuários que completaram o cadastro mas ainda não escolheram um plano.
     Visitante: {
-        description: "Acesso inicial para novos usuários. Limitado a completar o cadastro e perfil.",
+        description: "Acesso de novo usuário. Pode completar o perfil e se matricular em um plano.",
         pages: ["Matrícula", "Perfil", "Minhas Reservas"]
     }
 };
@@ -400,5 +402,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    
