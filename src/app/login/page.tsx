@@ -1,11 +1,13 @@
 
 "use client"
 
-import { Dices } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Dices, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,33 +25,57 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export default function LoginPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [user, loading, error] = useAuthState(auth);
+    const [isSigningIn, setIsSigningIn] = useState(false);
+
+    useEffect(() => {
+        if (!loading && user) {
+            router.push('/online-schedule');
+        }
+    }, [user, loading, router]);
+
 
     const handleGoogleLogin = async () => {
+        if (isSigningIn) return;
+        setIsSigningIn(true);
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
             toast({
                 title: `Bem-vindo, ${user.displayName}!`,
-                description: "Login realizado com sucesso.",
+                description: "Login realizado com sucesso. Redirecionando...",
             });
+<<<<<<< HEAD
             router.push('/online-schedule');
+=======
+            // O useEffect cuidará do redirecionamento
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
         } catch (error: any) {
-            // Se o usuário fechou o popup, não fazemos nada.
             if (error.code === 'auth/popup-closed-by-user') {
                 console.log("Login cancelado pelo usuário.");
-                return;
+            } else {
+                console.error("Erro na autenticação com Google:", error);
+                toast({
+                    title: "Erro no Login",
+                    description: "Não foi possível autenticar com o Google. Tente novamente.",
+                    variant: "destructive",
+                });
             }
-            
-            // Para todos os outros erros, mostramos uma notificação.
-            console.error("Erro na autenticação com Google:", error);
-            toast({
-                title: "Erro no Login",
-                description: "Não foi possível autenticar com o Google. Tente novamente.",
-                variant: "destructive",
-            });
+        } finally {
+            setIsSigningIn(false);
         }
     };
+    
+    // Se estiver verificando o estado ou já logado, mostra um loader.
+    if (loading || user) {
+         return (
+            <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <p className="mt-4 text-muted-foreground">Verificando sessão...</p>
+            </div>
+        );
+    }
 
 
   return (
@@ -65,11 +91,25 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-                 <Button onClick={handleGoogleLogin} className="w-full py-6 text-lg font-bold" variant="outline">
-                    <GoogleIcon className="mr-4 h-6 w-6" />
-                    Entrar com Google
+                 <Button onClick={handleGoogleLogin} className="w-full py-6 text-lg font-bold" variant="outline" disabled={isSigningIn}>
+                    {isSigningIn ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Autenticando...
+                        </>
+                    ) : (
+                        <>
+                            <GoogleIcon className="mr-4 h-6 w-6" />
+                            Entrar com Google
+                        </>
+                    )}
                 </Button>
             </div>
+             {error && (
+                <p className="mt-4 text-center text-sm text-destructive">
+                    Erro: {error.message}
+                </p>
+            )}
           </CardContent>
         </Card>
       </main>

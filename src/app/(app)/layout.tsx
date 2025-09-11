@@ -13,12 +13,16 @@ import type { User } from "@/lib/types/user";
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 // Rotas de administração, ordenadas da mais restrita para a menos.
 const adminOnlyRoutes = ["/admin"];
 const editorRoutes = ["/rooms", "/statistics", "/users"];
 const revisorRoutes = ["/statistics", "/users", "/rooms", "/admin"]; // Revisores podem ver tudo
 const allAdminRoutes = [...new Set([...adminOnlyRoutes, ...editorRoutes, ...revisorRoutes])];
+<<<<<<< HEAD
 >>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
 =======
 // Rotas de administração, ordenadas da mais restrita para a menos.
@@ -27,6 +31,8 @@ const editorRoutes = ["/rooms", "/statistics", "/users"];
 const revisorRoutes = ["/statistics", "/users"];
 const allAdminRoutes = [...adminOnlyRoutes, ...editorRoutes];
 >>>>>>> 937bd52b (vamos as regras de navegação dentro do app devido a lgumas mudaças isso)
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
 // Rotas principais para membros ativos.
 const memberRoutes = ["/online-schedule", "/my-bookings", "/subscribe", "/profile", "/notices"];
@@ -64,6 +70,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         // REGRA 2: MATRÍCULA PENDENTE
         // Se o cadastro está completo (status 'Ativo') mas ele ainda é 'Visitante' (não escolheu um plano),
         // ele fica "preso" na página de matrícula, mas pode ver o dashboard e suas reservas.
@@ -90,6 +97,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
              if (pathname === '/admin') {
                 router.push('/dashboard');
 =======
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
         // REGRA 2: MATRÍCULA PENDENTE (Categoria 'Visitante')
         // Se o cadastro está completo mas ele ainda é 'Visitante',
         // ele só pode acessar as rotas de visitante.
@@ -104,6 +113,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             router.push('/online-schedule');
             return;
         }
+<<<<<<< HEAD
         
         // REGRA 4: CONTROLE DE ACESSO DE ADMINS
         if (currentUser.role === 'Revisor') {
@@ -136,6 +146,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             return;
 >>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
         }
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     }
   }, [user, loading, userLoading, currentUser, pathname, router]);
 

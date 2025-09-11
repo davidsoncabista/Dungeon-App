@@ -1,9 +1,14 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 "use client"
 
 import * as React from "react";
 import { addMonths, format, isSameMonth, isToday, startOfMonth, startOfWeek, addDays, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+<<<<<<< HEAD
 <<<<<<< HEAD
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 <<<<<<< HEAD
@@ -22,26 +27,37 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 =======
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 import { ChevronLeft, ChevronRight, PlusCircle, Plus, Lock } from "lucide-react";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy } from "firebase/firestore";
 import { app, auth } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+<<<<<<< HEAD
 >>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/lib/types/room";
 import type { User as AppUser } from "@/lib/types/user";
 import type { Plan } from "@/lib/types/plan";
 import { cn } from "@/lib/utils";
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 import { BookingModal } from "@/components/app/dashboard/booking-modal";
 import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal";
 import { BookingDetailsModal } from "@/components/app/dashboard/booking-details-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+<<<<<<< HEAD
 >>>>>>> b93da843 (a parte de visualizar pode ser para todos exeto para visitantes ou mebro)
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
 const DaySkeleton = () => (
     <div className="border-t border-l p-2 h-32 md:h-40 flex flex-col">
@@ -105,6 +121,7 @@ export default function OnlineSchedulePage() {
     }, [bookings]);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const handleCreateBooking = async (data: Omit<Booking, 'id' | 'status'>) => {
         if (!user || !userPlan) {
             toast({ title: "Erro", description: "Você precisa estar logado e ter um plano para reservar.", variant: "destructive" });
@@ -143,10 +160,13 @@ export default function OnlineSchedulePage() {
     };
 
 =======
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     const canBook = currentUser?.status === 'Ativo';
 
     const today = startOfDay(new Date());
     const bookingLimitDate = addDays(today, 15);
+<<<<<<< HEAD
 >>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
 
     const handleCreateBooking = async (data: Omit<Booking, 'id' | 'status'>) => {
@@ -176,6 +196,8 @@ export default function OnlineSchedulePage() {
         });
       }
     }
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
     return (
         <div className="flex flex-col h-full">
@@ -189,6 +211,7 @@ export default function OnlineSchedulePage() {
                     {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
                 </h2>
                 <div>
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                      <Dialog open={isModalOpen && !selectedDate} onOpenChange={setIsModalOpen}>
@@ -217,12 +240,21 @@ export default function OnlineSchedulePage() {
                         onSuccess={handleCreateBooking}
 =======
 >>>>>>> b93da843 (a parte de visualizar pode ser para todos exeto para visitantes ou mebro)
+=======
+                     <BookingModal 
+                        initialDate={new Date()}
+                        onOpenChange={setIsModalOpen} 
+                        allBookings={bookings || []} 
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                     >
                         <Button disabled={!canBook}>
                             <PlusCircle className="mr-2 h-4 w-4"/>Nova Reserva
                         </Button>
                     </BookingModal>
+<<<<<<< HEAD
 >>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                 </div>
             </header>
 
@@ -235,8 +267,14 @@ export default function OnlineSchedulePage() {
                     ? Array.from({length: 42}).map((_, i) => <DaySkeleton key={i}/>)
                     : daysInMonth.map(day => {
                     const dayBookings = bookingsByDay.get(format(day, 'yyyy-MM-dd')) || [];
+<<<<<<< HEAD
                     const availableRooms = rooms?.filter(r => r.status === 'Disponível') ?? [];
 
+=======
+                    const isPastDay = isBefore(day, today);
+                    const isWithinBookingLimit = !isPastDay && isBefore(day, bookingLimitDate);
+                    
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                     return (
                         <div 
                             key={day.toString()}
@@ -251,20 +289,39 @@ export default function OnlineSchedulePage() {
                                 <span className={cn("font-semibold text-xs md:text-sm", isToday(day) && "text-primary font-bold")}>
                                     {format(day, 'd')}
                                 </span>
+<<<<<<< HEAD
                                 <BookingModal room={availableRooms[0]} date={day} onOpenChange={setIsModalOpen} allBookings={bookings || []}>
                                     <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!canBook}>
                                         <Plus className="h-4 w-4" />
                                         <span className="sr-only">Adicionar Reserva</span>
                                     </Button>
                                 </BookingModal>
+=======
+                                {isWithinBookingLimit && isSameMonth(day, currentMonth) && (
+                                    <BookingModal initialDate={day} onOpenChange={setIsModalOpen} allBookings={bookings || []}>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!canBook}>
+                                            <Plus className="h-4 w-4" />
+                                            <span className="sr-only">Adicionar Reserva</span>
+                                        </Button>
+                                    </BookingModal>
+                                )}
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                             </div>
                             <div className="flex-1 overflow-y-auto text-xs space-y-1 mt-1 pr-1">
                                 {dayBookings.slice(0, 3).map(b => {
                                     const room = rooms?.find(r => r.id === b.roomId);
+<<<<<<< HEAD
                                     const isOrganizer = b.organizerId === user?.uid;
                                     
                                     const canEdit = isOrganizer || isAdmin;
                                     const canView = currentUser?.status !== 'Pendente' && currentUser?.category !== 'Visitante';
+=======
+                                    if (!currentUser || !room) return null;
+                                    
+                                    const isOrganizer = b.organizerId === user?.uid;
+                                    const canEdit = isOrganizer || currentUser.role === 'Administrador' || currentUser.role === 'Editor';
+                                    const canView = currentUser.status !== 'Pendente' && currentUser.category !== 'Visitante';
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
                                     if (canEdit) {
                                         return (
@@ -314,3 +371,8 @@ export default function OnlineSchedulePage() {
         </div>
     );
 }
+<<<<<<< HEAD
+=======
+
+    
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)

@@ -34,6 +34,10 @@ import { Skeleton } from "../ui/skeleton"
 import { ScrollArea } from "../ui/scroll-area"
 import { Checkbox } from "../ui/checkbox"
 import { Separator } from "../ui/separator"
+<<<<<<< HEAD
+=======
+import { DeleteBookingDialog } from "@/components/app/dashboard/delete-booking-dialog"
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
 const editBookingFormSchema = (maxCapacity: number) => z.object({
   title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }).max(50, { message: "O título não pode ter mais de 50 caracteres."}),
@@ -185,6 +189,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel, onDelete, 
                     )}
                 />
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <div className="space-y-2">
                     <FormLabel>Participantes e Convidados</FormLabel>
                     <FormDescription>Selecione os membros e convidados para a sessão.</FormDescription>
@@ -231,6 +236,8 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel, onDelete, 
                                 <p className="text-center text-sm text-muted-foreground py-4">Nenhum usuário encontrado.</p>
                             )}
 =======
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                 <div className="space-y-4">
                     {/* Members Section */}
                     <div className="space-y-2">
@@ -238,7 +245,10 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel, onDelete, 
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="Buscar membro por nome ou apelido..." className="pl-9" onChange={(e) => setMemberSearchTerm(e.target.value)} />
+<<<<<<< HEAD
 >>>>>>> 6892017e (vamos mudar essa lista vamos almentar mais um step do modal, o segundo s)
+=======
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                         </div>
                         <ScrollArea className="h-32 rounded-md border">
                             <div className="p-4 space-y-1">

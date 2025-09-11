@@ -76,7 +76,13 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   };
 
   const getVisibleNavItems = () => {
+<<<<<<< HEAD
     // Visitantes veem um conjunto específico de páginas.
+=======
+    if (userStatus === 'Pendente') {
+        return [{ href: "/profile", label: "Meu Perfil", icon: User, roles: ["Pendente"] }];
+    }
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     if (userCategory === 'Visitante') {
         return visitorNavItems;
     }

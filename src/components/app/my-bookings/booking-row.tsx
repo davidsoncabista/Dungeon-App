@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+<<<<<<< HEAD
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { TableCell, TableRow } from "@/components/ui/table"
@@ -13,6 +14,16 @@ import { useDocumentData } from "react-firebase-hooks/firestore"
 import { doc, getFirestore, updateDoc, arrayRemove } from "firebase/firestore"
 import { app, auth } from "@/lib/firebase"
 import { Skeleton } from "@/components/ui/skeleton"
+=======
+import { useAuthState } from "react-firebase-hooks/auth"
+import { useDocumentData } from "react-firebase-hooks/firestore"
+import { getFirestore, doc, updateDoc, arrayRemove } from "firebase/firestore"
+import { format, parseISO, isPast } from "date-fns"
+import { ptBR } from "date-fns/locale"
+
+import { app, auth } from "@/lib/firebase"
+import type { Booking } from "@/lib/types/booking"
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 import type { Room } from "@/lib/types/room"
 import {
   DropdownMenu,
@@ -38,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 
+<<<<<<< HEAD
 export const BookingRow = ({ booking }: { booking: Booking }) => {
     const { toast } = useToast();
     const [user] = useAuthState(auth);
@@ -168,3 +180,130 @@ export const BookingRow = ({ booking }: { booking: Booking }) => {
       </TableRow>
     );
 };
+=======
+import { TableCell, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { MoreHorizontal, Pencil, Eye, LogOut } from "lucide-react"
+
+import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal"
+import { BookingDetailsModal } from "@/components/app/dashboard/booking-details-modal"
+import { useToast } from "@/hooks/use-toast"
+
+
+interface BookingRowProps {
+  booking: Booking;
+}
+
+export function BookingRow({ booking }: BookingRowProps) {
+  const { toast } = useToast();
+  const [user] = useAuthState(auth);
+  const firestore = getFirestore(app);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isLeaveAlertOpen, setIsLeaveAlertOpen] = useState(false);
+
+  const [room] = useDocumentData<Room>(doc(firestore, "rooms", booking.roomId));
+
+  const isOrganizer = user?.uid === booking.organizerId;
+  const bookingIsPast = isPast(parseISO(`${booking.date}T${booking.endTime}`));
+
+  const handleLeaveBooking = async () => {
+    if (!user) return;
+    try {
+      const bookingRef = doc(firestore, "bookings", booking.id);
+      await updateDoc(bookingRef, {
+        participants: arrayRemove(user.uid)
+      });
+      toast({
+        title: "Você saiu da reserva",
+        description: `Sua participação na sessão "${booking.title}" foi removida.`
+      });
+    } catch (error) {
+      console.error("Erro ao sair da reserva:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover sua participação. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const formattedDate = format(parseISO(booking.date), "dd/MM/yy");
+
+  return (
+    <TableRow>
+      <TableCell>
+        <p className="font-medium">{booking.title}</p>
+        <p className="text-sm text-muted-foreground">{room?.name}</p>
+      </TableCell>
+      <TableCell className="hidden md:table-cell">{formattedDate}</TableCell>
+      <TableCell className="hidden sm:table-cell">{booking.startTime} - {booking.endTime}</TableCell>
+      <TableCell className="text-right">
+        <AlertDialog open={isLeaveAlertOpen} onOpenChange={setIsLeaveAlertOpen}>
+            <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Ações para a reserva</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                {isOrganizer ? (
+                    <DropdownMenuItem onSelect={() => setIsEditModalOpen(true)} disabled={bookingIsPast}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar Reserva
+                    </DropdownMenuItem>
+                ) : (
+                    <>
+                        <DropdownMenuItem onSelect={() => setIsDetailsModalOpen(true)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()} disabled={bookingIsPast}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Sair da Reserva
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                    </>
+                )}
+            </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Confirmation Dialog to Leave */}
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação removerá você da lista de participantes desta reserva. Você não poderá reverter isso sozinho.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleLeaveBooking} className="bg-destructive hover:bg-destructive/90">
+                        Sim, sair
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        {isOrganizer ? (
+            <EditBookingModal booking={booking} onOpenChange={setIsEditModalOpen}>
+                <div data-state={isEditModalOpen ? 'open' : 'closed'} />
+            </EditBookingModal>
+        ) : (
+            <BookingDetailsModal booking={booking} onOpenChange={setIsDetailsModalOpen}>
+                 <div data-state={isDetailsModalOpen ? 'open' : 'closed'} />
+            </BookingDetailsModal>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)

@@ -56,8 +56,12 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
     
     const formattedDate = format(new Date(booking.date + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
     const isOrganizer = user?.uid === booking.organizerId;
+<<<<<<< HEAD
     const isAdmin = currentUser?.role === 'Administrador';
     const canEdit = isOrganizer || isAdmin;
+=======
+    const canEdit = isOrganizer || currentUser?.role === 'Administrador' || currentUser?.role === 'Editor';
+>>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     
     const [isMyModalOpen, setIsMyModalOpen] = useState(false);
 
