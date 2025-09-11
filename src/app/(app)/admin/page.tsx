@@ -4,9 +4,8 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 import { DollarSign, Ticket, CalendarCheck, Save } from "lucide-react"
@@ -35,6 +34,15 @@ const initialPlans: Plan[] = [
     { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2, votingWeight: 2 },
     { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4, votingWeight: 4 },
 >>>>>>> f68d22a8 (falta so mais uma coluna que sera peso de voto playe 1 gamer 2 master 4)
+=======
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react"
+
+const plans = [
+    { id: "plan_player", name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1 },
+    { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
+    { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
 ]
 =======
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
@@ -292,7 +300,7 @@ export default function AdminPage() {
     <div className="grid gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">Administração do Sistema</h1>
-        <p className="text-muted-foreground">Gerencie as regras de negócio, planos e configurações da plataforma.</p>
+        <p className="text-muted-foreground">Gerencie os planos de associação e as regras de negócio da plataforma.</p>
       </div>
 
       <Card>
@@ -300,6 +308,7 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
+<<<<<<< HEAD
                     <CardDescription>Defina os preços, cotas de reserva e limites para cada plano.</CardDescription>
                 </div>
                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
@@ -322,6 +331,14 @@ export default function AdminPage() {
                         />
                     </DialogContent>
                 </Dialog>
+=======
+                    <CardDescription>Defina os preços, cotas de reserva e limites de convite para cada plano.</CardDescription>
+                </div>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Novo Plano
+                </Button>
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
             </div>
         </CardHeader>
         <CardContent>
@@ -333,14 +350,20 @@ export default function AdminPage() {
                         <TableHead className="text-center">Cota Semanal</TableHead>
                         <TableHead className="text-center">Cota Mensal</TableHead>
                         <TableHead className="text-center">Cota Convites</TableHead>
+<<<<<<< HEAD
                         <TableHead className="text-center">Peso de Voto</TableHead>
+=======
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
 <<<<<<< HEAD
+<<<<<<< HEAD
                    {renderContent()}
 =======
+=======
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                     {plans.map(plan => (
                         <TableRow key={plan.id}>
                             <TableCell className="font-bold">{plan.name}</TableCell>
@@ -356,14 +379,18 @@ export default function AdminPage() {
                             <TableCell className="text-center">
                                 <Input type="number" defaultValue={plan.invites} className="w-20 mx-auto" />
                             </TableCell>
+<<<<<<< HEAD
                             <TableCell className="text-center">
                                 <Input type="number" defaultValue={plan.votingWeight} className="w-20 mx-auto" />
                             </TableCell>
+=======
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                             <TableCell className="text-right">
                                <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon">
                                             <MoreHorizontal className="h-4 w-4" />
+<<<<<<< HEAD
                                             <span className="sr-only">Ações para {plan.name}</span>
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -378,6 +405,17 @@ export default function AdminPage() {
                                             className="text-destructive focus:text-destructive focus:bg-destructive/10"
                                             onSelect={() => setDeletingPlan(plan)}
                                         >
+=======
+                                            <span className="sr-only">Ações</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Editar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Excluir
                                         </DropdownMenuItem>
@@ -386,7 +424,10 @@ export default function AdminPage() {
                             </TableCell>
                         </TableRow>
                     ))}
+<<<<<<< HEAD
 >>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
+=======
+>>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                 </TableBody>
             </Table>
         </CardContent>
@@ -435,7 +476,6 @@ export default function AdminPage() {
       <div className="flex justify-end mt-4">
 <<<<<<< HEAD
         <Button size="lg">
-            <Save className="mr-2 h-4 w-4" />
             Salvar Todas as Alterações
 =======
         <Button size="lg" onClick={handleSaveAllChanges} disabled={isSaving}>
