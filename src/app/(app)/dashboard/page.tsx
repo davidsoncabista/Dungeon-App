@@ -62,7 +62,7 @@ export default function DashboardPage() {
   
   // Notices
   const noticesRef = collection(firestore, 'notices');
-  const [allNotices, loadingNotices] = useCollectionData<Notice>(query(noticesRef), { idField: 'id' });
+  const [allNotices, loadingNotices] = useCollectionData<Notice>(query(noticesRef, orderBy("createdAt", "desc")), { idField: 'id' });
 
   // Bookings
   const bookingsRef = collection(firestore, 'bookings');
@@ -81,13 +81,16 @@ export default function DashboardPage() {
   useEffect(() => {
     if (loadingAuth || loadingNotices || !user || !allNotices) return;
 
+    // Filtra os avisos que são para todos ou especificamente para este usuário
     const noticesForUser = allNotices.filter(notice => 
         !notice.targetUserId || notice.targetUserId === user.uid
     );
+    // Encontra o primeiro aviso que o usuário ainda não marcou como lido
     const firstUnread = noticesForUser.find(notice => 
         !notice.readBy?.includes(user.uid)
     );
 
+    // Se encontrou um aviso não lido e nenhum modal de aviso já está aberto, define-o para ser exibido.
     if(firstUnread && !modalOpen) {
         setUnreadNotice(firstUnread);
     }
@@ -103,6 +106,7 @@ export default function DashboardPage() {
     if (dismissForever && user) {
         const noticeRef = doc(firestore, "notices", noticeId);
         try {
+            // Adiciona o UID do usuário ao array 'readBy' no Firestore
             await updateDoc(noticeRef, {
                 readBy: arrayUnion(user.uid)
             });
@@ -115,6 +119,7 @@ export default function DashboardPage() {
             });
         }
     }
+    // Fecha o modal, independentemente de ter sido salvo ou não
     setUnreadNotice(null);
   };
   
@@ -212,7 +217,7 @@ export default function DashboardPage() {
             if (sortConfig.key === 'date') {
                  const dateA = new Date(`${a.date}T${a.startTime}`);
                  const dateB = new Date(`${b.date}T${b.startTime}`);
-                 return sortConfig.direction === 'ascending' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+                 return sortConfig.direction === 'ascending' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - a.getTime();
             }
 
             if (a[sortConfig.key] < b[sortConfig.key]) {
