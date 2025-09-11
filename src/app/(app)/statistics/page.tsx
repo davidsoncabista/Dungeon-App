@@ -3,67 +3,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { BookOpenCheck, Crown, Users, TrendingUp } from "lucide-react"
-import { getBookings, getRooms, getUsers } from "@/lib/mock-service"
-import type { UserCategory } from "@/lib/types/user"
-
-// Process data for charts
-const bookings = getBookings();
-const users = getUsers();
-const rooms = getRooms();
-
-// 1. Total bookings by category
-const bookingsByCategory = bookings.reduce((acc, booking) => {
-    booking.participants.forEach(participant => {
-        const category = participant.category;
-        if (!acc[category]) {
-            acc[category] = 0;
-        }
-        acc[category]++;
-    });
-    return acc;
-}, {} as Record<UserCategory, number>);
-
-const categoryChartData = [
-  { category: "Player", bookings: bookingsByCategory.Player || 0, fill: "var(--color-player)" },
-  { category: "Gamer", bookings: bookingsByCategory.Gamer || 0, fill: "var(--color-gamer)" },
-  { category: "Master", bookings: bookingsByCategory.Master || 0, fill: "var(--color-master)" },
-]
-
-// 2. Bookings by room
-const bookingsByRoom = bookings.reduce((acc, booking) => {
-    const room = rooms.find(r => r.id === booking.roomId);
-    if (room) {
-        const roomName = room.name;
-        if (!acc[roomName]) {
-            acc[roomName] = 0;
-        }
-        acc[roomName]++;
-    }
-    return acc;
-}, {} as Record<string, number>);
-
-
-const roomColors: { [key: string]: string } = {
-    "Sala Ghal-Maraz": "var(--color-ghalmaraz)",
-    "Sala do Conselho": "var(--color-conselho)",
-    "Arena Imperial": "var(--color-arena)",
-    "Taverna do Anão": "var(--color-taverna)",
-};
-
-const roomChartData = Object.entries(bookingsByRoom).map(([room, count]) => ({
-    room: room,
-    bookings: count,
-    fill: roomColors[room] || "var(--color-default)",
-}));
-
-// 3. Stats Cards
-const totalBookings = bookings.length;
-const activeUsers = users.filter(u => u.status === "Ativo").length;
-const mostPopularRoom = roomChartData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current, {room: 'N/A', bookings: 0});
-const totalBookingsInPopularRoom = mostPopularRoom.bookings;
-const percentageOfTotal = totalBookings > 0 ? ((totalBookingsInPopularRoom / totalBookings) * 100).toFixed(0) : 0;
-
+import { BookOpenCheck, Crown, Users, TrendingUp, UserCheck, UserX } from "lucide-react"
+import { getBookings, getRooms } from "@/lib/mock-service"
+import type { UserCategory, User as AppUser } from "@/lib/types/user"
+import { useCollectionData } from "react-firebase-hooks/firestore"
+import { getFirestore, collection, query, orderBy } from "firebase/firestore"
+import { app } from "@/lib/firebase"
+import { useMemo } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const chartConfig = {
   bookings: {
@@ -88,6 +38,106 @@ const chartConfig = {
 }
 
 export default function StatisticsPage() {
+  const firestore = getFirestore(app);
+  
+  // --- Firestore Data ---
+  const [users, loadingUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
+  const bookings = getBookings(); // Mock data for now
+  const rooms = getRooms(); // Mock data for now
+
+  // --- Memoized Data Processing ---
+  const { 
+    categoryChartData, 
+    roomChartData,
+    totalBookings,
+    mostPopularRoom,
+    percentageOfTotal,
+    activeMembers,
+    inactiveOrVisitors
+  } = useMemo(() => {
+    // 1. Total bookings by category
+    const bookingsByCategory = bookings.reduce((acc, booking) => {
+        const participantUsers = booking.participants.map(uid => users?.find(u => u.uid === uid)).filter(Boolean) as AppUser[];
+        participantUsers.forEach(participant => {
+            const category = participant.category;
+            if (category !== 'Visitante') {
+                if (!acc[category]) {
+                    acc[category] = 0;
+                }
+                acc[category]++;
+            }
+        });
+        return acc;
+    }, {} as Record<UserCategory, number>);
+
+    const categoryData = [
+      { category: "Player", bookings: bookingsByCategory.Player || 0, fill: "var(--color-player)" },
+      { category: "Gamer", bookings: bookingsByCategory.Gamer || 0, fill: "var(--color-gamer)" },
+      { category: "Master", bookings: bookingsByCategory.Master || 0, fill: "var(--color-master)" },
+    ]
+
+    // 2. Bookings by room
+    const bookingsByRoom = bookings.reduce((acc, booking) => {
+        const room = rooms.find(r => r.id === booking.roomId);
+        if (room) {
+            const roomName = room.name;
+            if (!acc[roomName]) {
+                acc[roomName] = 0;
+            }
+            acc[roomName]++;
+        }
+        return acc;
+    }, {} as Record<string, number>);
+
+    const roomColors: { [key: string]: string } = {
+        "Sala Ghal-Maraz": "var(--color-ghalmaraz)",
+        "Sala do Conselho": "var(--color-conselho)",
+        "Arena Imperial": "var(--color-arena)",
+        "Taverna do Anão": "var(--color-taverna)",
+    };
+
+    const roomData = Object.entries(bookingsByRoom).map(([room, count]) => ({
+        room: room,
+        bookings: count,
+        fill: roomColors[room] || "var(--color-default)",
+    }));
+    
+    // 3. Stats Cards
+    const totalBookingsCount = bookings.length;
+    const popularRoom = roomData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current, {room: 'N/A', bookings: 0});
+    const totalBookingsInPopularRoom = popularRoom.bookings;
+    const percent = totalBookingsCount > 0 ? ((totalBookingsInPopularRoom / totalBookingsCount) * 100).toFixed(0) : 0;
+    
+    // 4. User lists
+    const active = users?.filter(u => u.status === 'Ativo' && u.category !== 'Visitante') || [];
+    const inactive = users?.filter(u => u.status !== 'Ativo' || u.category === 'Visitante') || [];
+
+    return {
+        categoryChartData: categoryData,
+        roomChartData: roomData,
+        totalBookings: totalBookingsCount,
+        mostPopularRoom: popularRoom,
+        percentageOfTotal: percent,
+        activeMembers: active,
+        inactiveOrVisitors: inactive
+    };
+  }, [bookings, rooms, users]);
+  
+
+  const renderUserList = (userList: AppUser[]) => (
+    <ul className="space-y-3">
+        {userList.map(user => (
+            <li key={user.uid} className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person"/>
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium truncate">{user.name}</span>
+            </li>
+        ))}
+    </ul>
+  );
+
   return (
     <div className="grid gap-8">
       <div>
@@ -98,22 +148,22 @@ export default function StatisticsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users?.length || 0}</div>}
+            <p className="text-xs text-muted-foreground">usuários cadastrados</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Reservas</CardTitle>
             <BookOpenCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalBookings}</div>
             <p className="text-xs text-muted-foreground">agendamentos no total</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{activeUsers}</div>
-            <p className="text-xs text-muted-foreground">membros na plataforma</p>
           </CardContent>
         </Card>
         <Card>
@@ -138,11 +188,50 @@ export default function StatisticsPage() {
         </Card>
       </div>
 
+       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-green-600" />
+                  Membros Ativos
+              </CardTitle>
+               {loadingUsers ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
+            </div>
+          </CardHeader>
+          <CardContent>
+              <ScrollArea className="h-72">
+                {loadingUsers ? (
+                  <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+                ) : renderUserList(activeMembers)}
+              </ScrollArea>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader>
+             <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                  <UserX className="h-5 w-5 text-amber-600" />
+                  Inativos e Visitantes
+              </CardTitle>
+               {loadingUsers ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
+            </div>
+          </CardHeader>
+          <CardContent>
+               <ScrollArea className="h-72">
+                 {loadingUsers ? (
+                  <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+                ) : renderUserList(inactiveOrVisitors)}
+               </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Reservas por Categoria</CardTitle>
-            <CardDescription>Total de participações por categoria de membro.</CardDescription>
+            <CardTitle>Reservas por Categoria de Membro</CardTitle>
+            <CardDescription>Total de participações em reservas por cada tipo de plano.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
