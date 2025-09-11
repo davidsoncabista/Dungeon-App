@@ -161,7 +161,7 @@ export default function RoomsPage() {
       const newRoomRef = doc(roomsRef);
       const newRoomId = newRoomRef.id;
 
-      const dataToSave = {
+      const dataToSave: Room = {
         ...data,
         id: newRoomId,
         uid: newRoomId,
