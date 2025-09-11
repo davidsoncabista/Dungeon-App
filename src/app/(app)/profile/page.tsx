@@ -20,9 +20,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Info } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Textarea } from "@/components/ui/textarea"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -32,12 +34,13 @@ const gameTypes = [
 
 
 const profileFormSchema = z.object({
-  name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
+  name: z.string().min(3, { message: "O nome completo é obrigatório." }),
   nickname: z.string().optional(),
-  phone: z.string().optional(),
-  cpf: z.string().optional(),
+  phone: z.string().min(10, { message: "O telefone deve ter pelo menos 10 dígitos." }),
+  cpf: z.string().min(11, { message: "O CPF deve ter 11 dígitos." }),
   rg: z.string().optional(),
-  birthdate: z.date().optional(),
+  address: z.string().min(10, { message: "O endereço deve ter pelo menos 10 caracteres." }),
+  birthdate: z.date({ required_error: "A data de nascimento é obrigatória."}),
   socialMedia: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
   gameTypes: z.array(z.string()).optional(),
 });
@@ -53,13 +56,13 @@ export default function ProfilePage() {
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
-    // Sync form with updated Firestore data, converting null to empty string for inputs
     values: appUser ? {
         name: appUser.name,
         nickname: appUser.nickname || "",
         phone: appUser.phone || "",
         cpf: appUser.cpf || "",
         rg: appUser.rg || "",
+        address: appUser.address || "",
         birthdate: appUser.birthdate ? parseISO(appUser.birthdate) : undefined,
         socialMedia: appUser.socialMedia || "",
         gameTypes: appUser.gameTypes || [],
@@ -69,6 +72,7 @@ export default function ProfilePage() {
         phone: "",
         cpf: "",
         rg: "",
+        address: "",
         birthdate: undefined,
         socialMedia: "",
         gameTypes: [],
@@ -78,21 +82,29 @@ export default function ProfilePage() {
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
     try {
-      const dataToSave = {
+      const dataToSave: Partial<User> = {
         name: data.name,
+        phone: data.phone,
+        cpf: data.cpf,
+        address: data.address,
+        birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
         gameTypes: data.gameTypes || [],
         nickname: data.nickname || null,
-        phone: data.phone || null,
-        cpf: data.cpf || null,
         rg: data.rg || null,
-        birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
         socialMedia: data.socialMedia || null,
       };
 
-      await updateDoc(userDocRef, dataToSave);
+      // Se for o primeiro preenchimento, muda o status para Ativo e categoria para Visitante
+      if (appUser?.status === 'Pendente') {
+        dataToSave.status = 'Ativo';
+        dataToSave.category = 'Visitante';
+      }
+
+      await updateDoc(userDocRef, dataToSave as any);
+      
       toast({
         title: "Sucesso!",
-        description: "Suas informações foram atualizadas.",
+        description: "Suas informações foram atualizadas. " + (appUser?.status === 'Pendente' ? 'Agora você pode escolher um plano de associação!' : ''),
       });
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
@@ -163,6 +175,16 @@ export default function ProfilePage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-8 md:grid-cols-3">
           <div className="md:col-span-2 space-y-8">
+             {appUser?.status === 'Pendente' && (
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Cadastro Incompleto!</AlertTitle>
+                    <AlertDescription>
+                        Para ter acesso ao sistema, por favor, complete seu cadastro abaixo. Os campos marcados com * são obrigatórios.
+                    </AlertDescription>
+                </Alert>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
@@ -174,7 +196,7 @@ export default function ProfilePage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome Completo</FormLabel>
+                      <FormLabel>Nome Completo *</FormLabel>
                       <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -202,7 +224,7 @@ export default function ProfilePage() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Telefone (Opcional)</FormLabel>
+                          <FormLabel>Telefone *</FormLabel>
                           <FormControl><Input placeholder="(91) 99999-9999" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
@@ -214,7 +236,7 @@ export default function ProfilePage() {
                     name="birthdate"
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                        <FormLabel>Data de Nascimento</FormLabel>
+                        <FormLabel>Data de Nascimento *</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
                             <FormControl>
@@ -226,7 +248,7 @@ export default function ProfilePage() {
                                 )}
                                 >
                                 {field.value ? (
-                                    format(field.value, "PPP")
+                                    format(field.value, "PPP", { locale: ptBR })
                                 ) : (
                                     <span>Escolha uma data</span>
                                 )}
@@ -243,6 +265,7 @@ export default function ProfilePage() {
                                 date > new Date() || date < new Date("1900-01-01")
                                 }
                                 initialFocus
+                                locale={ptBR}
                             />
                             </PopoverContent>
                         </Popover>
@@ -250,12 +273,56 @@ export default function ProfilePage() {
                         </FormItem>
                     )}
                 />
+                <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Endereço Completo *</FormLabel>
+                          <FormControl><Textarea placeholder="Rua, Número, Bairro, CEP, Cidade, Estado" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                />
+              </CardContent>
+            </Card>
+
+             <Card>
+              <CardHeader>
+                <CardTitle>Documentos</CardTitle>
+                <CardDescription>Necessário para membros associados. Seus dados estão seguros.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="cpf"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CPF *</FormLabel>
+                          <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="rg"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>RG (Opcional)</FormLabel>
+                          <FormControl><Input placeholder="00.000.000-0" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                 </div>
               </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Preferências de Jogo</CardTitle>
+                    <CardTitle>Preferências de Jogo (Opcional)</CardTitle>
                     <CardDescription>Nos diga o que você mais gosta de jogar!</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -264,7 +331,7 @@ export default function ProfilePage() {
                         name="socialMedia"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Rede Social (Opcional)</FormLabel>
+                            <FormLabel>Rede Social</FormLabel>
                             <FormControl><Input placeholder="Link para seu perfil (Instagram, etc.)" {...field} /></FormControl>
                             <FormMessage />
                             </FormItem>
@@ -317,39 +384,6 @@ export default function ProfilePage() {
                     />
                 </CardContent>
             </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Documentos (Opcional)</CardTitle>
-                <CardDescription>Necessário para membros associados. Seus dados estão seguros.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="cpf"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CPF</FormLabel>
-                          <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="rg"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>RG</FormLabel>
-                          <FormControl><Input placeholder="00.000.000-0" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                 </div>
-              </CardContent>
-            </Card>
 
             <div className="flex justify-end">
                 <Button type="submit" disabled={form.formState.isSubmitting}>
@@ -369,6 +403,7 @@ export default function ProfilePage() {
                           <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <Button variant="outline" onClick={handleUpdateAvatar}>Alterar Foto</Button>
+                      <p className="text-xs text-muted-foreground text-center">Sua foto é sincronizada com a conta Google.</p>
                   </CardContent>
               </Card>
           </div>
@@ -377,5 +412,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-
-    

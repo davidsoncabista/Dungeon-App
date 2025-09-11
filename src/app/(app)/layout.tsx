@@ -32,8 +32,44 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+      return;
     }
-  }, [user, loading, router]);
+
+    if (!userLoading && currentUser) {
+        // Regra 1: Forçar preenchimento do perfil para novos usuários
+        // Se o status é Pendente (novo usuário) e ele não está na página de perfil, force-o para lá.
+        if (currentUser.status === 'Pendente' && pathname !== '/profile') {
+            router.push('/profile');
+            return;
+        }
+
+        // Regra 2: Controle de Acesso para Visitantes
+        // Se o status já não é mais pendente (perfil preenchido) mas a categoria é Visitante
+        if (currentUser.status !== 'Pendente' && currentUser.category === 'Visitante') {
+            if (!visitorRoutes.includes(pathname)) {
+                router.push('/subscribe');
+                return;
+            }
+        }
+        
+        // Regra 3: Controle de Acesso para Membros
+        if (currentUser.role === 'Membro') {
+            const allowedRoutes = [...memberRoutes, ...visitorRoutes];
+            if (adminRoutes.some(p => pathname.startsWith(p))) {
+                 router.push('/dashboard');
+                 return;
+            }
+        }
+        
+        // Regra 4: Controle de acesso para Admin/Editor/Revisor
+        if (currentUser.role === 'Editor' || currentUser.role === 'Revisor') {
+             if (pathname === '/admin') {
+                router.push('/dashboard');
+                return;
+            }
+        }
+    }
+  }, [user, loading, userLoading, currentUser, pathname, router]);
 
 
   if (loading || userLoading || !user) {
@@ -58,29 +94,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   if (error || userError) {
     // Idealmente, aqui teríamos uma página de erro mais elaborada
     return <div>Error: {error?.message || userError?.message}</div>;
-  }
-  
-  if (currentUser) {
-    const userRole = currentUser.role;
-    const userCategory = currentUser.category;
-
-    if (userCategory === 'Visitante') {
-        if (!visitorRoutes.includes(pathname)) {
-            router.push('/subscribe');
-            return null; // Retorna null enquanto redireciona
-        }
-    } else if (userRole === 'Membro') {
-        const allowedRoutes = [...memberRoutes, ...visitorRoutes];
-        if (!allowedRoutes.includes(pathname)) {
-             router.push('/dashboard');
-             return null; // Retorna null enquanto redireciona
-        }
-    } else if (userRole === 'Revisor' || userRole === 'Editor') {
-         if (pathname === '/admin') {
-            router.push('/dashboard');
-            return null; // Retorna null enquanto redireciona
-        }
-    }
   }
   
   return (

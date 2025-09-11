@@ -23,10 +23,15 @@ export const createUserDocument = functions
       email: user.email || "",
       name: user.displayName || "Novo Aventureiro",
       avatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
-      category: "Visitante", // Categoria inicial padrão
-      status: "Pendente",     // Status inicial padrão
+      category: "Visitante", // Categoria inicial, mas o status 'Pendente' força o cadastro
+      status: "Pendente",     // Status inicial que força o preenchimento do perfil
       role: "Membro",         // Nível de acesso padrão
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Os campos obrigatórios (cpf, phone, birthdate, address) ficam vazios/nulos
+      cpf: null,
+      phone: null,
+      birthdate: null,
+      address: null,
     };
 
     try {

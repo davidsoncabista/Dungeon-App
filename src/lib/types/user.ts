@@ -20,6 +20,7 @@ export interface User {
   cpf?: string;
   rg?: string;
   birthdate?: string; // Formato YYYY-MM-DD
+  address?: string;
   socialMedia?: string;
   gameTypes?: GameType[];
 }
