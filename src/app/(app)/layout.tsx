@@ -1,8 +1,8 @@
 
 "use client"
 
-import type { ReactNode } from "react";
-import { usePathname, useRouter, redirect } from 'next/navigation';
+import { ReactNode, useEffect } from "react";
+import { usePathname, useRouter } from 'next/navigation';
 import { AppHeader } from "@/components/app/header";
 import { auth } from '@/lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -29,7 +29,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   
   const currentUser = appUser?.[0];
 
-  if (loading || userLoading) {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+
+  if (loading || userLoading || !user) {
     return (
         <div className="flex flex-col min-h-screen w-full bg-muted/40">
             <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -49,33 +56,29 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (error || userError) {
+    // Idealmente, aqui teríamos uma página de erro mais elaborada
     return <div>Error: {error?.message || userError?.message}</div>;
   }
   
-  if (!user) {
-    redirect('/login');
-    return null;
-  }
-
   if (currentUser) {
     const userRole = currentUser.role;
     const userCategory = currentUser.category;
 
     if (userCategory === 'Visitante') {
         if (!visitorRoutes.includes(pathname)) {
-            redirect('/subscribe');
-            return null;
+            router.push('/subscribe');
+            return null; // Retorna null enquanto redireciona
         }
     } else if (userRole === 'Membro') {
         const allowedRoutes = [...memberRoutes, ...visitorRoutes];
         if (!allowedRoutes.includes(pathname)) {
-            redirect('/dashboard');
-            return null;
+             router.push('/dashboard');
+             return null; // Retorna null enquanto redireciona
         }
     } else if (userRole === 'Revisor' || userRole === 'Editor') {
          if (pathname === '/admin') {
-            redirect('/dashboard');
-            return null;
+            router.push('/dashboard');
+            return null; // Retorna null enquanto redireciona
         }
     }
   }
