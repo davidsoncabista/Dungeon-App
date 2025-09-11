@@ -158,18 +158,15 @@ export default function RoomsPage() {
 
   const handleCreateRoom = async (data: Omit<Room, 'id' | 'uid'>) => {
     try {
-      // Gera um novo ID de documento antecipadamente
       const newRoomRef = doc(roomsRef);
       const newRoomId = newRoomRef.id;
 
-      // Adiciona os IDs ao objeto de dados antes de salvar
       const dataToSave = {
         ...data,
         id: newRoomId,
         uid: newRoomId,
       };
 
-      // Salva o documento com o ID já definido
       await setDoc(newRoomRef, dataToSave);
 
       toast({ title: "Sala Criada!", description: `A sala "${data.name}" foi adicionada com sucesso.` });
@@ -275,3 +272,5 @@ export default function RoomsPage() {
     </div>
   )
 }
+
+    

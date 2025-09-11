@@ -11,7 +11,9 @@ export interface Booking {
   endTime: string;
   title?: string; // Título da sessão
   description?: string; // Descrição opcional
-  participants: Pick<User, 'uid' | 'name' | 'avatar' | 'id'>[];
+  participants: string[]; // Array de UIDs dos participantes
   guests?: number; // Representa não-associados
   status: "Confirmada" | "Pendente" | "Cancelada";
 }
+
+    

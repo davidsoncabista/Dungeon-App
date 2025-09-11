@@ -6,35 +6,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import type { Booking } from "@/lib/types/booking"
 import { BookingEditForm } from "@/components/app/booking-edit-form"
 import { useToast } from "@/hooks/use-toast"
-import { getRoomById, updateBooking } from "@/lib/mock-service"
+import { getFirestore, doc, updateDoc } from "firebase/firestore"
+import { app } from "@/lib/firebase"
+import { useDocumentData } from "react-firebase-hooks/firestore"
+import type { Room } from "@/lib/types/room"
 
 // --- Componente de Edição de Reserva (Modal) ---
-export const EditBookingModal = ({ booking, allBookings, onBookingUpdated, onOpenChange, children }: { booking: Booking; allBookings: Booking[]; onBookingUpdated: (updatedBooking: Booking) => void; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => {
+export const EditBookingModal = ({ booking, onOpenChange, children }: { booking: Booking; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => {
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
-    const room = getRoomById(booking.roomId);
+    const firestore = getFirestore(app);
+    const roomRef = doc(firestore, 'rooms', booking.roomId);
+    const [room] = useDocumentData<Room>(roomRef, { idField: 'id' });
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
         onOpenChange(open);
     };
 
-    const handleSuccess = (data: Partial<Omit<Booking, 'id' | 'status'>>) => {
-        const updatedBooking = updateBooking(booking.id, data);
-        if (updatedBooking) {
-            onBookingUpdated(updatedBooking);
+    const handleSuccess = async (data: Partial<Omit<Booking, 'id'>>) => {
+        const bookingRef = doc(firestore, 'bookings', booking.id);
+        try {
+            await updateDoc(bookingRef, data);
             toast({
                 title: "Reserva Atualizada!",
                 description: `Sua reserva para a ${room?.name} foi modificada.`,
             });
-        } else {
-            toast({
+            handleOpenChange(false);
+        } catch (error) {
+             toast({
                 title: "Erro!",
                 description: "Não foi possível atualizar a reserva.",
                 variant: "destructive",
             });
         }
-        handleOpenChange(false);
     };
 
     return (
@@ -49,7 +54,6 @@ export const EditBookingModal = ({ booking, allBookings, onBookingUpdated, onOpe
                     <BookingEditForm
                         booking={booking}
                         room={room}
-                        allBookings={allBookings}
                         onSuccess={handleSuccess}
                         onCancel={() => handleOpenChange(false)}
                     />
@@ -58,3 +62,5 @@ export const EditBookingModal = ({ booking, allBookings, onBookingUpdated, onOpe
         </Dialog>
     );
 };
+
+    

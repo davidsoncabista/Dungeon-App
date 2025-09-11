@@ -2,38 +2,81 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableHeader, TableRow, TableCell } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getAuthenticatedUser, getBookings } from "@/lib/mock-service"
-import { isFuture, isPast } from "date-fns"
+import { isFuture, isPast, parseISO } from "date-fns"
 import { CalendarPlus, CalendarX } from "lucide-react"
 import { BookingRow } from "@/components/app/my-bookings/booking-row"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { auth } from "@/lib/firebase"
-import { useEffect, useState } from "react"
+import { app, auth } from "@/lib/firebase"
+import { useMemo } from "react"
 import type { Booking } from "@/lib/types/booking"
+import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
+import { useCollectionData } from "react-firebase-hooks/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function MyBookingsPage() {
-  const [user] = useAuthState(auth);
-  const [allUserBookings, setAllUserBookings] = useState<Booking[]>([]);
-  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([]);
-  const [pastBookings, setPastBookings] = useState<Booking[]>([]);
+  const [user, loadingAuth] = useAuthState(auth);
   
-  useEffect(() => {
-    if(user) {
-      const bookings = getBookings()
-        .filter(b => b.participants.some(p => p.uid === user.uid))
-        .sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime());
-      
-      setAllUserBookings(bookings);
-      setUpcomingBookings(bookings.filter(b => isFuture(new Date(`${b.date}T${b.startTime}`))));
-      setPastBookings(bookings.filter(b => isPast(new Date(`${b.date}T${b.startTime}`))));
-    }
-  }, [user]);
+  const firestore = getFirestore(app);
+  const bookingsRef = collection(firestore, 'bookings');
+  
+  // Query for bookings where the current user is a participant
+  const userBookingsQuery = useMemo(() => 
+    user ? query(bookingsRef, where('participants', 'array-contains', user.uid), orderBy('date', 'desc')) : null, 
+  [user, bookingsRef]);
 
-  if (!user) {
-    // Pode mostrar um loader ou uma mensagem
-    return <div>Carregando suas reservas...</div>;
+  const [allUserBookings, loadingBookings, error] = useCollectionData<Booking>(userBookingsQuery, { idField: 'id' });
+
+  const { upcomingBookings, pastBookings } = useMemo(() => {
+    if (!allUserBookings) {
+        return { upcomingBookings: [], pastBookings: [] };
+    }
+    const now = new Date();
+    return {
+      upcomingBookings: allUserBookings.filter(b => isFuture(parseISO(`${b.date}T${b.endTime}`))).sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime()),
+      pastBookings: allUserBookings.filter(b => isPast(parseISO(`${b.date}T${b.endTime}`))).sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime()),
+    }
+  }, [allUserBookings]);
+
+  const renderBookingTable = (bookings: Booking[], isLoading: boolean, emptyMessage: string) => {
+    if (isLoading) {
+      return Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={5}>
+            <Skeleton className="h-16 w-full" />
+          </TableCell>
+        </TableRow>
+      ));
+    }
+    if (error) {
+      return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar reservas: {error.message}</TableCell></TableRow>;
+    }
+    if (bookings.length === 0) {
+      return <TableRow><TableCell colSpan={5} className="h-24 text-center p-4 align-middle">{emptyMessage}</TableCell></TableRow>;
+    }
+    return bookings.map(booking => <BookingRow key={booking.id} booking={booking} />);
+  };
+
+  if (loadingAuth) {
+    return (
+        <div className="grid gap-8">
+            <div>
+                <Skeleton className="h-10 w-1/3 mb-2" />
+                <Skeleton className="h-5 w-1/2" />
+            </div>
+             <Skeleton className="h-10 w-[400px]" />
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-48 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
   }
   
   return (
@@ -72,15 +115,7 @@ export default function MyBookingsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {upcomingBookings.length > 0 ? (
-                    upcomingBookings.map(booking => <BookingRow key={booking.id} booking={booking} />)
-                  ) : (
-                    <TableRow>
-                      <td colSpan={5} className="h-24 text-center p-4 align-middle">
-                        Você não possui nenhuma reserva futura.
-                      </td>
-                    </TableRow>
-                  )}
+                  {renderBookingTable(upcomingBookings, loadingBookings, "Você não possui nenhuma reserva futura.")}
                 </TableBody>
               </Table>
             </CardContent>
@@ -104,15 +139,7 @@ export default function MyBookingsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pastBookings.length > 0 ? (
-                    pastBookings.map(booking => <BookingRow key={booking.id} booking={booking} />)
-                  ) : (
-                    <TableRow>
-                      <td colSpan={5} className="h-24 text-center p-4 align-middle">
-                        Nenhuma reserva encontrada no seu histórico.
-                      </td>
-                    </TableRow>
-                  )}
+                  {renderBookingTable(pastBookings, loadingBookings, "Nenhuma reserva encontrada no seu histórico.")}
                 </TableBody>
               </Table>
             </CardContent>
@@ -122,3 +149,5 @@ export default function MyBookingsPage() {
     </div>
   )
 }
+
+    

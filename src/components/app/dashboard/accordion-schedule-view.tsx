@@ -14,7 +14,7 @@ import type { Room } from "@/lib/types/room"
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
 
 // --- Componente da Agenda (Acordeão - Mobile/Portrait) ---
-export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
+export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[] }) => {
     return (
         <Accordion type="multiple" className="w-full space-y-2">
             {rooms.map((room, roomIndex) => {
@@ -34,7 +34,7 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
                             <div className="space-y-4 pt-2">
                                 {roomBookings.length > 0 ? (
                                     roomBookings.map(booking => (
-                                        <BookingDetailsModal key={booking.id} booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
+                                        <BookingDetailsModal key={booking.id} booking={booking} onOpenChange={setModalOpen}>
                                             <div className="p-3 rounded-md border cursor-pointer hover:bg-muted/50">
                                                 <p className="font-semibold">{booking.title || 'Reserva Rápida'}</p>
                                                 <p className="text-sm text-muted-foreground"><Clock className="inline h-3 w-3 mr-1"/>{booking.startTime} - {booking.endTime}</p>
@@ -45,7 +45,7 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
                                 ) : (
                                     <p className="text-sm text-center text-muted-foreground py-4">Nenhuma reserva para esta sala hoje.</p>
                                 )}
-                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
+                                <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
                                     <Button className="w-full mt-2">
                                         <PlusCircle className="mr-2 h-4 w-4" />
                                         Reservar {room.name}
@@ -59,3 +59,5 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
         </Accordion>
     )
 }
+
+    

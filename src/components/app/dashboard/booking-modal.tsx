@@ -7,27 +7,45 @@ import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
 import { BookingForm } from "@/components/app/booking-form"
 import { useToast } from "@/hooks/use-toast"
-import { createBooking } from "@/lib/mock-service"
+import { getFirestore, collection, doc, setDoc } from "firebase/firestore"
+import { app } from "@/lib/firebase"
 
 // --- Componente de Reserva (Modal) ---
-export const BookingModal = ({ room, date, onOpenChange, onBookingCreated, allBookings, children }: { room: Room, date: Date, onOpenChange: (open: boolean) => void, onBookingCreated: (newBookings: Booking) => void, allBookings: Booking[], children: React.ReactNode }) => {
+export const BookingModal = ({ room, date, onOpenChange, allBookings, children }: { room: Room, date: Date, onOpenChange: (open: boolean) => void, allBookings: Booking[], children: React.ReactNode }) => {
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
+    const firestore = getFirestore(app);
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
         onOpenChange(open);
     }
     
-    const handleSuccess = (data: Omit<Booking, 'id' | 'status'>) => {
-        const createdBooking = createBooking(data);
+    const handleSuccess = async (data: Omit<Booking, 'id' | 'status'>) => {
+        const bookingsRef = collection(firestore, "bookings");
+        const newBookingRef = doc(bookingsRef);
         
-        handleOpenChange(false);
-        toast({
-            title: "Reserva Confirmada!",
-            description: `Sua reserva para a ${room.name} foi agendada com sucesso.`,
-        });
-        onBookingCreated(createdBooking);
+        const newBooking: Booking = {
+            ...data,
+            id: newBookingRef.id,
+            status: 'Confirmada',
+        };
+
+        try {
+            await setDoc(newBookingRef, newBooking);
+            handleOpenChange(false);
+            toast({
+                title: "Reserva Confirmada!",
+                description: `Sua reserva para a ${room.name} foi agendada com sucesso.`,
+            });
+        } catch (error) {
+            console.error("Erro ao criar reserva:", error);
+             toast({
+                title: "Erro!",
+                description: "Não foi possível criar a reserva.",
+                variant: "destructive"
+            });
+        }
     }
 
     return (
@@ -51,3 +69,5 @@ export const BookingModal = ({ room, date, onOpenChange, onBookingCreated, allBo
         </Dialog>
     )
 }
+
+    

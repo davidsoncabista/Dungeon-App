@@ -10,7 +10,7 @@ import type { Room } from "@/lib/types/room"
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
 
 // --- Componente da Agenda (Timeline - Desktop/Landscape) ---
-export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBookingCreated, onBookingUpdated }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, onBookingCreated: (booking: Booking) => void, onBookingUpdated: (booking: Booking) => void }) => {
+export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[] }) => {
     
     const totalHours = 24;
     const hourColumns = 4; // Cada hora tem 4 colunas (intervalos de 15 min)
@@ -72,20 +72,19 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBo
                         <div className="w-32 shrink-0 pr-4 font-semibold text-right">{room.name}</div>
                         <div className="grid flex-1 h-14 bg-muted/50 rounded-lg relative overflow-hidden" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
                             
-                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} onBookingCreated={onBookingCreated} allBookings={bookings}>
+                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
                                 <button className="absolute inset-0 w-full h-full z-0" aria-label={`Reservar ${room.name}`}/>
                             </BookingModal>
                         
                             {roomBookings.map((booking) => {
                                 const style = calculateBookingStyle(booking);
                                 const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
-                                const organizer = booking.participants.find(p => p.uid === booking.organizerId);
-
+                                
                                 return (
                                     <div key={`${booking.id}-${booking.date}`} style={style} className="h-full p-1 z-10">
-                                        <BookingDetailsModal booking={booking} allBookings={bookings} onBookingUpdated={onBookingUpdated} onOpenChange={setModalOpen}>
+                                        <BookingDetailsModal booking={booking} onOpenChange={setModalOpen}>
                                             <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
-                                                <p className="font-bold whitespace-nowrap">{booking.title || organizer?.name.split(' ')[0]}</p>
+                                                <p className="font-bold whitespace-nowrap">{booking.title || 'Reserva Rápida'}</p>
                                                 <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
                                             </div>
                                         </BookingDetailsModal>
@@ -100,3 +99,5 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, onBo
         </div>
     )
 }
+
+    

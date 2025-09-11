@@ -3,7 +3,6 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getBookings, getRooms, getUserById, deleteBooking, getRoomById } from "@/lib/mock-service"
 import { Clock, Users, User, Calendar as CalendarIcon, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter, Trash2 } from "lucide-react"
 import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -24,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRange } from "react-day-picker"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth, app } from "@/lib/firebase"
-import { getFirestore, collection, doc, updateDoc, arrayUnion, query } from "firebase/firestore"
+import { getFirestore, collection, doc, updateDoc, arrayUnion, query, where, orderBy, deleteDoc } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 
 
@@ -50,9 +49,7 @@ export default function DashboardPage() {
   const [user, loadingAuth] = useAuthState(auth);
   const { toast } = useToast();
   
-  const [allBookings, setAllBookings] = useState<Booking[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(startOfToday());
   const [modalOpen, setModalOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [unreadNotice, setUnreadNotice] = useState<Notice | null>(null);
@@ -62,9 +59,23 @@ export default function DashboardPage() {
 
   // --- Firestore Data ---
   const firestore = getFirestore(app);
+  
+  // Notices
   const noticesRef = collection(firestore, 'notices');
-  const noticesQuery = query(noticesRef);
-  const [allNotices, loadingNotices, errorNotices] = useCollectionData<Notice>(noticesQuery, { idField: 'id' });
+  const [allNotices, loadingNotices] = useCollectionData<Notice>(query(noticesRef), { idField: 'id' });
+
+  // Bookings
+  const bookingsRef = collection(firestore, 'bookings');
+  const [allBookings, loadingBookings] = useCollectionData<Booking>(query(bookingsRef, orderBy('date'), orderBy('startTime')), { idField: 'id' });
+
+  // Rooms
+  const roomsRef = collection(firestore, 'rooms');
+  const [allRooms, loadingRooms] = useCollectionData<Room>(query(roomsRef, orderBy('name')), { idField: 'id' });
+
+  // Users
+  const usersRef = collection(firestore, 'users');
+  const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy('name')), { idField: 'id' });
+
 
   // Handle notices
   useEffect(() => {
@@ -82,14 +93,10 @@ export default function DashboardPage() {
     }
   }, [user, loadingAuth, allNotices, loadingNotices, modalOpen]);
 
-  // Load initial data (non-firestore)
+  // Handle client-side hydration
   useEffect(() => {
-    const allRawBookings = getBookings();
-    setSelectedDate(startOfToday());
-    setAllBookings(allRawBookings.sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime()));
-    setRooms(getRooms().filter(r => r.status === "Disponível"));
     setIsHydrated(true);
-  }, []); // Dependência vazia para carregar apenas uma vez
+  }, []);
 
 
   const handleDismissNotice = async (noticeId: string, dismissForever: boolean) => {
@@ -111,27 +118,14 @@ export default function DashboardPage() {
     setUnreadNotice(null);
   };
   
-  const handleBookingCreated = (newBooking: Booking) => {
-    setAllBookings(prevBookings => [...prevBookings, newBooking].sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime()));
-  }
-
-  const handleBookingUpdated = (updatedBooking: Booking) => {
-      setAllBookings(prevBookings => 
-          prevBookings
-              .map(b => b.id === updatedBooking.id ? updatedBooking : b)
-              .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime())
-      );
-  };
-
-  const handleBookingDeleted = (bookingId: string) => {
-    const success = deleteBooking(bookingId);
-    if(success) {
-      setAllBookings(prev => prev.filter(b => b.id !== bookingId));
+  const handleBookingDeleted = async (bookingId: string) => {
+    try {
+      await deleteDoc(doc(firestore, "bookings", bookingId));
       toast({
         title: "Reserva Cancelada!",
         description: "A reserva foi cancelada com sucesso.",
       });
-    } else {
+    } catch (error) {
        toast({
         title: "Erro!",
         description: "Não foi possível cancelar a reserva.",
@@ -141,7 +135,7 @@ export default function DashboardPage() {
   }
   
   const bookingsForSelectedDay = useMemo(() => {
-    if (!selectedDate) return [];
+    if (!selectedDate || !allBookings) return [];
     
     const selectedDay = format(selectedDate, "yyyy-MM-dd");
     const previousDay = format(subDays(selectedDate, 1), "yyyy-MM-dd");
@@ -162,6 +156,7 @@ export default function DashboardPage() {
 
 
   const bookingsForPeriod = useMemo(() => {
+    if (!allBookings) return [];
     const today = startOfToday();
     let start: Date;
     let end: Date;
@@ -199,9 +194,11 @@ export default function DashboardPage() {
 
 
   const sortedBookings = useMemo(() => {
+    if (!bookingsForPeriod || !allRooms || !allUsers || !user) return [];
+
     const sortableItems = bookingsForPeriod.map(b => {
-        const room = getRoomById(b.roomId);
-        const organizer = getUserById(b.organizerId); // This might fail as users are not in mock-service
+        const room = allRooms.find(r => r.id === b.roomId);
+        const organizer = allUsers.find(u => u.uid === b.organizerId);
         return {
             ...b,
             roomName: room?.name ?? 'N/A',
@@ -228,7 +225,7 @@ export default function DashboardPage() {
         });
     }
     return sortableItems;
-  }, [bookingsForPeriod, sortConfig, user]);
+  }, [bookingsForPeriod, sortConfig, user, allRooms, allUsers]);
 
   const requestSort = (key: SortableBookingKey) => {
     let direction: SortDirection = 'ascending';
@@ -239,36 +236,35 @@ export default function DashboardPage() {
   }
 
   const renderContent = () => {
-    if (!isHydrated || !selectedDate) {
+    if (!isHydrated || !selectedDate || loadingRooms || loadingBookings) {
         return <div className="space-y-4">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-48 w-full" />
         </div>;
     }
+    const availableRooms = allRooms?.filter(r => r.status === "Disponível") ?? [];
 
     return (
         <>
             <div className="hidden sm:block">
                 <ScrollArea className="w-full whitespace-nowrap">
                     <ScheduleView 
-                       rooms={rooms}
+                       rooms={availableRooms}
                        bookings={bookingsForSelectedDay}
                        selectedDate={selectedDate}
                        setModalOpen={setModalOpen}
-                       onBookingCreated={handleBookingCreated}
-                       onBookingUpdated={handleBookingUpdated}
+                       allBookings={allBookings ?? []}
                    />
                    <ScrollBar orientation="horizontal" />
                 </ScrollArea>
             </div>
             <div className="block sm:hidden">
                  <AccordionScheduleView
-                    rooms={rooms}
+                    rooms={availableRooms}
                     bookings={bookingsForSelectedDay}
                     selectedDate={selectedDate}
                     setModalOpen={setModalOpen}
-                    onBookingCreated={handleBookingCreated}
-                    onBookingUpdated={handleBookingUpdated}
+                    allBookings={allBookings ?? []}
                 />
             </div>
         </>
@@ -450,7 +446,18 @@ export default function DashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {sortedBookings.length > 0 ? sortedBookings.map(booking => {
+                        {(loadingBookings || loadingRooms || loadingUsers) ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-28" /></TableCell>
+                                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-10" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : sortedBookings.length > 0 ? sortedBookings.map(booking => {
                             const isAdmin = false; // Substituir pela lógica de role do usuário
                             const canEdit = user?.uid === booking.organizerId || isAdmin;
 
@@ -477,8 +484,6 @@ export default function DashboardPage() {
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                     <EditBookingModal 
                                                         booking={booking} 
-                                                        allBookings={allBookings} 
-                                                        onBookingUpdated={handleBookingUpdated} 
                                                         onOpenChange={setModalOpen}
                                                     >
                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -512,3 +517,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    

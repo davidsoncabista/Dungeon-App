@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.0 - 2025-09-17 10:00:00 - studio-ai
+
+- **feat(arquitetura): Adota estratégia de 'Fonte da Verdade Única' para sincronizar UI e DB**
+  - **Refatoração Global do Estado:** Eliminada a manipulação manual do estado local (useState) após operações de CRUD (Criação, Edição, Exclusão) em todo o aplicativo.
+  - **Fonte da Verdade Única:** A aplicação agora depende exclusivamente do hook `useCollectionData` do `react-firebase-hooks` para manter a interface sincronizada em tempo real com o Firestore. Isso significa que a UI "reage" automaticamente às mudanças no banco de dados, em vez de ser atualizada de forma otimista e manual.
+  - **Resolução de Erros de Chave (`key`):** A nova abordagem resolve de forma definitiva a causa raiz dos erros `Each child in a list should have a unique "key" prop`, garantindo que os dados renderizados sempre tenham um ID consistente fornecido diretamente pelo hook (`{ idField: 'id' }`).
+  - **Estabilidade e Confiabilidade:** Essa mudança de arquitetura torna o código mais simples, robusto e previsível, eliminando uma classe inteira de bugs relacionados à dessincronização entre o estado da UI e o estado do banco de dados.
+
 ## v0.5.0 - 2025-09-16 10:00:00 - davidson.dev.br
 
 - **Refatoração do Perfil de Usuário e Fluxo de Onboarding**:
@@ -61,3 +69,5 @@
   - `README.md`: Para detalhar as funcionalidades do aplicativo.
   - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
   - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
+
+    

@@ -159,7 +159,7 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
 }
 
 // --- Componente da Linha da Tabela ---
-function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: (title: string, description: string) => void; }) {
+function UserTableRow({ user }: { user: User; }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const firestore = getFirestore(app);
     const { toast } = useToast();
@@ -167,7 +167,7 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
     const handleAction = async (action: () => Promise<void>, title: string, description: string) => {
         try {
             await action();
-            onActionSuccess(title, description);
+            toast({ title, description });
         } catch (error: any) {
             console.error(`Erro ao executar ação: ${title}`, error);
             toast({
@@ -320,17 +320,11 @@ function UserTableRow({ user, onActionSuccess }: { user: User; onActionSuccess: 
 
 // --- Página Principal ---
 export default function UsersPage() {
-  const { toast } = useToast();
-  
   const firestore = getFirestore(app);
   const usersRef = collection(firestore, 'users');
   const usersQuery = query(usersRef, orderBy("name"));
   const [users, loading, error] = useCollectionData<User>(usersQuery, { idField: 'id' });
 
-  const handleActionSuccess = (title: string, description: string) => {
-      toast({ title, description });
-  };
-  
   const renderContent = () => {
     if (loading) {
         return Array.from({ length: 5 }).map((_, i) => (
@@ -362,9 +356,8 @@ export default function UsersPage() {
     
     return users.map(user => (
         <UserTableRow
-            key={user.uid}
+            key={user.id}
             user={user}
-            onActionSuccess={handleActionSuccess}
         />
     ));
   }
@@ -406,4 +399,5 @@ export default function UsersPage() {
     </div>
   )
 }
- 
+
+    

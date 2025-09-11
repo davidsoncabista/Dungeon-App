@@ -21,26 +21,25 @@ import { Check, ChevronsUpDown, Users, Calendar, AlertCircle } from "lucide-reac
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getAuthenticatedUser, getUsers } from "@/lib/mock-service"
 import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
-import { format, parseISO, parse, isBefore, addMinutes } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { getBookingDurationAndEnd } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DialogFooter } from "@/components/ui/dialog"
-import { useState, useMemo } from "react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-const allUsers = getUsers();
-const currentUser = getAuthenticatedUser();
+import { useMemo } from "react"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { useCollectionData } from "react-firebase-hooks/firestore"
+import { app, auth } from "@/lib/firebase"
+import { getFirestore, collection, query, orderBy } from "firebase/firestore"
+import type { User } from "@/lib/types/user"
+import { Skeleton } from "../ui/skeleton"
 
 const editBookingFormSchema = (maxCapacity: number) => z.object({
   title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }).max(50, { message: "O título não pode ter mais de 50 caracteres."}),
   description: z.string().max(200, {message: "A descrição não pode ter mais de 200 caracteres."}).optional(),
   participants: z.array(z.string()).min(1, { message: "Você deve selecionar pelo menos um participante (você mesmo)." }),
   guests: z.coerce.number().int().min(0, {message: "O número de convidados não pode ser negativo."}).optional().default(0),
-  // startTime e endTime podem não estar presentes se a lógica de edição for diferente
 }).refine(data => (data.participants.length + (data.guests ?? 0)) <= maxCapacity, {
     message: `O número total de participantes (membros + convidados) não pode exceder a capacidade da sala (${maxCapacity}).`,
     path: ["guests"],
@@ -49,12 +48,17 @@ const editBookingFormSchema = (maxCapacity: number) => z.object({
 interface BookingEditFormProps {
     booking: Booking;
     room: Room;
-    allBookings: Booking[];
     onSuccess: (data: Partial<Omit<Booking, 'id'>>) => void;
     onCancel: () => void;
 }
 
 export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingEditFormProps) {
+    const [user] = useAuthState(auth);
+    const firestore = getFirestore(app);
+    const usersRef = collection(firestore, 'users');
+    const usersQuery = query(usersRef, orderBy("name"));
+    const [allUsers, loadingUsers] = useCollectionData<User>(usersQuery, { idField: 'id' });
+
     const formSchema = editBookingFormSchema(room.capacity);
     type BookingFormValues = z.infer<typeof formSchema>;
 
@@ -63,7 +67,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
         defaultValues: {
             title: booking.title || "",
             description: booking.description || "",
-            participants: booking.participants.map(p => p.id),
+            participants: booking.participants || [],
             guests: booking.guests || 0,
         },
     });
@@ -71,15 +75,28 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
     const formattedDate = format(parseISO(booking.date), "PPP", { locale: ptBR });
     const totalParticipants = (form.watch("participants")?.length || 0) + (form.watch("guests") || 0);
 
+    const selectedParticipantDetails = useMemo(() => {
+        if (!allUsers || !form.watch("participants")) return [];
+        return form.watch("participants").map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
+    }, [allUsers, form.watch("participants")]);
+
     function onSubmit(data: BookingFormValues) {
-        const participantDetails = data.participants.map(id => allUsers.find(u => u.id === id)).filter(Boolean) as any[];
-        
-        const updatedData = {
-            ...data,
-            participants: participantDetails,
-        };
-        
-        onSuccess(updatedData);
+        onSuccess(data);
+    }
+
+    if (loadingUsers || !allUsers) {
+        return (
+            <div className="space-y-6">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                 <DialogFooter>
+                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-24" />
+                </DialogFooter>
+            </div>
+        )
     }
 
     return (
@@ -152,10 +169,9 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                                     )}
                                     >
                                         <div className="flex gap-1 flex-wrap">
-                                            {field.value.map(userId => {
-                                                const user = allUsers.find(u => u.id === userId);
-                                                return <Badge variant="secondary" key={userId}>{user?.name.split(" ")[0]}</Badge>
-                                            })}
+                                            {selectedParticipantDetails.map(p => (
+                                                <Badge variant="secondary" key={p.uid}>{p.name.split(" ")[0]}</Badge>
+                                            ))}
                                             {field.value.length === 0 && "Selecione os participantes"}
                                         </div>
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -168,26 +184,26 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                                     <CommandList>
                                         <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
                                         <CommandGroup>
-                                            {allUsers.map((user) => (
+                                            {allUsers.map((u) => (
                                             <CommandItem
-                                                value={user.name}
-                                                key={user.id}
+                                                value={u.name}
+                                                key={u.uid}
                                                 onSelect={() => {
                                                     const currentValues = field.value || [];
-                                                    const newValue = currentValues.includes(user.id)
-                                                        ? currentValues.filter(id => id !== user.id)
-                                                        : [...currentValues, user.id];
+                                                    const newValue = currentValues.includes(u.uid)
+                                                        ? currentValues.filter(id => id !== u.uid)
+                                                        : [...currentValues, u.uid];
                                                     field.onChange(newValue);
                                                 }}
-                                                disabled={user.id === currentUser.id}
+                                                disabled={u.uid === user?.uid}
                                             >
                                                 <Check
                                                 className={cn(
                                                     "mr-2 h-4 w-4",
-                                                    field.value.includes(user.id) ? "opacity-100" : "opacity-0"
+                                                    field.value.includes(u.uid) ? "opacity-100" : "opacity-0"
                                                 )}
                                                 />
-                                                {user.name}
+                                                {u.name}
                                             </CommandItem>
                                             ))}
                                         </CommandGroup>
