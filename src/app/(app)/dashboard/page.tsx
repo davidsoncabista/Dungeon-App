@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Users, User, Calendar as CalendarIcon, Pencil, Info, ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown, MoreHorizontal, Filter, Trash2 } from "lucide-react"
-import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval } from "date-fns"
+import { format, parseISO, startOfToday, parse, isBefore, addDays, subDays, isWithinInterval, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import React, { useState, useEffect, useMemo } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -45,6 +45,8 @@ const dateRangeOptions: { value: DateRangePreset; label: string }[] = [
     { value: 'last7', label: 'Últimos 7 dias' },
     { value: 'custom', label: 'Período Personalizado' },
 ];
+
+const MAX_BOOKING_DAYS_IN_ADVANCE = 15;
 
 export default function DashboardPage() {
   const [user, loadingAuth] = useAuthState(auth);
@@ -296,6 +298,10 @@ export default function DashboardPage() {
     return <ArrowUpDown className="ml-2 h-4 w-4" />;
   };
 
+  const isToday = selectedDate ? isSameDay(selectedDate, startOfToday()) : false;
+  const lastDay = addDays(startOfToday(), MAX_BOOKING_DAYS_IN_ADVANCE);
+  const isLastDay = selectedDate ? isSameDay(selectedDate, lastDay) : false;
+
   if (loadingAuth || !user) {
     return null
   }
@@ -327,7 +333,7 @@ export default function DashboardPage() {
                         </CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => selectedDate && setSelectedDate(subDays(selectedDate, 1))}>
+                        <Button variant="outline" size="icon" onClick={() => selectedDate && setSelectedDate(subDays(selectedDate, 1))} disabled={isToday}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <Popover>
@@ -348,13 +354,13 @@ export default function DashboardPage() {
                                 mode="single"
                                 selected={selectedDate || undefined}
                                 onSelect={(date) => date && setSelectedDate(date)}
-                                disabled={{ after: addDays(new Date(), 15) }}
+                                disabled={{ before: startOfToday(), after: lastDay }}
                                 initialFocus
                                 locale={ptBR}
                                 />
                             </PopoverContent>
                         </Popover>
-                         <Button variant="outline" size="icon" onClick={() => selectedDate && setSelectedDate(addDays(selectedDate, 1))}>
+                         <Button variant="outline" size="icon" onClick={() => selectedDate && setSelectedDate(addDays(selectedDate, 1))} disabled={isLastDay}>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>
