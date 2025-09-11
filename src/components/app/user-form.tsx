@@ -95,10 +95,14 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
 
   function onSubmit(data: UserFormValues) {
     const dataToSave = {
-        ...data,
-        nickname: data.nickname || null,
-        phone: data.phone || null,
-        birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
+      name: data.name,
+      email: data.email,
+      category: data.category,
+      status: data.status,
+      gameTypes: data.gameTypes || [],
+      nickname: data.nickname || null,
+      phone: data.phone || null,
+      birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
     };
     onSuccess(dataToSave as Partial<User>);
   }

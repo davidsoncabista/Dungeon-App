@@ -78,9 +78,9 @@ export default function ProfilePage() {
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
     try {
-      // Format date back to string if it exists and convert empty strings to null
       const dataToSave = {
-        ...data,
+        name: data.name,
+        gameTypes: data.gameTypes || [],
         nickname: data.nickname || null,
         phone: data.phone || null,
         cpf: data.cpf || null,

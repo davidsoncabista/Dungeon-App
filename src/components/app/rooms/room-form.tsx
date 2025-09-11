@@ -50,7 +50,6 @@ export function RoomForm({ onSave, onCancel, defaultValues }: RoomFormProps) {
   });
 
   function onSubmit(data: RoomFormValues) {
-    // Garante que campos opcionais vazios sejam enviados como null
     const dataToSave = {
       ...data,
       description: data.description || null,
