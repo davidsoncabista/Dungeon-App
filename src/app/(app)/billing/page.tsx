@@ -1,107 +1,109 @@
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { getTransactions } from "@/lib/mock-service"
-import { CheckCircle, QrCode, FileText } from "lucide-react"
-import Image from "next/image"
 
-export default function BillingPage() {
-  const transactions = getTransactions();
+"use client"
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, Dices } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/lib/firebase";
+import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import type { UserCategory } from "@/lib/types/user";
+
+const plans = [
+    {
+        name: "Player",
+        price: "R$ 30",
+        features: ["Acesso a 2 reservas mensais", "Ideal para jogadores casuais"]
+    },
+    {
+        name: "Gamer",
+        price: "R$ 50",
+        features: ["Acesso a 4 reservas mensais", "Perfeito para jogadores frequentes"]
+    },
+    {
+        name: "Master",
+        price: "R$ 70",
+        features: ["Reservas ilimitadas", "Apoie a associação e jogue sem limites!"]
+    }
+]
+
+export default function SubscribePage() {
+  const { toast } = useToast();
+  const [user] = useAuthState(auth);
+  const router = useRouter();
+
+  const handleSelectPlan = async (planName: UserCategory) => {
+    if (!user) {
+        toast({
+            title: "Erro de Autenticação",
+            description: "Você precisa estar logado para selecionar um plano.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    try {
+        const firestore = getFirestore();
+        const userDocRef = doc(firestore, "users", user.uid);
+        
+        await updateDoc(userDocRef, {
+            category: planName,
+            status: "Ativo"
+        });
+
+        toast({
+            title: "Plano Selecionado!",
+            description: `Bem-vindo à categoria ${planName}! Você foi redirecionado para o dashboard.`
+        });
+        
+        router.push("/dashboard");
+
+    } catch (error) {
+        console.error("Erro ao atualizar o plano do usuário:", error);
+        toast({
+            title: "Erro ao Salvar",
+            description: "Não foi possível selecionar o plano. Por favor, tente novamente.",
+            variant: "destructive"
+        });
+    }
+  };
+
   return (
-    <div className="grid gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Cobrança e Pagamentos</h1>
-        <p className="text-muted-foreground">Gerencie sua assinatura e histórico de pagamentos.</p>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-full text-center p-4">
+        <Dices className="h-16 w-16 text-primary mb-4" />
+        <h1 className="text-4xl font-bold tracking-tight font-headline">Seja bem-vindo, novo aventureiro!</h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl">
+            Sua conta foi criada com sucesso! Para começar a reservar salas e participar de eventos, você precisa se tornar um membro associado. Escolha um dos nossos planos abaixo.
+        </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status da Assinatura</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center text-center gap-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
-              <p className="text-2xl font-bold">Assinatura Ativa</p>
-              <p className="text-muted-foreground">Sua próxima cobrança será em <strong>01 de Outubro de 2024</strong>.</p>
-              <Button variant="outline" className="w-full">Gerenciar Assinatura</Button>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl w-full">
+            {plans.map(plan => (
+                <Card key={plan.name} className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold font-headline">{plan.name}</CardTitle>
+                        <CardDescription>{plan.price}<span className="text-xs">/mês</span></CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                        <ul className="space-y-2 text-left mb-6">
+                            {plan.features.map(feature => (
+                                <li key={feature} className="flex items-center gap-2">
+                                    <Check className="h-5 w-5 text-green-500" />
+                                    <span className="text-sm">{feature}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <Button className="w-full" onClick={() => handleSelectPlan(plan.name as UserCategory)}>
+                            Selecionar Plano
+                        </Button>
+                    </CardContent>
+                </Card>
+            ))}
         </div>
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pagamento Pendente</CardTitle>
-              <CardDescription>Realize o pagamento da sua mensalidade de Outubro/24.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-start gap-4">
-              <div className="text-4xl font-bold">R$ 50,00</div>
-              <p className="text-muted-foreground">Vencimento em 10 de Outubro de 2024.</p>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button className="w-full sm:w-auto">
-                        <QrCode className="mr-2 h-4 w-4" />
-                        Gerar QR Code para Pagamento
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Pagamento via PIX</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex flex-col items-center gap-4 py-4">
-                      <Image src="https://picsum.photos/250/250" alt="QR Code" width={250} height={250} data-ai-hint="qr code"/>
-                      <p className="text-center text-muted-foreground">Escaneie o QR Code com o aplicativo do seu banco para realizar o pagamento.</p>
-                      <Button variant="outline">Copiar Código PIX</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Transações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID da Transação</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Recibo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map(tx => (
-                <TableRow key={tx.id}>
-                  <TableCell className="font-mono text-xs">{tx.id}</TableCell>
-                  <TableCell>{tx.date}</TableCell>
-                  <TableCell>{tx.description}</TableCell>
-                  <TableCell>{tx.amount}</TableCell>
-                  <TableCell>
-                    <Badge variant={tx.status === 'Pago' ? 'secondary' : 'destructive'} className={tx.status === 'Pago' ? 'bg-green-100 text-green-800' : ''}>
-                      {tx.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                        <FileText className="h-4 w-4" />
-                        <span className="sr-only">Ver Recibo</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <p className="text-xs text-muted-foreground mt-8">
+            O pagamento é processado de forma segura. Em caso de dúvidas, contate a administração.
+        </p>
     </div>
-  )
+  );
 }

@@ -5,6 +5,7 @@ import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, Bar
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
+import type { User as AppUser } from "@/lib/types/user"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,28 +23,31 @@ import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Swords },
-  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked },
-  { href: "/billing", label: "Cobrança", icon: CreditCard },
+  { href: "/dashboard", label: "Dashboard", icon: Swords, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
 ];
 
 const adminNavItems = [
-    { href: "/statistics", label: "Estatísticas", icon: BarChart3 },
-    { href: "/users", label: "Usuários", icon: UsersIcon },
-    { href: "/rooms", label: "Salas", icon: DoorOpen },
-    { href: "/notices", label: "Avisos", icon: Megaphone },
-    { href: "/admin", label: "Administração", icon: ShieldCheck },
+    { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
+    { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
+    { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
+    { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador"] },
 ]
 
 interface AppHeaderProps {
     user: FirebaseUser | null;
+    currentUserData?: AppUser;
 }
 
-export function AppHeader({ user }: AppHeaderProps) {
+export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
   
+  const userRole = currentUserData?.role || 'Visitante';
+  const userCategory = currentUserData?.category || 'Visitante';
+
   const handleLogout = async () => {
     try {
       await auth.signOut();
@@ -62,6 +66,21 @@ export function AppHeader({ user }: AppHeaderProps) {
     }
   };
 
+  const getVisibleNavItems = () => {
+    if (userCategory === 'Visitante') {
+        return navItems.filter(item => item.href === '/subscribe' || item.href === '/profile');
+    }
+    return navItems.filter(item => item.roles.includes(userRole));
+  }
+
+  const getVisibleAdminNavItems = () => {
+     if (userCategory === 'Visitante' || userRole === 'Membro') return [];
+     return adminNavItems.filter(item => item.roles.includes(userRole));
+  }
+
+  const visibleNavItems = getVisibleNavItems();
+  const visibleAdminNavItems = getVisibleAdminNavItems();
+  const allVisibleItems = [...visibleNavItems, ...visibleAdminNavItems];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -73,19 +92,7 @@ export function AppHeader({ user }: AppHeaderProps) {
           <Dices className="h-8 w-8 text-primary" />
           <span className="sr-only">Dungeon App</span>
         </Link>
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-                "text-muted-foreground transition-colors hover:text-foreground",
-                pathname === item.href && "text-foreground font-semibold"
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
-         {adminNavItems.map((item) => (
+        {allVisibleItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
@@ -123,7 +130,7 @@ export function AppHeader({ user }: AppHeaderProps) {
               <Dices className="h-6 w-6 text-primary" />
               <span className="">Dungeon App</span>
             </Link>
-            {[...navItems, ...adminNavItems].map((item) => (
+            {allVisibleItems.map((item) => (
                 <Link
                 key={item.href}
                 href={item.href}
@@ -144,8 +151,8 @@ export function AppHeader({ user }: AppHeaderProps) {
         <div className="ml-auto flex-1 sm:flex-initial" />
         <Button variant="ghost" size="icon" className="rounded-full" asChild>
             <Link href="/notices">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Notificações</span>
+              <Megaphone className="h-5 w-5" />
+              <span className="sr-only">Mural de Avisos</span>
             </Link>
         </Button>
         <DropdownMenu>
@@ -172,7 +179,7 @@ export function AppHeader({ user }: AppHeaderProps) {
           <DropdownMenuItem asChild>
               <Link href="/profile"><User className="mr-2 h-4 w-4" />Perfil</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem disabled>
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
           </DropdownMenuItem>

@@ -12,12 +12,17 @@ import { collection, getFirestore, query, where } from "firebase/firestore";
 import type { User } from "@/lib/types/user";
 
 
+const adminRoutes = ["/statistics", "/users", "/rooms", "/admin"];
+const editorRoutes = ["/statistics", "/users", "/rooms"];
+const memberRoutes = ["/dashboard", "/my-bookings", "/notices", "/profile", "/subscribe"];
+const visitorRoutes = ["/subscribe", "/profile"];
+
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
   const router = useRouter();
   const pathname = usePathname();
 
-  // Busca os dados completos do usuário do Firestore
   const [appUser, userLoading, userError] = useCollectionData<User>(
     user ? query(collection(getFirestore(), 'users'), where('uid', '==', user.uid)) as any : null
   );
@@ -53,22 +58,31 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (currentUser) {
-    // Lógica de redirecionamento para novos usuários
-    if (currentUser.category === 'Visitante' && pathname !== '/subscribe') {
-        redirect('/subscribe');
-        return null;
-    }
+    const userRole = currentUser.role;
+    const userCategory = currentUser.category;
 
-    // Impede que visitantes acessem outras páginas além de /subscribe e /profile
-    if (currentUser.category === 'Visitante' && pathname !== '/subscribe' && pathname !== '/profile') {
-        redirect('/subscribe');
-        return null;
+    if (userCategory === 'Visitante') {
+        if (!visitorRoutes.includes(pathname)) {
+            redirect('/subscribe');
+            return null;
+        }
+    } else if (userRole === 'Membro') {
+        const allowedRoutes = [...memberRoutes, ...visitorRoutes];
+        if (!allowedRoutes.includes(pathname)) {
+            redirect('/dashboard');
+            return null;
+        }
+    } else if (userRole === 'Revisor' || userRole === 'Editor') {
+         if (pathname === '/admin') {
+            redirect('/dashboard');
+            return null;
+        }
     }
   }
   
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <AppHeader user={user} />
+      <AppHeader user={user} currentUserData={currentUser} />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         {children}
       </main>
