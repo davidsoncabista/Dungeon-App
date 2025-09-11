@@ -51,21 +51,16 @@ export default function AdminPage() {
   const firestore = getFirestore(app);
   const plansRef = collection(firestore, 'plans');
   const plansQuery = query(plansRef, orderBy("price"));
-  const [initialPlans, loading, error] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
+  const [plans, loading, error] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
 
-  const [plans, setPlans] = useState<Plan[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (initialPlans) {
-      setPlans(initialPlans.map(p => ({ ...p, corujaoQuota: p.corujaoQuota || 0 })));
-    }
-  }, [initialPlans]);
 
   const handleCreatePlan = async (data: { name: string }) => {
+    setIsSaving(true);
     try {
       const newPlanRef = doc(plansRef);
       const newPlan: Plan = {
@@ -84,11 +79,14 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Erro ao criar plano:", error);
       toast({ title: "Erro!", description: "Não foi possível criar o plano.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
     }
   };
 
   const handleUpdatePlan = async (data: { name: string }) => {
     if (!editingPlan) return;
+    setIsSaving(true);
     try {
       await updateDoc(doc(firestore, "plans", editingPlan.id), { name: data.name });
       toast({ title: "Plano Atualizado!", description: "O nome do plano foi alterado." });
@@ -96,11 +94,14 @@ export default function AdminPage() {
     } catch (error) {
        console.error("Erro ao atualizar plano:", error);
        toast({ title: "Erro!", description: "Não foi possível alterar o nome do plano.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
     }
   };
 
   const handleDeletePlan = async () => {
     if (!deletingPlan) return;
+    setIsSaving(true);
     try {
         await deleteDoc(doc(firestore, "plans", deletingPlan.id));
         toast({ title: "Plano Excluído!", description: "O plano foi removido com sucesso." });
@@ -108,32 +109,26 @@ export default function AdminPage() {
     } catch (error) {
         console.error("Erro ao excluir plano:", error);
         toast({ title: "Erro!", description: "Não foi possível remover o plano.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
     }
   };
 
-  const handleInputChange = (planId: string, field: keyof Plan, value: string) => {
-    setPlans(prevPlans => prevPlans.map(p => 
-      p.id === planId ? { ...p, [field]: Number(value) } : p
-    ));
-  };
-  
-  const handleSaveAllChanges = async () => {
-    setIsSaving(true);
-    const promises = plans.map(plan => {
-      const planRef = doc(firestore, "plans", plan.id);
-      // Remove 'id' e 'name' para garantir que apenas os campos numéricos sejam atualizados.
-      const { id, name, ...numericData } = plan;
-      return updateDoc(planRef, numericData);
-    });
-
+  const handleFieldChange = async (planId: string, field: keyof Plan, value: string | number) => {
+    const planRef = doc(firestore, "plans", planId);
     try {
-      await Promise.all(promises);
-      toast({ title: "Sucesso!", description: "Todas as regras foram salvas no banco de dados." });
+        await updateDoc(planRef, { [field]: Number(value) });
+        toast({
+            title: "Campo Atualizado",
+            description: `O campo foi salvo com sucesso.`,
+        });
     } catch (error) {
-      console.error("Erro ao salvar todas as alterações:", error);
-      toast({ title: "Erro!", description: "Não foi possível salvar todas as alterações.", variant: "destructive" });
-    } finally {
-        setIsSaving(false);
+        console.error(`Erro ao atualizar o campo ${String(field)}:`, error);
+        toast({
+            title: "Erro ao Salvar",
+            description: `Não foi possível atualizar o campo.`,
+            variant: "destructive",
+        });
     }
   };
   
@@ -183,55 +178,55 @@ export default function AdminPage() {
           <TableCell className="text-center">
               <Input 
                 type="number" 
-                value={plan.price} 
-                onChange={(e) => handleInputChange(plan.id, 'price', e.target.value)}
+                defaultValue={plan.price}
+                onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)}
                 className="w-24 mx-auto" 
               />
           </TableCell>
             <TableCell className="text-center">
               <Input 
                 type="number" 
-                value={plan.weeklyQuota} 
-                onChange={(e) => handleInputChange(plan.id, 'weeklyQuota', e.target.value)}
+                defaultValue={plan.weeklyQuota} 
+                onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)}
                 className="w-20 mx-auto" 
               />
           </TableCell>
           <TableCell className="text-center">
               <Input 
                 type="number" 
-                value={plan.monthlyQuota} 
-                onChange={(e) => handleInputChange(plan.id, 'monthlyQuota', e.target.value)}
+                defaultValue={plan.monthlyQuota} 
+                onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)}
                 className="w-20 mx-auto" 
               />
           </TableCell>
           <TableCell className="text-center">
               <Input 
                 type="number" 
-                value={plan.corujaoQuota} 
-                onChange={(e) => handleInputChange(plan.id, 'corujaoQuota', e.target.value)}
+                defaultValue={plan.corujaoQuota || 0} 
+                onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)}
                 className="w-20 mx-auto" 
               />
           </TableCell>
           <TableCell className="text-center">
               <Input 
                 type="number" 
-                value={plan.invites} 
-                onChange={(e) => handleInputChange(plan.id, 'invites', e.target.value)}
+                defaultValue={plan.invites} 
+                onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)}
                 className="w-20 mx-auto" 
               />
           </TableCell>
           <TableCell className="text-center">
               <Input 
                 type="number" 
-                value={plan.votingWeight} 
-                onChange={(e) => handleInputChange(plan.id, 'votingWeight', e.target.value)}
+                defaultValue={plan.votingWeight} 
+                onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)}
                 className="w-20 mx-auto" 
               />
           </TableCell>
           <TableCell className="text-right">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" disabled={isSaving}>
                           <MoreHorizontal className="h-4 w-4" />
                           <span className="sr-only">Ações para {plan.name}</span>
                       </Button>
@@ -269,11 +264,11 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
-                    <CardDescription>Defina os preços, cotas de reserva e limites para cada plano.</CardDescription>
+                    <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. As alterações são salvas automaticamente.</CardDescription>
                 </div>
                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                     <DialogTrigger asChild>
-                        <Button>
+                        <Button disabled={isSaving}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Novo Plano
                         </Button>
@@ -313,12 +308,6 @@ export default function AdminPage() {
             </Table>
         </CardContent>
       </Card>
-
-      <div className="flex justify-end">
-        <Button size="lg" onClick={handleSaveAllChanges} disabled={isSaving || !initialPlans}>
-            {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
-        </Button>
-      </div>
 
       <Card>
         <CardHeader>
