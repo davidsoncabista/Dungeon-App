@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -20,6 +20,30 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import type { AdminRole } from "@/lib/types/user";
+
+const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
+    Administrador: {
+        description: "Acesso total. Pode gerenciar planos, usuários, salas e as configurações do sistema.",
+        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas", "Administração"]
+    },
+    Editor: {
+        description: "Pode gerenciar usuários, salas e estatísticas, mas não as regras do sistema.",
+        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas"]
+    },
+    Revisor: {
+        description: "Pode visualizar estatísticas e gerenciar usuários, mas não edita salas ou regras.",
+        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil", "Estatísticas", "Usuários"]
+    },
+    Membro: {
+        description: "Acesso padrão para associados. Pode fazer reservas e gerenciar seu perfil.",
+        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil"]
+    },
+    Visitante: {
+        description: "Acesso inicial para novos usuários. Limitado a completar o cadastro e perfil.",
+        pages: ["Matrícula", "Perfil"]
+    }
+};
 
 
 export default function AdminPage() {
@@ -290,6 +314,12 @@ export default function AdminPage() {
         </CardContent>
       </Card>
 
+      <div className="flex justify-end">
+        <Button size="lg" onClick={handleSaveAllChanges} disabled={isSaving || !initialPlans}>
+            {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -317,6 +347,32 @@ export default function AdminPage() {
         </CardContent>
       </Card>
       
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Visualização das Regras de Acesso
+            </CardTitle>
+            <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {Object.entries(accessRules).map(([role, rule]) => (
+            <div key={role} className="p-4 rounded-lg border bg-muted/50">
+              <h4 className="font-bold flex items-center gap-2">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                {role}
+              </h4>
+              <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
+              <div className="flex flex-wrap gap-2">
+                {rule.pages.map(page => (
+                    <span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       {/* Edit Modal */}
       <Dialog open={!!editingPlan} onOpenChange={(isOpen) => !isOpen && setEditingPlan(null)}>
         <DialogContent>
@@ -351,13 +407,6 @@ export default function AdminPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-
-      <div className="flex justify-end mt-4">
-        <Button size="lg" onClick={handleSaveAllChanges} disabled={isSaving}>
-            {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
-        </Button>
-      </div>
 
     </div>
   )
