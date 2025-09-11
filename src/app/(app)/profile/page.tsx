@@ -26,6 +26,7 @@ import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
 import { ptBR } from "date-fns/locale"
+import { useRouter } from "next/navigation"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -50,6 +51,7 @@ const profileFormSchema = z.object({
 export default function ProfilePage() {
   const [user, loadingAuth] = useAuthState(auth);
   const { toast } = useToast();
+  const router = useRouter();
 
   const firestore = getFirestore(app);
   const userDocRef = user ? doc(firestore, "users", user.uid) : null;
@@ -83,6 +85,7 @@ export default function ProfilePage() {
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
     try {
+      const isFirstUpdate = appUser?.status === 'Pendente';
       const dataToSave: Partial<User> = {
         name: data.name,
         phone: data.phone,
@@ -96,7 +99,7 @@ export default function ProfilePage() {
       };
 
       // Se for o primeiro preenchimento, muda o status para Ativo e categoria para Visitante
-      if (appUser?.status === 'Pendente') {
+      if (isFirstUpdate) {
         dataToSave.status = 'Ativo';
         dataToSave.category = 'Visitante';
       }
@@ -105,8 +108,13 @@ export default function ProfilePage() {
       
       toast({
         title: "Sucesso!",
-        description: "Suas informações foram atualizadas. " + (appUser?.status === 'Pendente' ? 'Agora você pode escolher um plano de associação!' : ''),
+        description: "Suas informações foram atualizadas. " + (isFirstUpdate ? 'Agora você pode escolher um plano de associação!' : ''),
       });
+
+      if (isFirstUpdate) {
+        router.push('/subscribe');
+      }
+
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
       toast({
@@ -416,3 +424,5 @@ export default function ProfilePage() {
     </div>
   )
 }
+
+    
