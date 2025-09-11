@@ -1,13 +1,12 @@
 
 "use client"
 
-import { Bell, Search, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, Construction, Megaphone } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +32,7 @@ const adminNavItems = [
     { href: "/users", label: "Usuários", icon: UsersIcon },
     { href: "/rooms", label: "Salas", icon: DoorOpen },
     { href: "/notices", label: "Avisos", icon: Megaphone },
+    { href: "/admin", label: "Administração", icon: ShieldCheck },
 ]
 
 interface AppHeaderProps {
@@ -141,16 +141,7 @@ export function AppHeader({ user }: AppHeaderProps) {
       </Sheet>
 
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <form className="ml-auto flex-1 sm:flex-initial">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Procurar..."
-              className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
-            />
-          </div>
-        </form>
+        <div className="ml-auto flex-1 sm:flex-initial" />
         <Button variant="ghost" size="icon" className="rounded-full" asChild>
             <Link href="/notices">
               <Bell className="h-5 w-5" />
