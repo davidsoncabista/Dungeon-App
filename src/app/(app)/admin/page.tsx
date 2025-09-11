@@ -5,49 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { DollarSign, Ticket, CalendarCheck, Save } from "lucide-react"
-
-const plans = [
-<<<<<<< HEAD
-    { name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1 },
-    { name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
-    { name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
-=======
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react"
-import { useState } from "react"
-import type { Plan } from "@/lib/types/plan"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { PlanForm } from "@/components/app/admin/plan-form"
-
-const initialPlans: Plan[] = [
-    { id: "plan_player", name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1, votingWeight: 1 },
-    { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2, votingWeight: 2 },
-    { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4, votingWeight: 4 },
->>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
-=======
-    { id: "plan_player", name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1, votingWeight: 1 },
-    { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2, votingWeight: 2 },
-    { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4, votingWeight: 4 },
->>>>>>> f68d22a8 (falta so mais uma coluna que sera peso de voto playe 1 gamer 2 master 4)
-=======
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react"
-
-const plans = [
-    { id: "plan_player", name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1 },
-    { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
-    { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
-]
-=======
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert } from "lucide-react"
-import { useState, useEffect, ChangeEvent } from "react"
+import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -58,10 +18,7 @@ import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 
->>>>>>> 8ea4c320 (vamos fazer o crude da pagina de administração)
-
 export default function AdminPage() {
-<<<<<<< HEAD
   const { toast } = useToast();
   const firestore = getFirestore(app);
   const plansRef = collection(firestore, 'plans');
@@ -76,7 +33,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (initialPlans) {
-      setPlans(initialPlans);
+      setPlans(initialPlans.map(p => ({ ...p, corujaoQuota: p.corujaoQuota || 0 })));
     }
   }, [initialPlans]);
 
@@ -91,6 +48,7 @@ export default function AdminPage() {
         monthlyQuota: 0,
         invites: 0,
         votingWeight: 1,
+        corujaoQuota: 0,
       };
       await setDoc(newPlanRef, newPlan);
       toast({ title: "Plano Criado!", description: `O plano "${data.name}" foi adicionado.` });
@@ -161,6 +119,7 @@ export default function AdminPage() {
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-10 w-10 ml-auto" /></TableCell>
         </TableRow>
       ));
@@ -169,7 +128,7 @@ export default function AdminPage() {
     if (error) {
       return (
         <TableRow>
-          <TableCell colSpan={7}>
+          <TableCell colSpan={8}>
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
@@ -185,7 +144,7 @@ export default function AdminPage() {
     if (!plans || plans.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
+          <TableCell colSpan={8} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
         </TableRow>
       );
     }
@@ -214,6 +173,14 @@ export default function AdminPage() {
                 type="number" 
                 value={plan.monthlyQuota} 
                 onChange={(e) => handleInputChange(plan.id, 'monthlyQuota', e.target.value)}
+                className="w-20 mx-auto" 
+              />
+          </TableCell>
+          <TableCell className="text-center">
+              <Input 
+                type="number" 
+                value={plan.corujaoQuota} 
+                onChange={(e) => handleInputChange(plan.id, 'corujaoQuota', e.target.value)}
                 className="w-20 mx-auto" 
               />
           </TableCell>
@@ -262,40 +229,6 @@ export default function AdminPage() {
     ));
   }
 
-=======
-  const [plans, setPlans] = useState<Plan[]>(initialPlans);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
-
-  const handleCreatePlan = (data: { name: string }) => {
-    const newPlan: Plan = {
-      id: `plan_${data.name.toLowerCase().replace(/\s/g, '_')}_${Date.now()}`,
-      name: data.name,
-      price: 0,
-      weeklyQuota: 0,
-      monthlyQuota: 0,
-      invites: 0,
-      votingWeight: 1,
-    };
-    setPlans(prev => [...prev, newPlan]);
-    setIsCreateModalOpen(false);
-  };
-
-  const handleUpdatePlan = (data: { name: string }) => {
-    if (!editingPlan) return;
-    setPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...p, name: data.name } : p));
-    setEditingPlan(null);
-  };
-
-  const handleDeletePlan = () => {
-    if (!deletingPlan) return;
-    setPlans(prev => prev.filter(p => p.id !== deletingPlan.id));
-    setDeletingPlan(null);
-  };
-
->>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
-
   return (
     <div className="grid gap-8">
       <div>
@@ -308,7 +241,6 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
-<<<<<<< HEAD
                     <CardDescription>Defina os preços, cotas de reserva e limites para cada plano.</CardDescription>
                 </div>
                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
@@ -331,14 +263,6 @@ export default function AdminPage() {
                         />
                     </DialogContent>
                 </Dialog>
-=======
-                    <CardDescription>Defina os preços, cotas de reserva e limites de convite para cada plano.</CardDescription>
-                </div>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Novo Plano
-                </Button>
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
             </div>
         </CardHeader>
         <CardContent>
@@ -349,85 +273,14 @@ export default function AdminPage() {
                         <TableHead className="text-center">Preço (R$)</TableHead>
                         <TableHead className="text-center">Cota Semanal</TableHead>
                         <TableHead className="text-center">Cota Mensal</TableHead>
+                        <TableHead className="text-center">Cota Corujão</TableHead>
                         <TableHead className="text-center">Cota Convites</TableHead>
-<<<<<<< HEAD
                         <TableHead className="text-center">Peso de Voto</TableHead>
-=======
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-<<<<<<< HEAD
-<<<<<<< HEAD
                    {renderContent()}
-=======
-=======
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
-                    {plans.map(plan => (
-                        <TableRow key={plan.id}>
-                            <TableCell className="font-bold">{plan.name}</TableCell>
-                            <TableCell className="text-center">
-                                <Input type="number" defaultValue={plan.price} className="w-24 mx-auto" />
-                            </TableCell>
-                             <TableCell className="text-center">
-                                <Input type="number" defaultValue={plan.weeklyQuota} className="w-20 mx-auto" />
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <Input type="number" defaultValue={plan.monthlyQuota} className="w-20 mx-auto" />
-                            </TableCell>
-                            <TableCell className="text-center">
-                                <Input type="number" defaultValue={plan.invites} className="w-20 mx-auto" />
-                            </TableCell>
-<<<<<<< HEAD
-                            <TableCell className="text-center">
-                                <Input type="number" defaultValue={plan.votingWeight} className="w-20 mx-auto" />
-                            </TableCell>
-=======
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
-                            <TableCell className="text-right">
-                               <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="h-4 w-4" />
-<<<<<<< HEAD
-                                            <span className="sr-only">Ações para {plan.name}</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Editar Nome
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem 
-                                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                                            onSelect={() => setDeletingPlan(plan)}
-                                        >
-=======
-                                            <span className="sr-only">Ações</span>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Editar
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Excluir
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-<<<<<<< HEAD
->>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
-=======
->>>>>>> 47e1cb72 (na pagina administração precisamos de mais controle poder criar ou remov)
                 </TableBody>
             </Table>
         </CardContent>
@@ -445,11 +298,7 @@ export default function AdminPage() {
             <PlanForm
                 onSave={handleUpdatePlan}
                 onCancel={() => setEditingPlan(null)}
-<<<<<<< HEAD
                 defaultValues={editingPlan!}
-=======
-                defaultValues={editingPlan}
->>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
             />
         </DialogContent>
       </Dialog>
@@ -474,13 +323,8 @@ export default function AdminPage() {
 
 
       <div className="flex justify-end mt-4">
-<<<<<<< HEAD
-        <Button size="lg">
-            Salvar Todas as Alterações
-=======
         <Button size="lg" onClick={handleSaveAllChanges} disabled={isSaving}>
             {isSaving ? "Salvando..." : "Salvar Todas as Alterações"}
->>>>>>> 8ea4c320 (vamos fazer o crude da pagina de administração)
         </Button>
       </div>
 
