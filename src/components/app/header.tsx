@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Swords, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
-  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
 ];
 
@@ -68,7 +68,8 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
 
   const getVisibleNavItems = () => {
     if (userCategory === 'Visitante') {
-        return navItems.filter(item => item.href === '/subscribe' || item.href === '/profile');
+        // Visitantes só veem as páginas de matrícula, perfil e minhas reservas.
+        return navItems.filter(item => item.roles.includes('Visitante'));
     }
     return navItems.filter(item => item.roles.includes(userRole));
   }
