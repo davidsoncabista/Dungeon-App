@@ -15,7 +15,7 @@ import type { User } from "@/lib/types/user";
 const adminRoutes = ["/statistics", "/users", "/rooms", "/admin"];
 const editorRoutes = ["/statistics", "/users", "/rooms"];
 const memberRoutes = ["/dashboard", "/my-bookings", "/notices", "/profile", "/subscribe"];
-const visitorRoutes = ["/subscribe", "/profile"];
+const visitorRoutes = ["/subscribe", "/profile", "/my-bookings"];
 
 
 export default function AppLayout({ children }: { children: ReactNode }) {

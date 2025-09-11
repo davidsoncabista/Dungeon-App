@@ -41,7 +41,7 @@ const accessRules: Record<AdminRole | 'Visitante', { description: string; pages:
     },
     Visitante: {
         description: "Acesso inicial para novos usuários. Limitado a completar o cadastro e perfil.",
-        pages: ["Matrícula", "Perfil"]
+        pages: ["Matrícula", "Perfil", "Minhas Reservas"]
     }
 };
 
