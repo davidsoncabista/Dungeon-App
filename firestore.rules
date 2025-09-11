@@ -37,7 +37,29 @@ service cloud.firestore {
 
     // --- Regras para a Coleção de Reservas (`bookings`) ---
     match /bookings/{bookingId} {
+<<<<<<< HEAD
       // Qualquer usuário logado pode ler as reservas (para a agenda).
+=======
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth.uid == resource.data.organizerId || request.auth.token.admin == true;
+    }
+    
+    // Coleção `notices`
+    // Permite que qualquer usuário autenticado leia avisos.
+    // Apenas administradores podem criar, editar e excluir avisos.
+    match /notices/{noticeId} {
+        allow read: if request.auth != null;
+        // Permite que usuários atualizem apenas o campo 'readBy'
+        allow update: if request.auth.token.admin == true ||
+                       (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']));
+        allow create, delete: if request.auth.token.admin == true;
+    }
+
+    // Coleção `plans`
+    // Permite que qualquer usuário autenticado leia os planos.
+    // Apenas administradores podem criar, editar ou excluir planos.
+    match /plans/{planId} {
+>>>>>>> d454f3b1 (rules_version = '2';)
       allow read: if request.auth != null;
       
       // Um usuário pode criar uma reserva se for o organizador.
