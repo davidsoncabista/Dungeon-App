@@ -8,12 +8,27 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { DollarSign, Ticket, CalendarCheck, Save } from "lucide-react"
 
 const plans = [
     { name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1 },
     { name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
     { name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
+=======
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil } from "lucide-react"
+import { useState } from "react"
+import type { Plan } from "@/lib/types/plan"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { PlanForm } from "@/components/app/admin/plan-form"
+
+const initialPlans: Plan[] = [
+    { id: "plan_player", name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1, votingWeight: 1 },
+    { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2, votingWeight: 2 },
+    { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4, votingWeight: 4 },
+>>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
 ]
 =======
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
@@ -32,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 >>>>>>> 8ea4c320 (vamos fazer o crude da pagina de administração)
 
 export default function AdminPage() {
+<<<<<<< HEAD
   const { toast } = useToast();
   const firestore = getFirestore(app);
   const plansRef = collection(firestore, 'plans');
@@ -232,6 +248,39 @@ export default function AdminPage() {
     ));
   }
 
+=======
+  const [plans, setPlans] = useState<Plan[]>(initialPlans);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
+
+  const handleCreatePlan = (data: { name: string }) => {
+    const newPlan: Plan = {
+      id: `plan_${data.name.toLowerCase().replace(/\s/g, '_')}_${Date.now()}`,
+      name: data.name,
+      price: 0,
+      weeklyQuota: 0,
+      monthlyQuota: 0,
+      invites: 0,
+      votingWeight: 1,
+    };
+    setPlans(prev => [...prev, newPlan]);
+    setIsCreateModalOpen(false);
+  };
+
+  const handleUpdatePlan = (data: { name: string }) => {
+    if (!editingPlan) return;
+    setPlans(prev => prev.map(p => p.id === editingPlan.id ? { ...p, name: data.name } : p));
+    setEditingPlan(null);
+  };
+
+  const handleDeletePlan = () => {
+    if (!deletingPlan) return;
+    setPlans(prev => prev.filter(p => p.id !== deletingPlan.id));
+    setDeletingPlan(null);
+  };
+
+>>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
 
   return (
     <div className="grid gap-8">
@@ -283,7 +332,55 @@ export default function AdminPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+<<<<<<< HEAD
                    {renderContent()}
+=======
+                    {plans.map(plan => (
+                        <TableRow key={plan.id}>
+                            <TableCell className="font-bold">{plan.name}</TableCell>
+                            <TableCell className="text-center">
+                                <Input type="number" defaultValue={plan.price} className="w-24 mx-auto" />
+                            </TableCell>
+                             <TableCell className="text-center">
+                                <Input type="number" defaultValue={plan.weeklyQuota} className="w-20 mx-auto" />
+                            </TableCell>
+                            <TableCell className="text-center">
+                                <Input type="number" defaultValue={plan.monthlyQuota} className="w-20 mx-auto" />
+                            </TableCell>
+                            <TableCell className="text-center">
+                                <Input type="number" defaultValue={plan.invites} className="w-20 mx-auto" />
+                            </TableCell>
+                            <TableCell className="text-center">
+                                <Input type="number" defaultValue={plan.votingWeight} className="w-20 mx-auto" />
+                            </TableCell>
+                            <TableCell className="text-right">
+                               <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Ações para {plan.name}</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Editar Nome
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem 
+                                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                            onSelect={() => setDeletingPlan(plan)}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Excluir
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+>>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
                 </TableBody>
             </Table>
         </CardContent>
@@ -301,7 +398,11 @@ export default function AdminPage() {
             <PlanForm
                 onSave={handleUpdatePlan}
                 onCancel={() => setEditingPlan(null)}
+<<<<<<< HEAD
                 defaultValues={editingPlan!}
+=======
+                defaultValues={editingPlan}
+>>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
             />
         </DialogContent>
       </Dialog>
