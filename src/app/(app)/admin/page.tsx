@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DollarSign, Ticket, CalendarCheck, Save } from "lucide-react"
 
 const plans = [
+<<<<<<< HEAD
     { name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1 },
     { name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
     { name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
@@ -29,6 +30,11 @@ const initialPlans: Plan[] = [
     { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2, votingWeight: 2 },
     { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4, votingWeight: 4 },
 >>>>>>> 3e672e4c (vamos criar o modal de edição que basicamente so muda o nome do plano e)
+=======
+    { id: "plan_player", name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1, votingWeight: 1 },
+    { id: "plan_gamer", name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2, votingWeight: 2 },
+    { id: "plan_master", name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4, votingWeight: 4 },
+>>>>>>> f68d22a8 (falta so mais uma coluna que sera peso de voto playe 1 gamer 2 master 4)
 ]
 =======
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
