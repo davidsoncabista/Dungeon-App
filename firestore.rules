@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -6,16 +5,15 @@ service cloud.firestore {
 
     // Regras para a coleção 'users'
     match /users/{userId} {
-      // Leitura: Qualquer usuário autenticado pode ler a lista de usuários ou um perfil específico.
+      // Leitura: Qualquer usuário autenticado pode ler os perfis (para listar participantes, etc.)
       allow read: if request.auth != null;
 
-      // Criação: A criação é tratada pela Cloud Function 'createUserDocument' no backend.
-      // O acesso direto para criar documentos de usuário é bloqueado.
+      // Criação: A criação é feita via Cloud Function, não diretamente.
       allow create: if false;
 
       // Atualização:
-      // 1. O usuário pode sempre atualizar seu próprio documento.
-      // 2. Um administrador (com custom claim 'admin' igual a true) pode atualizar qualquer documento.
+      // 1. Um usuário pode sempre editar seu próprio documento.
+      // 2. Um administrador (com custom claim) pode editar qualquer documento.
       allow update: if request.auth.uid == userId || request.auth.token.admin == true;
 
       // Exclusão: Apenas administradores podem excluir usuários.
@@ -26,48 +24,45 @@ service cloud.firestore {
     match /rooms/{roomId} {
       // Leitura: Qualquer usuário autenticado pode ver as salas.
       allow read: if request.auth != null;
-      
-      // Escrita (Criação, Atualização, Exclusão): Apenas administradores podem gerenciar as salas.
+
+      // Escrita (create, update, delete): Apenas administradores.
       allow write: if request.auth.token.admin == true;
     }
 
     // Regras para a coleção 'bookings'
     match /bookings/{bookingId} {
-      // Leitura: Qualquer usuário autenticado pode ler as reservas.
-      allow read: if request.auth != null;
-
-      // Criação: Qualquer usuário autenticado pode criar uma reserva.
-      // A lógica de cotas e validações será feita no front-end e/ou em Cloud Functions.
-      allow create: if request.auth != null;
-
-      // Atualização e Exclusão:
-      // Apenas o organizador da reserva ou um administrador podem modificar ou cancelar a reserva.
-      allow update, delete: if request.auth.uid == resource.data.organizerId || request.auth.token.admin == true;
-    }
-    
-    // Regras para a coleção 'plans' (planos de associação)
-    match /plans/{planId} {
-      // Leitura: Todos os usuários autenticados podem ver os planos disponíveis.
+      // Leitura: Qualquer usuário autenticado pode ler as reservas (para a timeline).
       allow read: if request.auth != null;
       
-      // Escrita (Criação, Edição, Exclusão): Apenas administradores podem gerenciar os planos.
-      allow write: if request.auth.token.admin == true;
+      // Criação:
+      // O usuário precisa estar autenticado e ser o organizador da reserva que está criando.
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.organizerId;
+
+      // Atualização:
+      // Permitir a atualização se o requisitante for o organizador da reserva ou um administrador.
+      allow update: if request.auth.uid == resource.data.organizerId || request.auth.token.admin == true;
+      
+      // Exclusão:
+      // Permitir a exclusão se o requisitante for o organizador ou um administrador.
+      allow delete: if request.auth.uid == resource.data.organizerId || request.auth.token.admin == true;
     }
-
-    // Regras para a coleção 'notices' (avisos)
+    
+    // Regras para a coleção 'notices'
     match /notices/{noticeId} {
-        // Leitura: Todos podem ler os avisos.
+        // Leitura: Qualquer usuário autenticado pode ler os avisos.
         allow read: if request.auth != null;
-
-        // Criação e Exclusão: Apenas administradores podem criar ou apagar avisos.
-        allow create, delete: if request.auth.token.admin == true;
         
-        // Atualização: Permitimos que qualquer usuário autenticado atualize um aviso,
-        // mas apenas para adicionar seu UID ao array 'readBy'.
-        // Isso é seguro porque a regra abaixo garante que nenhum outro campo pode ser alterado.
-        allow update: if request.auth.uid != null 
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
-                      && !(request.auth.uid in resource.data.readBy);
+        // Escrita (create, update, delete): Apenas administradores.
+        allow write: if request.auth.token.admin == true;
+    }
+    
+    // Regras para a coleção 'plans'
+    match /plans/{planId} {
+        // Leitura: Qualquer usuário autenticado pode ver os planos.
+        allow read: if request.auth != null;
+        
+        // Escrita: Apenas administradores.
+        allow write: if request.auth.token.admin == true;
     }
   }
 }
