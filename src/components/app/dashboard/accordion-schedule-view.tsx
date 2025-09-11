@@ -39,7 +39,7 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
                                             <div className="p-3 rounded-md border cursor-pointer hover:bg-muted/50">
                                                 <p className="font-semibold">{booking.title || 'Reserva Rápida'}</p>
                                                 <p className="text-sm text-muted-foreground"><Clock className="inline h-3 w-3 mr-1"/>{booking.startTime} - {booking.endTime}</p>
-                                                <p className="text-sm text-muted-foreground"><Users className="inline h-3 w-3 mr-1"/>{booking.participants.length + (booking.guests || 0)} participante(s)</p>
+                                                <p className="text-sm text-muted-foreground"><Users className="inline h-3 w-3 mr-1"/>{booking.participants.length + (booking.guests?.length || 0)} participante(s)</p>
                                             </div>
                                         </BookingDetailsModal>
                                     ))
@@ -73,5 +73,3 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
         </Accordion>
     )
 }
-
-    
