@@ -11,7 +11,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Reservar Sala**: Fluxo integrado ao Dashboard para agendamento.
 - **Meu Perfil**: Permitir visualização e edição completa dos dados do usuário, incluindo informações pessoais, de associação e preferências de jogo.
 - **Cobranças**: Exibir status de pagamento e permitir quitação.
-- **Área do Administrador**: Painel para gerenciamento completo do sistema.
+- **Área do Administrador**: Painel para gerenciamento completo do sistema, incluindo planos, usuários, salas e regras de negócio.
 
 ### 2. Funcionalidades do Usuário (Associado)
 - **Autenticação e Onboarding**:
@@ -30,6 +30,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 ### 3. Funcionalidades do Administrador
 - **Níveis de Acesso**: Definir perfis de administrador (Administrador, Editor, Revisor) com permissões granulares gerenciadas por Custom Claims no Firebase.
 - **Dashboard de Estatísticas**: Painel com métricas de uso do sistema.
+- **Gerenciamento de Planos e Regras**: Interface para criar, editar e excluir planos de associação, controlando dinamicamente preços, cotas (semanal, mensal, corujão), limites de convidados e peso de voto.
 - **Gerenciamento de Avisos**: Criar, enviar e monitorar a visualização de avisos.
 - **Gerenciamento de Salas**: CRUD de salas e definição de capacidade.
 - **Gerenciamento de Usuários**: Visualizar, bloquear, aplicar multas e gerenciar níveis de acesso dos usuários. A criação de usuários é automática no primeiro login.

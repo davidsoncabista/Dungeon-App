@@ -20,11 +20,11 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 
 ### Para Administradores
 
-- **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema, incluindo uma timeline visual e um extrato de reservas detalhado com filtros e ações rápidas.
-- **Níveis de Acesso com Custom Claims**: Controle granular de permissões com três níveis (Administrador, Editor, Revisor), gerenciado de forma segura e eficiente pelo Firebase.
-- **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação, número de adimplentes e muito mais.
-- **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros (cadastrados automaticamente via login Google), gerencie status de pagamento, aplique advertências e controle níveis de acesso.
+- **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema.
+- **Gerenciamento de Planos e Regras de Negócio**: Crie, edite e remova planos de associação dinamicamente. Controle os preços, cotas de reserva (semanal, mensal, corujão), limite de convidados e peso de voto para cada plano em uma única interface.
+- **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros, gerencie status de pagamento, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`) com segurança através de `Custom Claims`.
 - **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e outras configurações.
+- **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação, número de adimplentes e muito mais.
 - **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações, edições ou cancelamentos quando necessário.
 - **Comunicação Direta**: Envie avisos para todos os usuários e acompanhe quem já visualizou.
 - **Gestão Financeira**: Gerencie cobranças avulsas e tenha acesso ao histórico de transações de todos os membros.
