@@ -1,7 +1,7 @@
 
 "use client"
 
-import { format, parse, parseISO, isBefore } from "date-fns"
+import { format, parse, parseISO, isBefore, getHours, getMinutes } from "date-fns"
 import { BookingDetailsModal } from "./booking-details-modal"
 import { BookingModal } from "./booking-modal"
 import type { Booking } from "@/lib/types/booking"
@@ -27,26 +27,31 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
         const startTime = parse(booking.startTime, 'HH:mm', new Date());
         const endTime = parse(booking.endTime, 'HH:mm', new Date());
         
-        let startHour = startTime.getHours() + startTime.getMinutes() / 60;
-        let endHour = endTime.getHours() + endTime.getMinutes() / 60;
+        let startHour = getHours(startTime) + getMinutes(startTime) / 60;
+        let endHour = getHours(endTime) + getMinutes(endTime) / 60;
 
-        // Se a reserva começou no dia anterior, ela deve começar na coluna 0 da grade do dia atual
-        if (bookingDay < selectedDay) {
+        // Se a reserva começou no dia anterior e atravessou a meia-noite,
+        // ela deve começar na coluna 0 da grade do dia atual.
+        if (bookingDay < selectedDay && endHour < startHour) {
             startHour = 0;
         }
 
-        // Se a reserva atravessa a meia-noite e está sendo visualizada no dia em que começa
-        if (isBefore(endTime, startTime) && bookingDay === selectedDay) {
-            endHour = 24; // Faz a reserva terminar no final da grade
+        // Se a reserva atravessa a meia-noite e estamos visualizando o dia em que ela começa,
+        // ela deve terminar no final da grade (24h).
+        if (endHour < startHour && bookingDay === selectedDay) {
+            endHour = 24; 
         }
         
         const startColumn = Math.floor(startHour * hourColumns) + 1;
         const endColumn = Math.floor(endHour * hourColumns) + 1;
-        const columnSpan = endColumn - startColumn;
+        
+        let columnSpan = endColumn - startColumn;
+        if (columnSpan < 0) columnSpan = 0;
+
 
         return {
             gridColumnStart: startColumn,
-            gridColumnEnd: `span ${columnSpan > 0 ? columnSpan : 0}`,
+            gridColumnEnd: `span ${columnSpan}`,
         };
     };
 
@@ -119,5 +124,3 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
         </div>
     )
 }
-
-    
