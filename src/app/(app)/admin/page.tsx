@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -17,6 +17,10 @@ import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, ord
 import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -283,6 +287,33 @@ export default function AdminPage() {
                    {renderContent()}
                 </TableBody>
             </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Controle de Acesso ao Sistema
+            </CardTitle>
+            <CardDescription>Gerencie as permissões e o estado geral da plataforma.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="space-y-4 rounded-lg border border-dashed p-4">
+                <h3 className="font-semibold">Modo de Manutenção</h3>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="maintenance-mode" className="text-muted-foreground max-w-sm">
+                        Quando ativado, apenas administradores podem acessar o sistema. Novos agendamentos e edições são bloqueados para membros.
+                    </Label>
+                    <Switch id="maintenance-mode" aria-label="Ativar modo de manutenção" />
+                </div>
+            </div>
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                    Alterar essas configurações pode impactar todos os usuários. Tenha certeza do que está fazendo.
+                </AlertDescription>
+            </Alert>
         </CardContent>
       </Card>
       
