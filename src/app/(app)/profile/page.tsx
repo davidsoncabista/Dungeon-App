@@ -25,6 +25,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
+import { ptBR } from "date-fns/locale"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
