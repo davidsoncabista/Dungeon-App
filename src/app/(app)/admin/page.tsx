@@ -10,9 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DollarSign, Ticket, CalendarCheck, Save } from "lucide-react"
 
 const plans = [
-    { name: "Player", price: 30, bookings: 2, invites: 1 },
-    { name: "Gamer", price: 50, bookings: 4, invites: 2 },
-    { name: "Master", price: 70, bookings: "Ilimitado", invites: 4 },
+    { name: "Player", price: 30, weeklyQuota: 1, monthlyQuota: 2, invites: 1 },
+    { name: "Gamer", price: 50, weeklyQuota: 2, monthlyQuota: 4, invites: 2 },
+    { name: "Master", price: 70, weeklyQuota: 7, monthlyQuota: 99, invites: 4 },
 ]
 
 export default function AdminPage() {
@@ -32,23 +32,33 @@ export default function AdminPage() {
                         <CalendarCheck className="h-6 w-6 text-primary" />
                         <div>
                             <CardTitle>Regras de Cota de Reserva</CardTitle>
-                            <CardDescription>Defina o limite de reservas mensais para cada categoria de membro.</CardDescription>
+                            <CardDescription>Defina os limites semanais e mensais para cada categoria.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="cota-player" className="font-bold">Player</Label>
-                        <Input id="cota-player" type="number" defaultValue="2" className="w-24" />
-                    </div>
-                     <div className="flex items-center justify-between">
-                        <Label htmlFor="cota-gamer" className="font-bold">Gamer</Label>
-                        <Input id="cota-gamer" type="number" defaultValue="4" className="w-24" />
-                    </div>
-                     <div className="flex items-center justify-between">
-                        <Label htmlFor="cota-master" className="font-bold">Master</Label>
-                        <Input id="cota-master" defaultValue="99" className="w-24" />
-                    </div>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Plano</TableHead>
+                                <TableHead className="text-center">Semanal</TableHead>
+                                <TableHead className="text-center">Mensal</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {plans.map(plan => (
+                                <TableRow key={plan.name}>
+                                    <TableCell className="font-bold">{plan.name}</TableCell>
+                                    <TableCell>
+                                        <Input type="number" defaultValue={plan.weeklyQuota} className="w-20 mx-auto text-center" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input type="number" defaultValue={plan.monthlyQuota} className="w-20 mx-auto text-center" />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
 
