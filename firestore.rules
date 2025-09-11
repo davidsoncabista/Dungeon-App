@@ -1,63 +1,63 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Regra Geral: Por padrão, ninguém pode acessar os dados a menos que seja
-    // explicitamente permitido.
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Coleção `users`
-    // Permite que usuários autenticados leiam perfis, mas só possam editar o seu próprio.
-    // Administradores (`admin: true` no Custom Claim) podem editar qualquer perfil.
+    // Regra Temporária: Permite que um usuário autenticado edite seu próprio documento, incluindo o 'role'.
+    // Isso é necessário para restaurar o primeiro administrador.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow update: if request.auth.uid == userId || request.auth.token.admin == true;
-      allow create: if request.auth.uid == userId;
-      // Excluir usuários deve ser feito com cuidado, talvez apenas por administradores
-      allow delete: if request.auth.token.admin == true;
+      allow read, update: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
     }
 
-    // Coleção `rooms`
-    // Permite que qualquer usuário autenticado leia as salas, mas apenas
-    // administradores podem criar, editar ou excluir.
+    // A regra original mais segura está comentada abaixo e será restaurada.
+    /*
+    match /users/{userId} {
+      // Qualquer usuário autenticado pode ler a lista de usuários, mas não pode criar.
+      // A criação é feita pela Cloud Function no backend.
+      allow list: if request.auth != null;
+      // Um usuário pode ler e atualizar seu próprio perfil.
+      allow get, update: if request.auth.uid == userId;
+      
+      // Um administrador pode ler e escrever em qualquer perfil.
+      allow get, list, update, delete: if request.auth.token.admin == true;
+
+      // Um administrador pode alterar o 'role' de um usuário.
+      // Ninguém mais pode alterar o campo 'role'.
+      allow update: if request.auth.token.admin == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+    }
+    */
+
     match /rooms/{roomId} {
+      // Todos os usuários logados podem ler as salas.
       allow read: if request.auth != null;
-      allow create, update, delete: if request.auth.token.admin == true;
+      // Apenas administradores podem criar, editar ou excluir salas.
+      allow write: if request.auth.token.admin == true;
     }
 
-    // Coleção `bookings`
-    // Permite que usuários autenticados leiam e criem reservas.
-    // Editar ou cancelar uma reserva só é permitido para o organizador ou um admin.
     match /bookings/{bookingId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth.uid == resource.data.organizerId || request.auth.token.admin == true;
+        // Todos os usuários logados podem ler as reservas.
+        allow list, get: if request.auth != null;
+
+        // Usuário pode criar uma reserva se estiver autenticado.
+        allow create: if request.auth != null;
+
+        // O organizador da reserva ou um administrador podem atualizar ou excluir.
+        allow update, delete: if resource.data.organizerId == request.auth.uid || request.auth.token.admin == true;
     }
-    
-    // Coleção `notices`
-    // Permite que qualquer usuário autenticado leia avisos.
-    // Apenas administradores podem criar, editar e excluir avisos.
+
     match /notices/{noticeId} {
-        allow read: if request.auth != null;
-        // Permite que administradores editem tudo, mas usuários normais só podem
-        // adicionar seu próprio UID ao array 'readBy'.
-        allow update: if request.auth.token.admin == true ||
-                       (request.auth != null && 
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
-                        request.resource.data.readBy.hasAny([request.auth.uid]));
-        allow create, delete: if request.auth.token.admin == true;
-    }
-    
-    // Coleção `plans`
-    // Permite que qualquer usuário autenticado leia os planos, mas apenas
-    // administradores podem criar, editar ou excluir.
-    match /plans/{planId} {
+      // Todos os usuários logados podem ler os avisos.
       allow read: if request.auth != null;
+      // Apenas administradores podem criar, editar ou excluir avisos.
+      allow write: if request.auth.token.admin == true;
+    }
+
+    match /plans/{planId} {
+      // Todos os usuários logados podem ler os planos.
+      allow read: if request.auth != null;
+      // Apenas administradores podem criar, editar ou excluir planos.
       allow write: if request.auth.token.admin == true;
     }
   }
 }
-    
