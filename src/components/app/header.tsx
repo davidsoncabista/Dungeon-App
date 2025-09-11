@@ -23,7 +23,7 @@ import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Swords, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/dashboard", label: "Dashboard", icon: Swords, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
 ];
@@ -68,7 +68,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
 
   const getVisibleNavItems = () => {
     if (userCategory === 'Visitante') {
-        // Visitantes só veem as páginas de matrícula, perfil e minhas reservas.
+        // Visitantes veem um conjunto específico de páginas.
         return navItems.filter(item => item.roles.includes('Visitante'));
     }
     return navItems.filter(item => item.roles.includes(userRole));

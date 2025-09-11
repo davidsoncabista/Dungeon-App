@@ -16,7 +16,7 @@ const adminRoutes = ["/statistics", "/users", "/rooms", "/admin"];
 const editorRoutes = ["/statistics", "/users", "/rooms"];
 const memberRoutes = ["/dashboard", "/my-bookings", "/notices", "/profile", "/subscribe"];
 // Rotas que um visitante (perfil preenchido, mas sem plano) pode acessar.
-const visitorRoutes = ["/subscribe", "/profile", "/my-bookings"];
+const visitorRoutes = ["/dashboard", "/subscribe", "/profile", "/my-bookings"];
 
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -48,7 +48,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         // REGRA 2: MATRÍCULA PENDENTE
         // Se o cadastro está completo (status 'Ativo') mas ele ainda é 'Visitante' (não escolheu um plano),
-        // ele fica "preso" na página de matrícula.
+        // ele fica "preso" na página de matrícula, mas pode ver o dashboard e suas reservas.
         if (currentUser.status === 'Ativo' && currentUser.category === 'Visitante') {
             // Permite acesso apenas às rotas definidas para visitantes.
             if (!visitorRoutes.includes(pathname)) {

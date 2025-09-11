@@ -94,7 +94,7 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
                                     </TooltipTrigger>
                                     {!canBook && (
                                         <TooltipContent side="top" align="center">
-                                            <p>Apenas membros ativos podem fazer reservas.</p>
+                                            <p>Apenas membros associados podem fazer reservas.</p>
                                         </TooltipContent>
                                     )}
                                 </Tooltip>

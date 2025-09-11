@@ -60,7 +60,7 @@ export const AccordionScheduleView = ({ rooms, bookings, selectedDate, setModalO
                                         </TooltipTrigger>
                                         {!canBook && (
                                             <TooltipContent>
-                                                <p>Apenas membros ativos podem fazer reservas.</p>
+                                                <p>Apenas membros associados podem fazer reservas.</p>
                                             </TooltipContent>
                                         )}
                                     </Tooltip>
