@@ -70,15 +70,15 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
   
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: isEditMode ? {
-        ...defaultValues,
-        birthdate: defaultValues?.birthdate ? parseISO(defaultValues.birthdate) : undefined,
-    } : {
-      name: "",
-      email: "",
-      category: "Player",
-      status: "Pendente",
-      gameTypes: []
+    defaultValues: {
+      name: defaultValues?.name || "",
+      email: defaultValues?.email || "",
+      category: defaultValues?.category || "Player",
+      status: defaultValues?.status || "Pendente",
+      nickname: defaultValues?.nickname || "",
+      phone: defaultValues?.phone || "",
+      birthdate: defaultValues?.birthdate ? parseISO(defaultValues.birthdate) : undefined,
+      gameTypes: defaultValues?.gameTypes || []
     },
   });
 
@@ -86,6 +86,8 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
     if (isEditMode && defaultValues) {
         form.reset({
             ...defaultValues,
+            nickname: defaultValues.nickname || "",
+            phone: defaultValues.phone || "",
             birthdate: defaultValues.birthdate ? parseISO(defaultValues.birthdate) : undefined
         })
     }
@@ -94,6 +96,8 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
   function onSubmit(data: UserFormValues) {
     const dataToSave = {
         ...data,
+        nickname: data.nickname || null,
+        phone: data.phone || null,
         birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
     };
     onSuccess(dataToSave as Partial<User>);
@@ -295,3 +299,5 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
     </Form>
   )
 }
+
+    

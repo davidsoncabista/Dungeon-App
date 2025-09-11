@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -53,36 +53,40 @@ export default function ProfilePage() {
 
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-        name: appUser?.name || user?.displayName || "",
-        nickname: appUser?.nickname || "",
-        phone: appUser?.phone || "",
-        cpf: appUser?.cpf || "",
-        rg: appUser?.rg || "",
-        birthdate: appUser?.birthdate ? new Date(appUser.birthdate) : undefined,
-        socialMedia: appUser?.socialMedia || "",
-        gameTypes: appUser?.gameTypes || [],
-    },
-    // Sync form with updated Firestore data
+    // Sync form with updated Firestore data, converting null to empty string for inputs
     values: appUser ? {
         name: appUser.name,
         nickname: appUser.nickname || "",
         phone: appUser.phone || "",
         cpf: appUser.cpf || "",
         rg: appUser.rg || "",
-        birthdate: appUser.birthdate ? new Date(appUser.birthdate) : undefined,
+        birthdate: appUser.birthdate ? parseISO(appUser.birthdate) : undefined,
         socialMedia: appUser.socialMedia || "",
         gameTypes: appUser.gameTypes || [],
-    } : undefined
+    } : {
+        name: user?.displayName || "",
+        nickname: "",
+        phone: "",
+        cpf: "",
+        rg: "",
+        birthdate: undefined,
+        socialMedia: "",
+        gameTypes: [],
+    }
   });
 
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
     try {
-      // Format date back to string if it exists
+      // Format date back to string if it exists and convert empty strings to null
       const dataToSave = {
         ...data,
+        nickname: data.nickname || null,
+        phone: data.phone || null,
+        cpf: data.cpf || null,
+        rg: data.rg || null,
         birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
+        socialMedia: data.socialMedia || null,
       };
 
       await updateDoc(userDocRef, dataToSave);
@@ -373,3 +377,5 @@ export default function ProfilePage() {
     </div>
   )
 }
+
+    
