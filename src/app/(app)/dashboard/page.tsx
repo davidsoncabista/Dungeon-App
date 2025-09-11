@@ -357,6 +357,9 @@ export default function DashboardPage() {
                                 disabled={{ before: startOfToday(), after: lastDay }}
                                 initialFocus
                                 locale={ptBR}
+                                captionLayout="dropdown-buttons"
+                                fromYear={new Date().getFullYear()}
+                                toYear={new Date().getFullYear() + 1}
                                 />
                             </PopoverContent>
                         </Popover>
@@ -426,6 +429,9 @@ export default function DashboardPage() {
                                     onSelect={setCustomDateRange}
                                     numberOfMonths={2}
                                     locale={ptBR}
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={new Date().getFullYear() - 5}
+                                    toYear={new Date().getFullYear() + 5}
                                     />
                                 </PopoverContent>
                             </Popover>

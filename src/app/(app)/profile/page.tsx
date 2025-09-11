@@ -267,6 +267,9 @@ export default function ProfilePage() {
                                 }
                                 initialFocus
                                 locale={ptBR}
+                                captionLayout="dropdown-buttons"
+                                fromYear={1920}
+                                toYear={new Date().getFullYear()}
                             />
                             </PopoverContent>
                         </Popover>
