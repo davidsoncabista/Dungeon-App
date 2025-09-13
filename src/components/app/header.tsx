@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
@@ -23,7 +23,7 @@ import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Swords, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/online-schedule", label: "Agenda Online", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
 ];
@@ -71,12 +71,14 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
         // Visitantes veem um conjunto específico de páginas.
         return navItems.filter(item => item.roles.includes('Visitante'));
     }
-    return navItems.filter(item => item.roles.includes(userRole));
+    // O fallback para 'Membro' garante que mesmo que o role não esteja definido, ele veja o menu básico.
+    return navItems.filter(item => item.roles.includes(userRole || 'Membro'));
   }
 
   const getVisibleAdminNavItems = () => {
      if (userCategory === 'Visitante' || userRole === 'Membro') return [];
-     return adminNavItems.filter(item => item.roles.includes(userRole));
+     // O fallback para 'Membro' garante que o menu admin não apareça se o role for indefinido.
+     return adminNavItems.filter(item => item.roles.includes(userRole || 'Membro'));
   }
 
   const visibleNavItems = getVisibleNavItems();
@@ -87,7 +89,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Link
-          href="/dashboard"
+          href="/online-schedule"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
           <Dices className="h-8 w-8 text-primary" />
@@ -125,7 +127,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
            </SheetHeader>
           <nav className="grid gap-6 text-lg font-medium mt-4">
             <Link
-              href="/dashboard"
+              href="/online-schedule"
               className="flex items-center gap-2 text-lg font-semibold mb-4"
             >
               <Dices className="h-6 w-6 text-primary" />
