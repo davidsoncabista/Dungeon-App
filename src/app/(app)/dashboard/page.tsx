@@ -57,8 +57,9 @@ export default function DashboardPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [unreadNotice, setUnreadNotice] = useState<Notice | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: SortableBookingKey; direction: SortDirection } | null>({ key: 'date', direction: 'ascending' });
-  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('next15');
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
+  
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 30), to: addDays(new Date(), 365 * 3) });
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('custom');
 
   // --- Firestore Data ---
   const firestore = getFirestore(app);
@@ -69,7 +70,7 @@ export default function DashboardPage() {
 
   // Bookings
   const bookingsRef = collection(firestore, 'bookings');
-  const [allBookings, loadingBookings] = useCollectionData<Booking>(query(bookingsRef, orderBy('date'), orderBy('startTime')), { idField: 'id' });
+  const [allBookings, loadingBookings, errorBookings] = useCollectionData<Booking>(query(bookingsRef, orderBy('date'), orderBy('startTime')), { idField: 'id' });
 
   // Rooms
   const roomsRef = collection(firestore, 'rooms');
@@ -80,7 +81,7 @@ export default function DashboardPage() {
   const [allUsers, loadingUsers] = useCollectionData<AppUser>(query(usersRef, orderBy('name')), { idField: 'id' });
   
   // Current User Data
-  const currentUserQuery = useMemo(() => user ? query(usersRef, where('uid', '==', user.uid)) : null, [user, usersRef]);
+  const currentUserQuery = useMemo(() => user ? query(usersRef, where('uid', '==', user.uid)) : null, [user]);
   const [currentUserData, loadingCurrentUser] = useCollectionData<AppUser>(currentUserQuery);
   const currentUser = currentUserData?.[0];
 
@@ -95,7 +96,7 @@ export default function DashboardPage() {
     );
     // Encontra o primeiro aviso que o usuário ainda não marcou como lido
     const firstUnread = noticesForUser.find(notice => 
-        !notice.readBy?.includes(user.uid)
+        notice.id && !notice.readBy?.includes(user.uid)
     );
 
     // Se encontrou um aviso não lido e nenhum modal de aviso já está aberto, define-o para ser exibido.
@@ -111,7 +112,7 @@ export default function DashboardPage() {
 
 
   const handleDismissNotice = async (noticeId: string, dismissForever: boolean) => {
-    if (dismissForever && user) {
+    if (dismissForever && user && noticeId) {
         const noticeRef = doc(firestore, "notices", noticeId);
         try {
             // Adiciona o UID do usuário ao array 'readBy' no Firestore
@@ -153,10 +154,10 @@ export default function DashboardPage() {
     const selectedDay = format(selectedDate, "yyyy-MM-dd");
     const previousDay = format(subDays(selectedDate, 1), "yyyy-MM-dd");
 
-    const todaysBookings = allBookings.filter(b => format(parseISO(b.date), "yyyy-MM-dd") === selectedDay);
+    const todaysBookings = allBookings.filter(b => b.date === selectedDay);
     
     const overnightBookings = allBookings.filter(b => {
-        const bookingDay = format(parseISO(b.date), "yyyy-MM-dd");
+        const bookingDay = b.date;
         const isOvernight = isBefore(parse(b.endTime, 'HH:mm', new Date()), parse(b.startTime, 'HH:mm', new Date()));
         return bookingDay === previousDay && isOvernight;
     });
@@ -200,7 +201,7 @@ export default function DashboardPage() {
     end.setHours(23, 59, 59, 999);
 
     return allBookings.filter(b => {
-        const bookingDate = parseISO(b.date);
+        const bookingDate = new Date(b.date + 'T00:00:00'); // Use a forma mais segura de criar a data
         return isWithinInterval(bookingDate, { start, end });
     });
   }, [allBookings, dateRangePreset, customDateRange]);
@@ -487,20 +488,21 @@ export default function DashboardPage() {
                             ))
                         ) : sortedBookings.length > 0 ? sortedBookings.map(booking => {
                             const isAdmin = currentUser?.role === 'Administrador';
-                            const canEdit = user?.uid === booking.organizerId || isAdmin;
+                            const isOrganizer = user?.uid === booking.organizerId;
+                            const room = allRooms?.find(r => r.id === booking.roomId);
 
                             return (
                                 <TableRow key={booking.id}>
                                     <TableCell className="font-medium">{booking.title}</TableCell>
                                     <TableCell className="hidden md:table-cell">{booking.roomName}</TableCell>
                                      <TableCell className="hidden sm:table-cell">
-                                        {format(parseISO(booking.date), "dd/MM/yy", { locale: ptBR })}
+                                        {format(new Date(booking.date + 'T00:00:00'), "dd/MM/yy", { locale: ptBR })}
                                         <span className="text-muted-foreground ml-2">{booking.startTime}</span>
                                     </TableCell>
                                     <TableCell className="hidden lg:table-cell">{booking.organizerName}</TableCell>
                                     <TableCell className="text-right">{booking.participants.length + (booking.guests?.length || 0)}</TableCell>
                                     <TableCell className="text-right">
-                                        {canEdit && (
+                                        {(isOrganizer || isAdmin) && room && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon">
@@ -511,7 +513,9 @@ export default function DashboardPage() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                     <EditBookingModal 
-                                                        booking={booking} 
+                                                        booking={booking}
+                                                        room={room}
+                                                        allUsers={allUsers ?? []}
                                                         onOpenChange={setModalOpen}
                                                     >
                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -534,7 +538,9 @@ export default function DashboardPage() {
                             )
                         }) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">Nenhuma reserva encontrada para este período.</TableCell>
+                                <TableCell colSpan={6} className="h-24 text-center">
+                                    {errorBookings ? `Erro: ${errorBookings.message}` : "Nenhuma reserva encontrada para este período."}
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>

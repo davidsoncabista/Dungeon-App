@@ -14,9 +14,9 @@ import type { User } from "@/lib/types/user";
 
 const adminRoutes = ["/statistics", "/users", "/rooms", "/admin"];
 const editorRoutes = ["/statistics", "/users", "/rooms"];
-const memberRoutes = ["/dashboard", "/my-bookings", "/notices", "/profile", "/subscribe"];
+const memberRoutes = ["/online-schedule", "/my-bookings", "/notices", "/profile", "/subscribe"];
 // Rotas que um visitante (perfil preenchido, mas sem plano) pode acessar.
-const visitorRoutes = ["/dashboard", "/subscribe", "/profile", "/my-bookings"];
+const visitorRoutes = ["/online-schedule", "/subscribe", "/profile", "/my-bookings"];
 
 
 export default function AppLayout({ children }: { children: ReactNode }) {

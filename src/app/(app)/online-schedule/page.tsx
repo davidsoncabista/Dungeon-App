@@ -205,7 +205,7 @@ export default function OnlineSchedulePage() {
                                         Agendando para {format(day, "PPP", { locale: ptBR })}
                                     </DialogDescription>
                                 </DialogHeader>
-                                {availableRooms.length > 0 ? (
+                                {canBook && availableRooms.length > 0 ? (
                                      <BookingForm 
                                         room={availableRooms[0]} // Simplificado: usa a primeira sala disponível
                                         date={day}
@@ -213,7 +213,13 @@ export default function OnlineSchedulePage() {
                                         onSuccess={handleCreateBooking}
                                         onCancel={() => setIsModalOpen(false)}
                                     />
-                                ) : <p>Nenhuma sala disponível para reserva.</p>}
+                                ) : <p className="text-center text-muted-foreground py-4">
+                                        { !canBook 
+                                            ? "Apenas membros com status 'Ativo' podem criar reservas." 
+                                            : "Nenhuma sala disponível para reserva."
+                                        }
+                                    </p>
+                                }
                             </DialogContent>
                         </Dialog>
                     )
@@ -222,4 +228,3 @@ export default function OnlineSchedulePage() {
         </div>
     );
 }
-
