@@ -12,15 +12,34 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Trash2 } from "lucide-react"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DeleteBookingDialogProps {
     onConfirm: () => void;
     children: React.ReactNode;
+    disabled?: boolean;
+    disabledReason?: string;
 }
 
-export function DeleteBookingDialog({ onConfirm, children }: DeleteBookingDialogProps) {
+export function DeleteBookingDialog({ onConfirm, children, disabled = false, disabledReason }: DeleteBookingDialogProps) {
+    if (disabled) {
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        {/* A div é necessária para que o Tooltip funcione em um elemento desabilitado */}
+                        <div className="relative w-full" tabIndex={0}>
+                           {children}
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{disabledReason}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        )
+    }
+    
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -43,3 +62,5 @@ export function DeleteBookingDialog({ onConfirm, children }: DeleteBookingDialog
         </AlertDialog>
     )
 }
+
+    

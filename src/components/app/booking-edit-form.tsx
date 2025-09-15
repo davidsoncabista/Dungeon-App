@@ -1,4 +1,3 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -16,7 +15,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, Calendar, AlertCircle, Search } from "lucide-react"
+import { Users, Calendar, AlertCircle, Search, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
@@ -29,11 +28,12 @@ import { useState, useMemo } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { app, auth } from "@/lib/firebase"
-import { getFirestore, collection, query, orderBy, where } from "firebase/firestore"
+import { getFirestore, collection, query, orderBy } from "firebase/firestore"
 import type { User } from "@/lib/types/user"
 import { Skeleton } from "../ui/skeleton"
 import { ScrollArea } from "../ui/scroll-area"
 import { Checkbox } from "../ui/checkbox"
+import { Separator } from "../ui/separator"
 
 const editBookingFormSchema = (maxCapacity: number) => z.object({
   title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }).max(50, { message: "O título não pode ter mais de 50 caracteres."}),
@@ -50,16 +50,19 @@ interface BookingEditFormProps {
     room: Room;
     onSuccess: (data: Partial<Omit<Booking, 'id'>>) => void;
     onCancel: () => void;
+    onDelete: () => void;
+    canCancel: boolean;
 }
 
-export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingEditFormProps) {
+export function BookingEditForm({ booking, room, onSuccess, onCancel, onDelete, canCancel }: BookingEditFormProps) {
     const [user] = useAuthState(auth);
     const firestore = getFirestore(app);
     const usersRef = collection(firestore, 'users');
     
-    // Busca todos os usuários para popular os seletores
     const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy("name")), { idField: 'id' });
-    const [searchTerm, setSearchTerm] = useState("");
+    
+    const [memberSearchTerm, setMemberSearchTerm] = useState("");
+    const [guestSearchTerm, setGuestSearchTerm] = useState("");
 
     const formSchema = editBookingFormSchema(room.capacity);
     type BookingFormValues = z.infer<typeof formSchema>;
@@ -77,35 +80,40 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
     const formattedDate = format(parseISO(booking.date), "PPP", { locale: ptBR });
     const totalParticipants = (form.watch("participants")?.length || 0) + (form.watch("guests")?.length || 0);
 
-    const { activeMembers, potentialGuests, filteredUsers } = useMemo(() => {
-        if (!allUsers) return { activeMembers: [], potentialGuests: [], filteredUsers: [] };
+    const { activeMembers, inactiveOrVisitors } = useMemo(() => {
+        if (!allUsers) return { activeMembers: [], inactiveOrVisitors: [] };
         
         const active = allUsers.filter(u => u.status === 'Ativo' && u.category !== 'Visitante');
-        const guests = allUsers.filter(u => u.status !== 'Ativo' || u.category === 'Visitante');
+        const inactive = allUsers.filter(u => u.status !== 'Ativo' || u.category === 'Visitante');
 
-        const combinedList = [...active, ...guests];
-        const filtered = searchTerm
-            ? combinedList.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
-            : combinedList;
+        return { activeMembers: active, inactiveOrVisitors: inactive };
+    }, [allUsers]);
 
-        return { activeMembers: active, potentialGuests: guests, filteredUsers: filtered };
-    }, [allUsers, searchTerm]);
+    const filteredMembers = useMemo(() => 
+        activeMembers.filter(u => 
+            u.name.toLowerCase().includes(memberSearchTerm.toLowerCase()) || 
+            (u.nickname && u.nickname.toLowerCase().includes(memberSearchTerm.toLowerCase()))
+        ), [activeMembers, memberSearchTerm]);
+
+    const filteredGuests = useMemo(() =>
+        inactiveOrVisitors.filter(u => 
+            u.name.toLowerCase().includes(guestSearchTerm.toLowerCase()) || 
+            (u.nickname && u.nickname.toLowerCase().includes(guestSearchTerm.toLowerCase()))
+        ), [inactiveOrVisitors, guestSearchTerm]);
 
 
     function onSubmit(data: BookingFormValues) {
         onSuccess(data);
     }
     
-    const handleUserToggle = (toggledUser: User) => {
-        const isGuest = potentialGuests.some(g => g.uid === toggledUser.uid);
+    const handleToggle = (userId: string, isGuest: boolean) => {
         const field = isGuest ? "guests" : "participants";
         const currentValues = form.getValues(field);
-        const newValues = currentValues.includes(toggledUser.uid)
-            ? currentValues.filter(uid => uid !== toggledUser.uid)
-            : [...currentValues, toggledUser.uid];
+        const newValues = currentValues.includes(userId)
+            ? currentValues.filter(id => id !== userId)
+            : [...currentValues, userId];
 
-        // O organizador não pode ser desmarcado
-        if (toggledUser.uid === user?.uid) return;
+        if (userId === user?.uid) return;
 
         form.setValue(field, newValues, { shouldValidate: true });
     };
@@ -176,6 +184,7 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                         </FormItem>
                     )}
                 />
+<<<<<<< HEAD
                 <div className="space-y-2">
                     <FormLabel>Participantes e Convidados</FormLabel>
                     <FormDescription>Selecione os membros e convidados para a sessão.</FormDescription>
@@ -188,25 +197,30 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                         />
                     </div>
                     <ScrollArea className="h-48 rounded-md border">
-                        <div className="p-4 space-y-2">
+                        <div className="p-4 space-y-1">
                             {filteredUsers.map(u => {
                                 const isGuest = potentialGuests.some(g => g.uid === u.uid);
                                 const isChecked = form.watch('participants').includes(u.uid) || form.watch('guests').includes(u.uid);
+                                const checkboxId = `edit-user-${u.uid}`;
                                 return (
                                     <div 
                                         key={u.uid} 
                                         className={cn(
-                                            "flex items-center space-x-3 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
+                                            "flex items-center space-x-3 p-2 rounded-md",
                                             isGuest && "opacity-75"
                                         )}
-                                        onClick={() => handleUserToggle(u)}
                                     >
                                         <Checkbox 
+                                            id={checkboxId}
                                             checked={isChecked}
+                                            onCheckedChange={() => handleUserToggle(u)}
                                             disabled={u.uid === user?.uid} // Organizador não pode ser desmarcado
                                             aria-label={`Selecionar ${u.name}`}
                                         />
-                                        <label className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                        <label
+                                            htmlFor={checkboxId}
+                                            className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        >
                                             {u.name}
                                         </label>
                                         {isGuest && <Badge variant="outline">{u.category}</Badge>}
@@ -216,8 +230,55 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                             {filteredUsers.length === 0 && (
                                 <p className="text-center text-sm text-muted-foreground py-4">Nenhum usuário encontrado.</p>
                             )}
+=======
+                <div className="space-y-4">
+                    {/* Members Section */}
+                    <div className="space-y-2">
+                        <FormLabel>Membros</FormLabel>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar membro por nome ou apelido..." className="pl-9" onChange={(e) => setMemberSearchTerm(e.target.value)} />
+>>>>>>> 6892017e (vamos mudar essa lista vamos almentar mais um step do modal, o segundo s)
                         </div>
-                    </ScrollArea>
+                        <ScrollArea className="h-32 rounded-md border">
+                            <div className="p-4 space-y-1">
+                                {filteredMembers.map(u => (
+                                    <div key={u.uid} className="flex items-center space-x-3 p-2 rounded-md">
+                                        <Checkbox id={`edit-member-${u.uid}`} checked={form.watch('participants').includes(u.uid)} onCheckedChange={() => handleToggle(u.uid, false)} disabled={u.uid === user?.uid} />
+                                        <label htmlFor={`edit-member-${u.uid}`} className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                            {u.name} {u.nickname && `(${u.nickname})`}
+                                        </label>
+                                    </div>
+                                ))}
+                                {filteredMembers.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">Nenhum membro encontrado.</p>}
+                            </div>
+                        </ScrollArea>
+                    </div>
+                    
+                    <Separator />
+
+                    {/* Guests Section */}
+                    <div className="space-y-2">
+                        <FormLabel>Convidados</FormLabel>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Buscar convidado por nome ou apelido..." className="pl-9" onChange={(e) => setGuestSearchTerm(e.target.value)} />
+                        </div>
+                        <ScrollArea className="h-32 rounded-md border">
+                            <div className="p-4 space-y-1">
+                                {filteredGuests.map(u => (
+                                    <div key={u.uid} className="flex items-center space-x-3 p-2 rounded-md opacity-75">
+                                        <Checkbox id={`edit-guest-${u.uid}`} checked={form.watch('guests').includes(u.uid)} onCheckedChange={() => handleToggle(u.uid, true)} />
+                                        <label htmlFor={`edit-guest-${u.uid}`} className="flex-1 text-sm font-medium leading-none cursor-pointer">
+                                            {u.name} {u.nickname && `(${u.nickname})`}
+                                        </label>
+                                        <Badge variant="outline">{u.category}</Badge>
+                                    </div>
+                                ))}
+                                {filteredGuests.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">Nenhum convidado encontrado.</p>}
+                            </div>
+                        </ScrollArea>
+                    </div>
                 </div>
                 
                 {form.formState.errors.guests?.message && (
@@ -228,15 +289,24 @@ export function BookingEditForm({ booking, room, onSuccess, onCancel }: BookingE
                         </AlertDescription>
                     </Alert>
                 )}
-                <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={onCancel}>
-                        Cancelar
-                    </Button>
-                    <Button type="submit">Salvar Alterações</Button>
+                <DialogFooter className="pt-4">
+                    <div className="flex w-full justify-between items-center">
+                        <DeleteBookingDialog onConfirm={onDelete} disabled={!canCancel} disabledReason="Não é possível cancelar reservas com menos de 5h de antecedência.">
+                             <Button type="button" variant="destructive" disabled={!canCancel}>
+                                <Trash2 className="mr-2 h-4 w-4"/>
+                                Cancelar Reserva
+                             </Button>
+                        </DeleteBookingDialog>
+                        
+                        <div className="flex gap-2">
+                            <Button type="button" variant="ghost" onClick={onCancel}>
+                                Fechar
+                            </Button>
+                            <Button type="submit">Salvar Alterações</Button>
+                        </div>
+                    </div>
                 </DialogFooter>
             </form>
         </Form>
     );
 }
-
-    

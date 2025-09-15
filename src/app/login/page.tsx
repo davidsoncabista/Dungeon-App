@@ -33,7 +33,7 @@ export default function LoginPage() {
                 title: `Bem-vindo, ${user.displayName}!`,
                 description: "Login realizado com sucesso.",
             });
-            router.push('/dashboard');
+            router.push('/online-schedule');
         } catch (error: any) {
             // Se o usuário fechou o popup, não fazemos nada.
             if (error.code === 'auth/popup-closed-by-user') {

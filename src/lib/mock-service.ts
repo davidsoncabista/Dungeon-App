@@ -77,7 +77,7 @@ let bookings: Booking[] = [
     endTime: '22:30', 
     title: 'A Sociedade do Anel',
     description: 'Continuar a jornada para destruir o Um Anel.',
-    participants: [], // Será preenchido dinamicamente
+    participants: ['usr_frodo', 'usr_gandalf', 'usr_aragorn', 'usr_legolas'],
     guests: [],
     status: 'Confirmada'
   },
@@ -89,7 +89,7 @@ let bookings: Booking[] = [
     startTime: '18:00', 
     endTime: '22:00', 
     title: 'Torneio de Card Game',
-    participants: [],
+    participants: ['aj6dlsAG8CXFm85ccNtivvAafia2', 'usr_gandalf', 'usr_frodo'],
     guests: [],
     status: 'Confirmada'
   },
@@ -100,7 +100,7 @@ let bookings: Booking[] = [
     date: '2024-09-15', 
     startTime: '20:00', 
     endTime: '23:30', 
-    participants: [],
+    participants: ['usr_aragorn', 'usr_legolas'],
     guests: [],
     status: 'Confirmada'
   },
@@ -112,7 +112,7 @@ let bookings: Booking[] = [
     startTime: '23:00', 
     endTime: '07:00', 
     title: 'Corujão de Testes',
-    participants: [],
+    participants: ['usr_gandalf'],
     guests: [],
     status: 'Confirmada'
   },
@@ -124,7 +124,7 @@ let bookings: Booking[] = [
     startTime: '08:00', 
     endTime: '12:30', 
     title: 'Sessão de World of Warcraft RPG',
-    participants: [],
+    participants: ['usr_gandalf'],
     guests: [],
     status: 'Confirmada'
   },

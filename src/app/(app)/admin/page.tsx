@@ -7,20 +7,22 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { PlanForm } from "@/components/app/admin/plan-form"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore"
-import { app } from "@/lib/firebase"
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore"
+import { app, auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import type { AdminRole } from "@/lib/types/user";
+import type { AdminRole, User as AppUser } from "@/lib/types/user";
+import { useAuthState } from "react-firebase-hooks/auth"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Objeto que serve como documentação viva das regras de acesso do sistema.
 const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
@@ -50,11 +52,22 @@ const accessRules: Record<AdminRole | 'Visitante', { description: string; pages:
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
   const firestore = getFirestore(app);
+  
+  // --- Data Fetching ---
   const plansRef = collection(firestore, 'plans');
   const plansQuery = query(plansRef, orderBy("price"));
-  const [plans, loading, error] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
+  const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
 
+  const usersRef = collection(firestore, 'users');
+  const currentUserQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
+  const [appUser, loadingUser] = useCollectionData<AppUser>(currentUserQuery);
+  const currentUser = appUser?.[0];
+  
+  const canEdit = currentUser?.role === 'Administrador';
+
+  // --- Component State ---
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
@@ -62,6 +75,7 @@ export default function AdminPage() {
 
 
   const handleCreatePlan = async (data: { name: string }) => {
+    if (!canEdit) return;
     setIsSaving(true);
     try {
       const newPlanRef = doc(plansRef);
@@ -88,7 +102,7 @@ export default function AdminPage() {
   };
 
   const handleUpdatePlan = async (data: { name: string }) => {
-    if (!editingPlan) return;
+    if (!editingPlan || !canEdit) return;
     setIsSaving(true);
     try {
       await updateDoc(doc(firestore, "plans", editingPlan.id), { name: data.name });
@@ -103,7 +117,7 @@ export default function AdminPage() {
   };
 
   const handleDeletePlan = async () => {
-    if (!deletingPlan) return;
+    if (!deletingPlan || !canEdit) return;
     setIsSaving(true);
     try {
         await deleteDoc(doc(firestore, "plans", deletingPlan.id));
@@ -118,6 +132,7 @@ export default function AdminPage() {
   };
 
   const handleFieldChange = async (planId: string, field: keyof Plan, value: string | number) => {
+    if (!canEdit) return;
     const planRef = doc(firestore, "plans", planId);
     try {
         await updateDoc(planRef, { [field]: Number(value) });
@@ -136,7 +151,7 @@ export default function AdminPage() {
   };
   
   const renderContent = () => {
-    if (loading) {
+    if (loadingPlans || loadingUser) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
             <TableCell><Skeleton className="h-6 w-24" /></TableCell>
@@ -152,7 +167,7 @@ export default function AdminPage() {
       ));
     }
 
-    if (error) {
+    if (errorPlans) {
       return (
         <TableRow>
           <TableCell colSpan={9}>
@@ -160,7 +175,7 @@ export default function AdminPage() {
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
                     <h4 className="font-bold text-destructive">Erro ao carregar planos</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. ({error.message})</p>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. ({errorPlans.message})</p>
                 </div>
             </div>
           </TableCell>
@@ -184,7 +199,8 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.price}
                 onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)}
-                className="w-24 mx-auto" 
+                className="w-24 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
             <TableCell className="text-center">
@@ -192,7 +208,8 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.weeklyQuota} 
                 onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)}
-                className="w-20 mx-auto" 
+                className="w-20 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
           <TableCell className="text-center">
@@ -200,7 +217,8 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.monthlyQuota} 
                 onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)}
-                className="w-20 mx-auto" 
+                className="w-20 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
           <TableCell className="text-center">
@@ -208,7 +226,8 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.corujaoQuota || 0} 
                 onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)}
-                className="w-20 mx-auto" 
+                className="w-20 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
           <TableCell className="text-center">
@@ -216,7 +235,8 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.invites} 
                 onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)}
-                className="w-20 mx-auto" 
+                className="w-20 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
            <TableCell className="text-center">
@@ -224,7 +244,8 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.extraInvitePrice || 0} 
                 onBlur={(e) => handleFieldChange(plan.id, 'extraInvitePrice', e.target.value)}
-                className="w-24 mx-auto" 
+                className="w-24 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
           <TableCell className="text-center">
@@ -232,20 +253,21 @@ export default function AdminPage() {
                 type="number" 
                 defaultValue={plan.votingWeight} 
                 onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)}
-                className="w-20 mx-auto" 
+                className="w-20 mx-auto"
+                disabled={!canEdit}
               />
           </TableCell>
           <TableCell className="text-right">
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={isSaving}>
+                      <Button variant="ghost" size="icon" disabled={isSaving || !canEdit}>
                           <MoreHorizontal className="h-4 w-4" />
                           <span className="sr-only">Ações para {plan.name}</span>
                       </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuItem onSelect={() => setEditingPlan(plan)}>
+                      <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar Nome
                       </DropdownMenuItem>
@@ -253,6 +275,7 @@ export default function AdminPage() {
                       <DropdownMenuItem 
                           className="text-destructive focus:text-destructive focus:bg-destructive/10"
                           onSelect={() => setDeletingPlan(plan)}
+                          disabled={!canEdit}
                       >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir
@@ -276,11 +299,11 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
-                    <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. As alterações são salvas automaticamente.</CardDescription>
+                    <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
                 </div>
                  <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                     <DialogTrigger asChild>
-                        <Button disabled={isSaving}>
+                        <Button disabled={isSaving || !canEdit}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Novo Plano
                         </Button>
@@ -301,24 +324,37 @@ export default function AdminPage() {
             </div>
         </CardHeader>
         <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Plano</TableHead>
-                        <TableHead className="text-center">Preço (R$)</TableHead>
-                        <TableHead className="text-center">Cota Semanal</TableHead>
-                        <TableHead className="text-center">Cota Mensal</TableHead>
-                        <TableHead className="text-center">Cota Corujão</TableHead>
-                        <TableHead className="text-center">Cota Convites</TableHead>
-                        <TableHead className="text-center">Preço Convite Extra (R$)</TableHead>
-                        <TableHead className="text-center">Peso de Voto</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                   {renderContent()}
-                </TableBody>
-            </Table>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className={!canEdit ? 'cursor-not-allowed' : ''}>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Plano</TableHead>
+                                        <TableHead className="text-center">Preço (R$)</TableHead>
+                                        <TableHead className="text-center">Cota Semanal</TableHead>
+                                        <TableHead className="text-center">Cota Mensal</TableHead>
+                                        <TableHead className="text-center">Cota Corujão</TableHead>
+                                        <TableHead className="text-center">Cota Convites</TableHead>
+                                        <TableHead className="text-center">Preço Convite Extra (R$)</TableHead>
+                                        <TableHead className="text-center">Peso de Voto</TableHead>
+                                        <TableHead className="text-right">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                {renderContent()}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </TooltipTrigger>
+                     {!canEdit && (
+                        <TooltipContent>
+                            <p>Você não tem permissão para editar os planos.</p>
+                        </TooltipContent>
+                     )}
+                </Tooltip>
+            </TooltipProvider>
         </CardContent>
       </Card>
 
@@ -337,7 +373,7 @@ export default function AdminPage() {
                     <Label htmlFor="maintenance-mode" className="text-muted-foreground max-w-sm">
                         Quando ativado, apenas administradores podem acessar o sistema. Novos agendamentos e edições são bloqueados para membros.
                     </Label>
-                    <Switch id="maintenance-mode" aria-label="Ativar modo de manutenção" />
+                    <Switch id="maintenance-mode" aria-label="Ativar modo de manutenção" disabled={!canEdit} />
                 </div>
             </div>
             <Alert variant="destructive">
@@ -413,3 +449,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
+    

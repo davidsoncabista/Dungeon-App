@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays } from "lucide-react"
@@ -22,11 +21,19 @@ import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 
+// Navegação principal para membros ativos
 const navItems = [
   { href: "/online-schedule", label: "Agenda Online", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
-  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
-  { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante", "Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
 ];
+
+// Navegação visível para usuários 'Visitante' ou 'Pendente'
+const visitorNavItems = [
+    { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
+    { href: "/profile", label: "Meu Perfil", icon: User, roles: ["Visitante", "Pendente"] },
+];
+
 
 const adminNavItems = [
     { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
@@ -45,8 +52,10 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
   
-  const userRole = currentUserData?.role || 'Visitante';
+  const userRole = currentUserData?.role || 'Membro';
+  const userStatus = currentUserData?.status || 'Pendente';
   const userCategory = currentUserData?.category || 'Visitante';
+
 
   const handleLogout = async () => {
     try {
@@ -67,18 +76,18 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   };
 
   const getVisibleNavItems = () => {
-    // Visitantes não veem o menu principal de navegação, apenas o de matrícula/perfil.
+    // Visitantes veem um conjunto específico de páginas.
     if (userCategory === 'Visitante') {
-        return navItems.filter(item => item.roles.includes('Visitante'));
+        return visitorNavItems;
     }
-    // O fallback para 'Membro' garante que mesmo que o role não esteja definido, ele veja o menu básico.
-    return navItems.filter(item => item.roles.includes(userRole || 'Membro'));
+    // Membros ativos e admins
+    return navItems.filter(item => item.roles.includes(userRole));
   }
 
   const getVisibleAdminNavItems = () => {
-     if (userCategory === 'Visitante' || userRole === 'Membro') return [];
-     // O fallback para 'Membro' garante que o menu admin não apareça se o role for indefinido.
-     return adminNavItems.filter(item => item.roles.includes(userRole || 'Membro'));
+     if (userCategory === 'Visitante' || userStatus === 'Pendente' || userRole === 'Membro') return [];
+     // Filtra itens de admin baseado no role específico.
+     return adminNavItems.filter(item => item.roles.includes(userRole));
   }
 
   const visibleNavItems = getVisibleNavItems();

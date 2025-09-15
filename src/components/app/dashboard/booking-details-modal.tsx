@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type ReactNode } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import type { User as AppUser } from "@/lib/types/user";
 import { Skeleton } from "@/components/ui/skeleton"
 
 // --- Componente de Detalhes da Reserva (Modal) ---
-export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booking: Booking, children: React.ReactNode, onOpenChange: (open: boolean) => void }) => {
+export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booking: Booking, children: ReactNode, onOpenChange: (open: boolean) => void }) => {
     const [user] = useAuthState(auth);
     const firestore = getFirestore(app);
     
@@ -36,6 +36,11 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
         allParticipantUIDs.length > 0 ? query(usersRef, where('uid', 'in', allParticipantUIDs)) : null
     , [allParticipantUIDs, usersRef]);
     const [participantDetails, loadingParticipants] = useCollectionData<AppUser>(participantsQuery, { idField: 'id' });
+
+    // Busca dados do usuário atual para checar se é admin
+    const currentUserQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
+    const [currentUserData] = useCollectionData<AppUser>(currentUserQuery);
+    const currentUser = currentUserData?.[0];
     
     const organizer = useMemo(() => 
         participantDetails?.find(p => p.uid === booking.organizerId)
@@ -49,8 +54,11 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
         participantDetails?.filter(p => booking.guests?.includes(p.uid))
     , [participantDetails, booking.guests]);
     
-    const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
+    const formattedDate = format(new Date(booking.date + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
     const isOrganizer = user?.uid === booking.organizerId;
+    const isAdmin = currentUser?.role === 'Administrador';
+    const canEdit = isOrganizer || isAdmin;
+    
     const [isMyModalOpen, setIsMyModalOpen] = useState(false);
 
     const handleMyOpenChange = (open: boolean) => {
@@ -102,7 +110,7 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
                    </div>
                    )}
                 </div>
-                 {isOrganizer && (
+                 {canEdit && (
                     <div className="flex justify-end gap-2">
                         <EditBookingModal booking={booking} onOpenChange={setIsMyModalOpen}>
                             <Button variant="outline"><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
@@ -113,3 +121,5 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
         </Dialog>
     )
 }
+
+    

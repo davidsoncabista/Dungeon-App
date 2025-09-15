@@ -1,30 +1,52 @@
-
 "use client"
 
 import * as React from "react";
-import { addMonths, format, getDay, isSameMonth, isToday, startOfMonth, startOfWeek } from "date-fns";
+import { addMonths, format, isSameMonth, isToday, startOfMonth, startOfWeek, addDays, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+<<<<<<< HEAD
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+<<<<<<< HEAD
 import { ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
+=======
+import { ChevronLeft, ChevronRight, PlusCircle, Plus, Lock } from "lucide-react";
+>>>>>>> b93da843 (a parte de visualizar pode ser para todos exeto para visitantes ou mebro)
 import { useCollectionData } from "react-firebase-hooks/firestore";
+<<<<<<< HEAD
 import { getFirestore, collection, query, orderBy, where, doc, setDoc } from "firebase/firestore";
+=======
+import { getFirestore, collection, query, orderBy, where, addDoc, serverTimestamp } from "firebase/firestore";
+>>>>>>> 29a97599 (os editores podem editar as reservas)
 import { app, auth } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BookingForm } from "@/components/app/booking-form";
 import { useToast } from "@/hooks/use-toast";
+=======
+import { ChevronLeft, ChevronRight, PlusCircle, Plus, Lock } from "lucide-react";
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { getFirestore, collection, query, orderBy } from "firebase/firestore";
+import { app, auth } from "@/lib/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+>>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/lib/types/room";
 import type { User as AppUser } from "@/lib/types/user";
 import type { Plan } from "@/lib/types/plan";
 import { cn } from "@/lib/utils";
+<<<<<<< HEAD
+=======
+import { BookingModal } from "@/components/app/dashboard/booking-modal";
+import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal";
+import { BookingDetailsModal } from "@/components/app/dashboard/booking-details-modal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+>>>>>>> b93da843 (a parte de visualizar pode ser para todos exeto para visitantes ou mebro)
 
 const DaySkeleton = () => (
-    <div className="border border-muted/50 rounded-md p-2 h-32 flex flex-col">
-        <Skeleton className="h-5 w-5 mb-2"/>
-        <div className="space-y-1">
+    <div className="border-t border-l p-2 h-32 md:h-40 flex flex-col">
+        <span className="font-semibold"><Skeleton className="h-5 w-5 mb-2"/></span>
+        <div className="space-y-1 mt-1">
             <Skeleton className="h-3 w-full"/>
             <Skeleton className="h-3 w-5/6"/>
         </div>
@@ -32,12 +54,10 @@ const DaySkeleton = () => (
 )
 
 export default function OnlineSchedulePage() {
-    const { toast } = useToast();
     const [user, loadingAuth] = useAuthState(auth);
     const firestore = getFirestore(app);
 
     const [currentMonth, setCurrentMonth] = React.useState(startOfMonth(new Date()));
-    const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
 
     // --- Firestore Data ---
@@ -48,9 +68,9 @@ export default function OnlineSchedulePage() {
     const [rooms, loadingRooms] = useCollectionData<Room>(query(roomsRef, orderBy('name')), { idField: 'id' });
 
     const usersRef = collection(firestore, 'users');
-    const [currentUserData, loadingCurrentUser] = useCollectionData<AppUser>(user ? query(usersRef, where('uid', '==', user.uid)) : null);
-    const currentUser = currentUserData?.[0];
-
+    const [users, loadingUsers] = useCollectionData<AppUser>(query(usersRef, orderBy('name')), { idField: 'id' });
+    const currentUser = users?.find(u => u.uid === user?.uid);
+    
     const plansRef = collection(firestore, 'plans');
     const [plans, loadingPlans] = useCollectionData<Plan>(plansRef, { idField: 'id' });
     const userPlan = React.useMemo(() => plans?.find(p => p.name === currentUser?.category), [plans, currentUser]);
@@ -61,26 +81,21 @@ export default function OnlineSchedulePage() {
     const handleToday = () => setCurrentMonth(startOfMonth(new Date()));
 
     const daysInMonth = React.useMemo(() => {
-        const start = startOfWeek(currentMonth);
+        const start = startOfWeek(currentMonth, { weekStartsOn: 0 }); // Dom=0
         const days = [];
-        for (let i = 0; i < 35; i++) {
-            days.push(addMonths(start, Math.floor(i/7) * 0).setDate(start.getDate() + i));
+        let day = start;
+        for (let i = 0; i < 42; i++) {
+            days.push(new Date(day));
+            day.setDate(day.getDate() + 1);
         }
-        const correctedDays = days.map(d => new Date(d));
-        // Ensure we get 35 or 42 days to fill the grid
-        if (correctedDays.length < 42 && getDay(correctedDays[34]) !== 6) {
-             for (let i = 35; i < 42; i++) {
-                correctedDays.push(addMonths(start, Math.floor(i/7) * 0).setDate(start.getDate() + i));
-            }
-        }
-        return correctedDays.map(d => new Date(d));
+        return days;
     }, [currentMonth]);
 
 
     const bookingsByDay = React.useMemo(() => {
         if (!bookings) return new Map();
         return bookings.reduce((acc, booking) => {
-            const date = booking.date;
+            const date = format(new Date(booking.date + 'T00:00:00'), 'yyyy-MM-dd');
             if (!acc.has(date)) {
                 acc.set(date, []);
             }
@@ -89,6 +104,7 @@ export default function OnlineSchedulePage() {
         }, new Map<string, Booking[]>());
     }, [bookings]);
 
+<<<<<<< HEAD
     const handleCreateBooking = async (data: Omit<Booking, 'id' | 'status'>) => {
         if (!user || !userPlan) {
             toast({ title: "Erro", description: "Você precisa estar logado e ter um plano para reservar.", variant: "destructive" });
@@ -126,6 +142,40 @@ export default function OnlineSchedulePage() {
         }
     };
 
+=======
+    const canBook = currentUser?.status === 'Ativo';
+
+    const today = startOfDay(new Date());
+    const bookingLimitDate = addDays(today, 15);
+>>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
+
+    const handleCreateBooking = async (data: Omit<Booking, 'id' | 'status'>) => {
+      if(!user) return;
+      const newBooking: Booking = {
+        ...data,
+        id: '', // será preenchido pelo Firestore
+        organizerId: user.uid,
+        status: 'Confirmada'
+      };
+
+      try {
+        const newBookingRef = doc(collection(firestore, "bookings"));
+        await setDoc(newBookingRef, { ...newBooking, id: newBookingRef.id });
+
+        toast({
+            title: "Reserva Confirmada!",
+            description: `Sua reserva foi agendada com sucesso.`,
+        });
+        setIsModalOpen(false);
+      } catch(error) {
+        console.error("Erro ao criar reserva:", error);
+        toast({
+            title: "Erro!",
+            description: "Não foi possível criar a reserva.",
+            variant: "destructive"
+        });
+      }
+    }
 
     return (
         <div className="flex flex-col h-full">
@@ -139,6 +189,8 @@ export default function OnlineSchedulePage() {
                     {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
                 </h2>
                 <div>
+<<<<<<< HEAD
+<<<<<<< HEAD
                      <Dialog open={isModalOpen && !selectedDate} onOpenChange={setIsModalOpen}>
                         <DialogTrigger asChild>
                             <Button><PlusCircle className="mr-2 h-4 w-4"/>Nova Reserva</Button>
@@ -153,6 +205,24 @@ export default function OnlineSchedulePage() {
                             </p>
                         </DialogContent>
                     </Dialog>
+=======
+=======
+>>>>>>> b93da843 (a parte de visualizar pode ser para todos exeto para visitantes ou mebro)
+                     <BookingModal 
+                        room={rooms?.find(r => r.status === 'Disponível')!} 
+                        date={new Date()} 
+                        onOpenChange={setIsModalOpen} 
+                        allBookings={bookings || []} 
+<<<<<<< HEAD
+                        onSuccess={handleCreateBooking}
+=======
+>>>>>>> b93da843 (a parte de visualizar pode ser para todos exeto para visitantes ou mebro)
+                    >
+                        <Button disabled={!canBook}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>Nova Reserva
+                        </Button>
+                    </BookingModal>
+>>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
                 </div>
             </header>
 
@@ -161,74 +231,86 @@ export default function OnlineSchedulePage() {
             </div>
 
             <div className="grid grid-cols-7 flex-1">
-                {(loadingBookings || loadingRooms || loadingAuth || loadingPlans) 
+                {(loadingBookings || loadingRooms || loadingAuth || loadingPlans || loadingUsers) 
                     ? Array.from({length: 42}).map((_, i) => <DaySkeleton key={i}/>)
                     : daysInMonth.map(day => {
                     const dayBookings = bookingsByDay.get(format(day, 'yyyy-MM-dd')) || [];
                     const availableRooms = rooms?.filter(r => r.status === 'Disponível') ?? [];
-                    const canBook = currentUser?.status === 'Ativo';
 
                     return (
-                        <Dialog key={day.toString()} onOpenChange={(open) => {
-                            if (!open) setSelectedDate(null);
-                            setIsModalOpen(open);
-                        }} open={isModalOpen && selectedDate?.getTime() === day.getTime()}>
-                            <DialogTrigger asChild>
-                                <div 
-                                    className={cn(
-                                        "border-t border-l p-2 h-32 md:h-40 flex flex-col cursor-pointer hover:bg-muted/50 transition-colors",
-                                        !isSameMonth(day, currentMonth) && "bg-muted/30 text-muted-foreground",
-                                        isToday(day) && "bg-blue-50"
-                                    )}
-                                    onClick={() => setSelectedDate(day)}
-                                >
-                                    <span className={cn("font-semibold", isToday(day) && "text-primary font-bold")}>
-                                        {format(day, 'd')}
-                                    </span>
-                                    <div className="flex-1 overflow-y-auto text-xs space-y-1 mt-1">
-                                        {dayBookings.slice(0, 3).map(b => {
-                                            const room = rooms?.find(r => r.id === b.roomId);
-                                            return (
-                                                <div key={b.id} className="p-1 bg-primary/10 text-primary-foreground rounded-sm truncate">
+                        <div 
+                            key={day.toString()}
+                            className={cn(
+                                "border-t border-l p-1.5 h-32 md:h-40 flex flex-col relative",
+                                !isSameMonth(day, currentMonth) && "bg-muted/30 text-muted-foreground",
+                                isToday(day) && "bg-blue-50",
+                                isPastDay && "bg-muted/50"
+                            )}
+                        >
+                            <div className="flex justify-between items-center">
+                                <span className={cn("font-semibold text-xs md:text-sm", isToday(day) && "text-primary font-bold")}>
+                                    {format(day, 'd')}
+                                </span>
+                                <BookingModal room={availableRooms[0]} date={day} onOpenChange={setIsModalOpen} allBookings={bookings || []}>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!canBook}>
+                                        <Plus className="h-4 w-4" />
+                                        <span className="sr-only">Adicionar Reserva</span>
+                                    </Button>
+                                </BookingModal>
+                            </div>
+                            <div className="flex-1 overflow-y-auto text-xs space-y-1 mt-1 pr-1">
+                                {dayBookings.slice(0, 3).map(b => {
+                                    const room = rooms?.find(r => r.id === b.roomId);
+                                    const isOrganizer = b.organizerId === user?.uid;
+                                    
+                                    const canEdit = isOrganizer || isAdmin;
+                                    const canView = currentUser?.status !== 'Pendente' && currentUser?.category !== 'Visitante';
+
+                                    if (canEdit) {
+                                        return (
+                                            <EditBookingModal key={b.id} booking={b} onOpenChange={setIsModalOpen}>
+                                                <div className="p-1 bg-primary/20 text-primary-foreground rounded-sm truncate cursor-pointer hover:bg-primary/30">
                                                     <span className="font-semibold text-primary">{room?.name.slice(0,5)}:</span> <span className="text-primary/80">{b.title}</span>
                                                 </div>
-                                            )
-                                        })}
-                                        {dayBookings.length > 3 && (
-                                            <div className="text-center text-muted-foreground font-bold">...</div>
-                                        )}
-                                    </div>
-                                </div>
-                            </DialogTrigger>
-                             <DialogContent className="sm:max-w-lg">
-                                <DialogHeader>
-                                    <DialogTitle>Nova Reserva</DialogTitle>
-                                    <DialogDescription>
-                                        Agendando para {format(day, "PPP", { locale: ptBR })}
-                                    </DialogDescription>
-                                </DialogHeader>
-                                {canBook && availableRooms.length > 0 ? (
-                                     <BookingForm 
-                                        room={availableRooms[0]} // Simplificado: usa a primeira sala disponível. Poderíamos adicionar um seletor de salas aqui no futuro.
-                                        date={day}
-                                        allBookings={bookings || []}
-                                        onSuccess={handleCreateBooking}
-                                        onCancel={() => setSelectedDate(null)}
-                                    />
-                                ) : <p className="text-center text-muted-foreground py-4">
-                                        { !canBook 
-                                            ? "Apenas membros com status 'Ativo' podem criar reservas." 
-                                            : "Nenhuma sala disponível para reserva."
-                                        }
-                                    </p>
-                                }
-                            </DialogContent>
-                        </Dialog>
+                                            </EditBookingModal>
+                                        )
+                                    }
+
+                                    if(canView) {
+                                        return (
+                                            <BookingDetailsModal key={b.id} booking={b} onOpenChange={setIsModalOpen}>
+                                                <div className="p-1 bg-secondary text-secondary-foreground rounded-sm truncate cursor-pointer hover:bg-secondary/80">
+                                                    <span className="font-semibold">{room?.name.slice(0,5)}:</span> <span>{b.title}</span>
+                                                </div>
+                                            </BookingDetailsModal>
+                                        )
+                                    }
+
+                                    // Renderização para Visitantes/Pendentes
+                                    return (
+                                        <TooltipProvider key={b.id}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="p-1 bg-muted/50 text-muted-foreground rounded-sm truncate cursor-not-allowed flex items-center gap-1">
+                                                        <Lock className="h-3 w-3 shrink-0" />
+                                                        <span className="truncate">{b.title}</span>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Complete seu cadastro e matrícula para ver os detalhes.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )
+                                })}
+                                {dayBookings.length > 3 && (
+                                    <div className="text-center text-muted-foreground font-bold text-xs">...</div>
+                                )}
+                            </div>
+                        </div>
                     )
                 })}
             </div>
         </div>
     );
 }
-
-    

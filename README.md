@@ -29,6 +29,18 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Comunicação Direta**: Envie avisos para todos os usuários e acompanhe quem já visualizou.
 - **Gestão Financeira**: Gerencie cobranças avulsas e tenha acesso ao histórico de transações de todos os membros.
 
+## Desenvolvimento e Deploy
+
+### Rodando Localmente
+Para rodar o projeto em ambiente de desenvolvimento, utilize o comando:
+`npm run dev`
+
+### Fazendo Deploy
+Para publicar as alterações no Firebase (App Hosting e Functions), utilize o comando:
+`firebase deploy`
+
+Certifique-se de estar autenticado na CLI do Firebase (`firebase login`).
+
 ## Equipe do Projeto
 
 - **Davidson Santos Conceição**: Project Lead & DevOps Engineer
@@ -42,3 +54,4 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Iasmin Oneide Figueira de Castro Leal (@koda_master)**: Homologação (Testes)
 
 Este projeto foi construído com Next.js, React, Tailwind CSS e Firebase.
+

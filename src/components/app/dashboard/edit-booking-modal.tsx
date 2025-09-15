@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -6,10 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import type { Booking } from "@/lib/types/booking"
 import { BookingEditForm } from "@/components/app/booking-edit-form"
 import { useToast } from "@/hooks/use-toast"
-import { getFirestore, doc, updateDoc } from "firebase/firestore"
+import { getFirestore, doc, updateDoc, deleteDoc } from "firebase/firestore"
 import { app } from "@/lib/firebase"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 import type { Room } from "@/lib/types/room"
+import { differenceInHours, parseISO } from "date-fns"
+import { DeleteBookingDialog } from "./delete-booking-dialog"
 
 // --- Componente de Edição de Reserva (Modal) ---
 export const EditBookingModal = ({ booking, onOpenChange, children }: { booking: Booking; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => {
@@ -41,6 +42,30 @@ export const EditBookingModal = ({ booking, onOpenChange, children }: { booking:
             });
         }
     };
+    
+    const handleDelete = async () => {
+        const bookingRef = doc(firestore, 'bookings', booking.id);
+        try {
+            await deleteDoc(bookingRef);
+            toast({
+                title: "Reserva Cancelada!",
+                description: "A reserva foi cancelada com sucesso.",
+            });
+            handleOpenChange(false);
+        } catch (error) {
+            toast({
+                title: "Erro ao Cancelar",
+                description: "Não foi possível cancelar a reserva.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    // Lógica para permitir ou não o cancelamento
+    const bookingDateTime = parseISO(`${booking.date}T${booking.startTime}`);
+    const hoursUntilBooking = differenceInHours(bookingDateTime, new Date());
+    const canCancel = hoursUntilBooking >= 5;
+
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -56,11 +81,11 @@ export const EditBookingModal = ({ booking, onOpenChange, children }: { booking:
                         room={room}
                         onSuccess={handleSuccess}
                         onCancel={() => handleOpenChange(false)}
+                        onDelete={handleDelete}
+                        canCancel={canCancel}
                     />
                 )}
             </DialogContent>
         </Dialog>
     );
 };
-
-    

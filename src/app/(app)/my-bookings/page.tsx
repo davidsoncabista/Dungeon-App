@@ -1,153 +1,141 @@
 
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableHeader, TableRow, TableCell } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { isFuture, isPast, parseISO } from "date-fns"
-import { CalendarPlus, CalendarX } from "lucide-react"
-import { BookingRow } from "@/components/app/my-bookings/booking-row"
+import { useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { app, auth } from "@/lib/firebase"
-import { useMemo } from "react"
-import type { Booking } from "@/lib/types/booking"
-import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
+import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
+import { isPast, parseISO } from "date-fns"
+
+import { auth, app } from "@/lib/firebase"
+import type { Booking } from "@/lib/types/booking"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { BookingRow } from "@/components/app/my-bookings/booking-row"
+import { BookMarked, ShieldAlert } from "lucide-react"
 
 export default function MyBookingsPage() {
   const [user, loadingAuth] = useAuthState(auth);
-  
   const firestore = getFirestore(app);
+
   const bookingsRef = collection(firestore, 'bookings');
   
   // Query for bookings where the current user is a participant
   const userBookingsQuery = useMemo(() => 
     user ? query(bookingsRef, where('participants', 'array-contains', user.uid), orderBy('date', 'desc')) : null, 
-  [user, bookingsRef]);
+  [user]);
 
   const [allUserBookings, loadingBookings, error] = useCollectionData<Booking>(userBookingsQuery, { idField: 'id' });
 
-  const { upcomingBookings, pastBookings } = useMemo(() => {
-    if (!allUserBookings) {
-        return { upcomingBookings: [], pastBookings: [] };
-    }
-    const now = new Date();
-    return {
-      upcomingBookings: allUserBookings.filter(b => isFuture(parseISO(`${b.date}T${b.endTime}`))).sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime()),
-      pastBookings: allUserBookings.filter(b => isPast(parseISO(`${b.date}T${b.endTime}`))).sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime()),
-    }
-  }, [allUserBookings]);
+  const { upcomingBookings, pastBookings } = (bookings || []).reduce(
+    (acc, booking) => {
+      const bookingDate = parseISO(`${booking.date}T${booking.endTime}`);
+      if (isPast(bookingDate)) {
+        acc.pastBookings.push(booking);
+      } else {
+        acc.upcomingBookings.push(booking);
+      }
+      return acc;
+    },
+    { upcomingBookings: [] as Booking[], pastBookings: [] as Booking[] }
+  );
+  
+  // As próximas reservas devem ser em ordem crescente
+  upcomingBookings.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 
-  const renderBookingTable = (bookings: Booking[], isLoading: boolean, emptyMessage: string) => {
-    if (isLoading) {
+  const renderTable = (bookingList: Booking[], isLoading: boolean, error?: Error, isEmptyMessage?: string) => {
+     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={5}>
-            <Skeleton className="h-16 w-full" />
-          </TableCell>
+          <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
+          <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
         </TableRow>
       ));
     }
+    
     if (error) {
-      return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar reservas: {error.message}</TableCell></TableRow>;
-    }
-    if (bookings.length === 0) {
-      return <TableRow><TableCell colSpan={5} className="h-24 text-center p-4 align-middle">{emptyMessage}</TableCell></TableRow>;
-    }
-    return bookings.map(booking => <BookingRow key={booking.id} booking={booking} />);
-  };
-
-  if (loadingAuth) {
-    return (
-        <div className="grid gap-8">
-            <div>
-                <Skeleton className="h-10 w-1/3 mb-2" />
-                <Skeleton className="h-5 w-1/2" />
+       return (
+        <TableRow>
+          <TableCell colSpan={5}>
+            <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
+                <ShieldAlert className="h-8 w-8 text-destructive" />
+                <div>
+                    <h4 className="font-bold text-destructive">Erro ao carregar reservas</h4>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar seus agendamentos. ({error.message})</p>
+                </div>
             </div>
-             <Skeleton className="h-10 w-[400px]" />
-             <Card>
-                <CardHeader>
-                    <Skeleton className="h-8 w-1/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-48 w-full" />
-                </CardContent>
-            </Card>
-        </div>
-    );
+          </TableCell>
+        </TableRow>
+      );
+    }
+    
+    if (bookingList.length === 0) {
+        return (
+            <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">{isEmptyMessage}</TableCell>
+            </TableRow>
+        )
+    }
+
+    return bookingList.map(booking => <BookingRow key={booking.id} booking={booking} />);
   }
-  
+
+
   return (
     <div className="grid gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">Minhas Reservas</h1>
-        <p className="text-muted-foreground">Aqui está o histórico de suas aventuras, passadas e futuras.</p>
+        <p className="text-muted-foreground">Acompanhe seus agendamentos e seu histórico de jogos.</p>
       </div>
 
-      <Tabs defaultValue="upcoming">
-        <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-          <TabsTrigger value="upcoming">
-            <CalendarPlus className="mr-2 h-4 w-4" />
-            Próximas
-          </TabsTrigger>
-          <TabsTrigger value="past">
-            <CalendarX className="mr-2 h-4 w-4" />
-            Histórico
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="upcoming">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reservas Futuras</CardTitle>
-              <CardDescription>Seus próximos jogos e eventos agendados.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <th className="p-4 text-left font-medium text-muted-foreground">Sala e Data</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground hidden md:table-cell">Horário</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground hidden lg:table-cell">Participantes</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground">Status</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground"><span className="sr-only">Ações</span></th>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {renderBookingTable(upcomingBookings, loadingBookings, "Você não possui nenhuma reserva futura.")}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="past">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Reservas</CardTitle>
-              <CardDescription>Todas as suas reservas passadas.</CardDescription>
-            </CardHeader>
-            <CardContent>
-            <Table>
-                <TableHeader>
-                  <TableRow>
-                    <th className="p-4 text-left font-medium text-muted-foreground">Sala e Data</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground hidden md:table-cell">Horário</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground hidden lg:table-cell">Participantes</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground">Status</th>
-                    <th className="p-4 text-left font-medium text-muted-foreground"><span className="sr-only">Ações</span></th>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {renderBookingTable(pastBookings, loadingBookings, "Nenhuma reserva encontrada no seu histórico.")}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Próximas Reservas</CardTitle>
+          <CardDescription>Suas reservas agendadas que ainda não aconteceram.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Sessão / Sala</TableHead>
+                <TableHead className="hidden md:table-cell">Data</TableHead>
+                <TableHead className="hidden sm:table-cell">Horário</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {renderTable(upcomingBookings, loadingAuth || loadingBookings, errorBookings, "Você não tem nenhuma reserva futura.")}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Reservas</CardTitle>
+          <CardDescription>Suas reservas que já foram concluídas.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Sessão / Sala</TableHead>
+                <TableHead className="hidden md:table-cell">Data</TableHead>
+                <TableHead className="hidden sm:table-cell">Horário</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+                {renderTable(pastBookings, loadingAuth || loadingBookings, errorBookings, "Seu histórico de reservas está vazio.")}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
     </div>
   )
 }
-
-    

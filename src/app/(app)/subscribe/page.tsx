@@ -55,10 +55,10 @@ export default function SubscribePage() {
 
         toast({
             title: "Plano Selecionado!",
-            description: `Bem-vindo à categoria ${planName}! Você foi redirecionado para o dashboard.`
+            description: `Bem-vindo à categoria ${planName}! Você foi redirecionado para a agenda.`
         });
         
-        router.push("/dashboard");
+        router.push("/online-schedule");
 
     } catch (error) {
         console.error("Erro ao atualizar o plano do usuário:", error);
