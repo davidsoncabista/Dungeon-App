@@ -16,9 +16,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Check, ChevronsUpDown, Users, Calendar, AlertCircle } from "lucide-react"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Users, Calendar, AlertCircle, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
@@ -36,7 +34,8 @@ import { getFirestore, collection, query, orderBy } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import type { User } from "@/lib/types/user"
 import { Skeleton } from "../ui/skeleton"
-
+import { ScrollArea } from "../ui/scroll-area"
+import { Checkbox } from "../ui/checkbox"
 
 const createBookingFormSchema = (maxCapacity: number) => z.object({
   title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }).max(50, { message: "O título não pode ter mais de 50 caracteres."}),
@@ -49,7 +48,6 @@ const createBookingFormSchema = (maxCapacity: number) => z.object({
     message: `O número total de participantes (membros + convidados) não pode exceder a capacidade da sala (${maxCapacity}).`,
     path: ["guests"],
 });
-
 
 interface BookingFormProps {
     room: Room;
@@ -66,6 +64,7 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
   const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy("name")), { idField: 'id' });
 
   const [step, setStep] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const bookingFormSchema = createBookingFormSchema(room.capacity);
   type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
@@ -170,23 +169,39 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
 
   const totalParticipants = (form.watch("participants")?.length || 0) + (form.watch("guests")?.length || 0);
   
-  const { activeMembers, potentialGuests } = useMemo(() => {
-    if (!allUsers) return { activeMembers: [], potentialGuests: [] };
-    return {
-        activeMembers: allUsers.filter(u => u.status === 'Ativo' && u.category !== 'Visitante'),
-        potentialGuests: allUsers.filter(u => u.status !== 'Ativo' || u.category === 'Visitante')
-    };
-  }, [allUsers]);
+  const { potentialGuests, filteredUsers } = useMemo(() => {
+    if (!allUsers) return { potentialGuests: [], filteredUsers: [] };
+    
+    const guests = allUsers.filter(u => u.status !== 'Ativo' || u.category === 'Visitante');
+    const active = allUsers.filter(u => u.status === 'Ativo' && u.category !== 'Visitante');
+    
+    // A ordem é importante para o visual: membros ativos primeiro.
+    const combinedList = [...active, ...guests];
 
-  const selectedParticipants = useMemo(() => {
-    if (!allUsers || !form.watch("participants")) return [];
-    return form.watch("participants").map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
-  }, [allUsers, form.watch("participants")]);
+    const filtered = searchTerm
+        ? combinedList.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        : combinedList;
 
-  const selectedGuests = useMemo(() => {
-      if (!allUsers || !form.watch("guests")) return [];
-      return form.watch("guests").map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
-  }, [allUsers, form.watch("guests")]);
+    return { potentialGuests: guests, filteredUsers: filtered };
+  }, [allUsers, searchTerm]);
+
+
+  const handleUserToggle = (toggledUser: User) => {
+    const isGuest = potentialGuests.some(g => g.uid === toggledUser.uid);
+    const field = isGuest ? "guests" : "participants";
+    const currentValues = form.getValues(field);
+
+    const newValues = currentValues.includes(toggledUser.uid)
+        ? currentValues.filter(uid => uid !== toggledUser.uid)
+        : [...currentValues, toggledUser.uid];
+
+    // O organizador (usuário logado) não pode ser desmarcado da lista de participantes.
+    if (field === "participants" && toggledUser.uid === user?.uid) {
+        return;
+    }
+
+    form.setValue(field, newValues, { shouldValidate: true });
+  };
 
 
   return (
@@ -295,141 +310,51 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
         {step === 2 && (
             <div className="space-y-4">
                 {loadingUsers ? <Skeleton className="h-40 w-full" /> : (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="participants"
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormLabel>Participantes (Membros Ativos)</FormLabel>
-                          <Popover>
-                              <PopoverTrigger asChild>
-                                  <FormControl>
-                                      <Button
-                                      variant="outline"
-                                      role="combobox"
-                                      className={cn(
-                                          "w-full justify-between h-auto min-h-10",
-                                          !field.value && "text-muted-foreground"
-                                      )}
-                                      >
-                                          <div className="flex gap-1 flex-wrap">
-                                              {selectedParticipants.map(p => (
-                                                  <Badge variant="secondary" key={p.uid}>{p.name.split(" ")[0]}</Badge>
-                                              ))}
-                                              {field.value.length === 0 && "Selecione os participantes"}
-                                          </div>
-                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                      </Button>
-                                  </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                  <Command>
-                                      <CommandInput placeholder="Buscar membro..." />
-                                      <CommandList>
-                                          <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
-                                          <CommandGroup>
-                                              {activeMembers.map((u) => (
-                                              <CommandItem
-                                                  value={u.name}
-                                                  key={u.uid}
-                                                  onSelect={() => {
-                                                    form.setValue("participants", 
-                                                      field.value.includes(u.uid)
-                                                        ? field.value.filter(id => id !== u.uid)
-                                                        : [...field.value, u.uid]
-                                                    );
-                                                  }}
-                                                  disabled={u.uid === user?.uid} // O organizador (usuário atual) não pode ser removido
-                                              >
-                                                  <Check
-                                                  className={cn(
-                                                      "mr-2 h-4 w-4",
-                                                      field.value.includes(u.uid) ? "opacity-100" : "opacity-0"
-                                                  )}
-                                                  />
-                                                  {u.name}
-                                              </CommandItem>
-                                              ))}
-                                          </CommandGroup>
-                                      </CommandList>
-                                  </Command>
-                              </PopoverContent>
-                          </Popover>
-                          <FormDescription>Inclua você e outros membros que participarão.</FormDescription>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="guests"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Convidados (Visitantes ou Inativos)</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                        variant="outline"
-                                        role="combobox"
+                  <div className="space-y-2">
+                    <FormLabel>Participantes e Convidados</FormLabel>
+                    <FormDescription>Selecione os membros e convidados para a sessão.</FormDescription>
+                     <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Buscar por nome..."
+                            className="pl-9"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <ScrollArea className="h-48 rounded-md border">
+                        <div className="p-4 space-y-2">
+                            {filteredUsers.map(u => {
+                                const isGuest = potentialGuests.some(g => g.uid === u.uid);
+                                const isChecked = form.watch('participants').includes(u.uid) || form.watch('guests').includes(u.uid);
+                                return (
+                                    <div 
+                                        key={u.uid} 
                                         className={cn(
-                                            "w-full justify-between h-auto min-h-10",
-                                            !field.value && "text-muted-foreground"
+                                            "flex items-center space-x-3 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
+                                            isGuest && "opacity-75"
                                         )}
-                                        >
-                                            <div className="flex gap-1 flex-wrap">
-                                                {selectedGuests.map(p => (
-                                                    <Badge variant="outline" key={p.uid}>{p.name.split(" ")[0]}</Badge>
-                                                ))}
-                                                {field.value.length === 0 && "Selecione os convidados"}
-                                            </div>
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Buscar convidado..." />
-                                        <CommandList>
-                                            <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
-                                            <CommandGroup>
-                                                {potentialGuests.map((u) => (
-                                                    <CommandItem
-                                                        value={u.name}
-                                                        key={u.uid}
-                                                        className={cn(u.status !== 'Ativo' || u.category === 'Visitante' ? "opacity-75" : "")}
-                                                        onSelect={() => {
-                                                            form.setValue("guests", 
-                                                              field.value.includes(u.uid)
-                                                                ? field.value.filter(id => id !== u.uid)
-                                                                : [...field.value, u.uid]
-                                                            );
-                                                        }}
-                                                    >
-                                                        <Check
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            field.value.includes(u.uid) ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                        />
-                                                        {u.name}
-                                                        <span className="ml-2 text-xs text-muted-foreground">({u.category})</span>
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            <FormDescription>Participantes que não são membros ativos.</FormDescription>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                  </>
+                                        onClick={() => handleUserToggle(u)}
+                                    >
+                                        <Checkbox 
+                                            checked={isChecked}
+                                            disabled={u.uid === user?.uid} // Organizador não pode ser desmarcado
+                                            aria-label={`Selecionar ${u.name}`}
+                                        />
+                                        <label className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                            {u.name}
+                                        </label>
+                                        {isGuest && <Badge variant="outline">{u.category}</Badge>}
+                                    </div>
+                                )
+                            })}
+                            {filteredUsers.length === 0 && (
+                                <p className="text-center text-sm text-muted-foreground py-4">Nenhum usuário encontrado.</p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                    <FormMessage />
+                </div>
                 )}
-
                 
                 {form.formState.errors.guests?.message && (
                     <Alert variant="destructive">
@@ -458,3 +383,5 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
     </Form>
   )
 }
+
+    
