@@ -68,7 +68,7 @@ export default function OnlineSchedulePage() {
         }
         const correctedDays = days.map(d => new Date(d));
         // Ensure we get 35 or 42 days to fill the grid
-        if (getDay(correctedDays[34]) !== 6) {
+        if (correctedDays.length < 42 && getDay(correctedDays[34]) !== 6) {
              for (let i = 35; i < 42; i++) {
                 correctedDays.push(addMonths(start, Math.floor(i/7) * 0).setDate(start.getDate() + i));
             }
@@ -95,17 +95,16 @@ export default function OnlineSchedulePage() {
             return;
         }
 
-        // --- LÓGICA DE COTAS (SIMPLIFICADA) ---
-        const userBookings = bookings?.filter(b => b.organizerId === user.uid) || [];
-        // Lógica semanal e mensal precisaria de mais detalhes (ex: startOfWeek)
-        if (userBookings.length >= userPlan.monthlyQuota) {
-            toast({
-                title: "Limite de Reservas Atingido",
-                description: `Você já atingiu seu limite mensal de ${userPlan.monthlyQuota} reservas.`,
-                variant: "destructive"
-            });
-            return;
-        }
+        // --- LÓGICA DE COTAS (A SER IMPLEMENTADA NA FASE 2) ---
+        // const userBookings = bookings?.filter(b => b.organizerId === user.uid) || [];
+        // if (userBookings.length >= userPlan.monthlyQuota) {
+        //     toast({
+        //         title: "Limite de Reservas Atingido",
+        //         description: `Você já atingiu seu limite mensal de ${userPlan.monthlyQuota} reservas.`,
+        //         variant: "destructive"
+        //     });
+        //     return;
+        // }
         
         try {
             const bookingsRef = collection(firestore, "bookings");
@@ -140,7 +139,7 @@ export default function OnlineSchedulePage() {
                     {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
                 </h2>
                 <div>
-                     <Dialog>
+                     <Dialog open={isModalOpen && !selectedDate} onOpenChange={setIsModalOpen}>
                         <DialogTrigger asChild>
                             <Button><PlusCircle className="mr-2 h-4 w-4"/>Nova Reserva</Button>
                         </DialogTrigger>
@@ -163,14 +162,17 @@ export default function OnlineSchedulePage() {
 
             <div className="grid grid-cols-7 flex-1">
                 {(loadingBookings || loadingRooms || loadingAuth || loadingPlans) 
-                    ? Array.from({length: 35}).map((_, i) => <DaySkeleton key={i}/>)
+                    ? Array.from({length: 42}).map((_, i) => <DaySkeleton key={i}/>)
                     : daysInMonth.map(day => {
                     const dayBookings = bookingsByDay.get(format(day, 'yyyy-MM-dd')) || [];
                     const availableRooms = rooms?.filter(r => r.status === 'Disponível') ?? [];
                     const canBook = currentUser?.status === 'Ativo';
 
                     return (
-                        <Dialog key={day.toString()} onOpenChange={setIsModalOpen} open={isModalOpen && selectedDate?.getTime() === day.getTime()}>
+                        <Dialog key={day.toString()} onOpenChange={(open) => {
+                            if (!open) setSelectedDate(null);
+                            setIsModalOpen(open);
+                        }} open={isModalOpen && selectedDate?.getTime() === day.getTime()}>
                             <DialogTrigger asChild>
                                 <div 
                                     className={cn(
@@ -198,7 +200,7 @@ export default function OnlineSchedulePage() {
                                     </div>
                                 </div>
                             </DialogTrigger>
-                             <DialogContent>
+                             <DialogContent className="sm:max-w-lg">
                                 <DialogHeader>
                                     <DialogTitle>Nova Reserva</DialogTitle>
                                     <DialogDescription>
@@ -207,11 +209,11 @@ export default function OnlineSchedulePage() {
                                 </DialogHeader>
                                 {canBook && availableRooms.length > 0 ? (
                                      <BookingForm 
-                                        room={availableRooms[0]} // Simplificado: usa a primeira sala disponível
+                                        room={availableRooms[0]} // Simplificado: usa a primeira sala disponível. Poderíamos adicionar um seletor de salas aqui no futuro.
                                         date={day}
                                         allBookings={bookings || []}
                                         onSuccess={handleCreateBooking}
-                                        onCancel={() => setIsModalOpen(false)}
+                                        onCancel={() => setSelectedDate(null)}
                                     />
                                 ) : <p className="text-center text-muted-foreground py-4">
                                         { !canBook 
@@ -228,3 +230,5 @@ export default function OnlineSchedulePage() {
         </div>
     );
 }
+
+    
