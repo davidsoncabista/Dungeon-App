@@ -155,7 +155,7 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
     
     const newBooking = {
         title: data.title,
-        description: data.description,
+        description: data.description || null,
         participants: data.participants,
         guests: data.guests || [],
         roomId: room.id,
@@ -297,69 +297,69 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
                 {loadingUsers ? <Skeleton className="h-40 w-full" /> : (
                   <>
                     <FormField
-                    control={form.control}
-                    name="participants"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Participantes (Membros Ativos)</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                        "w-full justify-between h-auto min-h-10",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                    >
-                                        <div className="flex gap-1 flex-wrap">
-                                            {selectedParticipants.map(p => (
-                                                <Badge variant="secondary" key={p.uid}>{p.name.split(" ")[0]}</Badge>
-                                            ))}
-                                            {field.value.length === 0 && "Selecione os participantes"}
-                                        </div>
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                <Command>
-                                    <CommandInput placeholder="Buscar membro..." />
-                                    <CommandList>
-                                        <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
-                                        <CommandGroup>
-                                            {activeMembers.map((u) => (
-                                            <CommandItem
-                                                value={u.name}
-                                                key={u.uid}
-                                                onSelect={() => {
-                                                    const currentValues = field.value || [];
-                                                    const newValue = currentValues.includes(u.uid)
-                                                        ? currentValues.filter(id => id !== u.uid)
-                                                        : [...currentValues, u.uid];
-                                                    field.onChange(newValue);
-                                                }}
-                                                disabled={u.uid === user?.uid} // O organizador (usuário atual) não pode ser removido
-                                            >
-                                                <Check
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    field.value.includes(u.uid) ? "opacity-100" : "opacity-0"
-                                                )}
-                                                />
-                                                {u.name}
-                                            </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
-                        <FormDescription>Inclua você e outros membros que participarão.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
+                      control={form.control}
+                      name="participants"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Participantes (Membros Ativos)</FormLabel>
+                          <Popover>
+                              <PopoverTrigger asChild>
+                                  <FormControl>
+                                      <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                          "w-full justify-between h-auto min-h-10",
+                                          !field.value && "text-muted-foreground"
+                                      )}
+                                      >
+                                          <div className="flex gap-1 flex-wrap">
+                                              {selectedParticipants.map(p => (
+                                                  <Badge variant="secondary" key={p.uid}>{p.name.split(" ")[0]}</Badge>
+                                              ))}
+                                              {field.value.length === 0 && "Selecione os participantes"}
+                                          </div>
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                      </Button>
+                                  </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                  <Command>
+                                      <CommandInput placeholder="Buscar membro..." />
+                                      <CommandList>
+                                          <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
+                                          <CommandGroup>
+                                              {activeMembers.map((u) => (
+                                              <CommandItem
+                                                  value={u.name}
+                                                  key={u.uid}
+                                                  onSelect={() => {
+                                                    form.setValue("participants", 
+                                                      field.value.includes(u.uid)
+                                                        ? field.value.filter(id => id !== u.uid)
+                                                        : [...field.value, u.uid]
+                                                    );
+                                                  }}
+                                                  disabled={u.uid === user?.uid} // O organizador (usuário atual) não pode ser removido
+                                              >
+                                                  <Check
+                                                  className={cn(
+                                                      "mr-2 h-4 w-4",
+                                                      field.value.includes(u.uid) ? "opacity-100" : "opacity-0"
+                                                  )}
+                                                  />
+                                                  {u.name}
+                                              </CommandItem>
+                                              ))}
+                                          </CommandGroup>
+                                      </CommandList>
+                                  </Command>
+                              </PopoverContent>
+                          </Popover>
+                          <FormDescription>Inclua você e outros membros que participarão.</FormDescription>
+                          <FormMessage />
+                          </FormItem>
+                      )}
                     />
                     <FormField
                         control={form.control}
@@ -398,12 +398,13 @@ export function BookingForm({ room, date, allBookings, onSuccess, onCancel }: Bo
                                                     <CommandItem
                                                         value={u.name}
                                                         key={u.uid}
+                                                        className={cn(u.status !== 'Ativo' || u.category === 'Visitante' ? "opacity-75" : "")}
                                                         onSelect={() => {
-                                                            const currentValues = field.value || [];
-                                                            const newValue = currentValues.includes(u.uid)
-                                                                ? currentValues.filter(id => id !== u.uid)
-                                                                : [...currentValues, u.uid];
-                                                            field.onChange(newValue);
+                                                            form.setValue("guests", 
+                                                              field.value.includes(u.uid)
+                                                                ? field.value.filter(id => id !== u.uid)
+                                                                : [...field.value, u.uid]
+                                                            );
                                                         }}
                                                     >
                                                         <Check

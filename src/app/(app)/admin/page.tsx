@@ -74,6 +74,7 @@ export default function AdminPage() {
         invites: 0,
         votingWeight: 1,
         corujaoQuota: 0,
+        extraInvitePrice: 0,
       };
       await setDoc(newPlanRef, newPlan);
       toast({ title: "Plano Criado!", description: `O plano "${data.name}" foi adicionado.` });
@@ -145,6 +146,7 @@ export default function AdminPage() {
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-10 w-10 ml-auto" /></TableCell>
         </TableRow>
       ));
@@ -153,7 +155,7 @@ export default function AdminPage() {
     if (error) {
       return (
         <TableRow>
-          <TableCell colSpan={8}>
+          <TableCell colSpan={9}>
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
@@ -169,7 +171,7 @@ export default function AdminPage() {
     if (!plans || plans.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={8} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
+          <TableCell colSpan={9} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
         </TableRow>
       );
     }
@@ -215,6 +217,14 @@ export default function AdminPage() {
                 defaultValue={plan.invites} 
                 onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)}
                 className="w-20 mx-auto" 
+              />
+          </TableCell>
+           <TableCell className="text-center">
+              <Input 
+                type="number" 
+                defaultValue={plan.extraInvitePrice || 0} 
+                onBlur={(e) => handleFieldChange(plan.id, 'extraInvitePrice', e.target.value)}
+                className="w-24 mx-auto" 
               />
           </TableCell>
           <TableCell className="text-center">
@@ -300,6 +310,7 @@ export default function AdminPage() {
                         <TableHead className="text-center">Cota Mensal</TableHead>
                         <TableHead className="text-center">Cota Corujão</TableHead>
                         <TableHead className="text-center">Cota Convites</TableHead>
+                        <TableHead className="text-center">Preço Convite Extra (R$)</TableHead>
                         <TableHead className="text-center">Peso de Voto</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
