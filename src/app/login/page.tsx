@@ -46,11 +46,7 @@ export default function LoginPage() {
                 title: `Bem-vindo, ${user.displayName}!`,
                 description: "Login realizado com sucesso. Redirecionando...",
             });
-<<<<<<< HEAD
-            router.push('/online-schedule');
-=======
             // O useEffect cuidará do redirecionamento
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
         } catch (error: any) {
             if (error.code === 'auth/popup-closed-by-user') {
                 console.log("Login cancelado pelo usuário.");
