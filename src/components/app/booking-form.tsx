@@ -93,6 +93,18 @@ const createBookingFormSchema = (
             const d = parse(b.date, 'yyyy-MM-dd', new Date());
             return getMonth(d) === bookingMonth && getYear(d) === bookingYear && b.startTime === '23:00';
         }).length;
+
+        // Conta convidados no mesmo mês
+        const monthlyGuestsCount = allUserBookings.reduce((acc, b) => {
+            const d = parse(b.date, 'yyyy-MM-dd', new Date());
+             if (getMonth(d) === bookingMonth && getYear(d) === bookingYear) {
+                return acc + (b.guests?.length || 0);
+            }
+            return acc;
+        }, 0);
+        
+        const currentGuests = data.guests?.length || 0;
+        const totalGuestsThisMonth = monthlyGuestsCount + currentGuests;
         
         // Valida cota semanal
         if (userPlan.weeklyQuota > 0 && weeklyBookings >= userPlan.weeklyQuota) {
@@ -118,6 +130,15 @@ const createBookingFormSchema = (
                 code: z.ZodIssueCode.custom,
                 message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
                 path: ["startTime"],
+            });
+        }
+
+        // Valida cota de convidados mensal
+        if (userPlan.invites > 0 && totalGuestsThisMonth > userPlan.invites) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Você excedeu sua cota mensal de ${userPlan.invites} convidado(s). Você já convidou ${monthlyGuestsCount} este mês.`,
+                path: ["guests"],
             });
         }
     }
@@ -152,7 +173,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   
   const userBookingsQuery = useMemo(() => 
     user ? query(collection(firestore, 'bookings'), where('organizerId', '==', user.uid)) : null,
-  [user, firestore]);
+  [user]);
   const [allUserBookings, loadingUserBookings] = useCollectionData<Booking>(userBookingsQuery);
 
   // --- State do formulário ---
@@ -249,8 +270,8 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     switch (step) {
         case 0: fieldsToValidate = ["date", "roomId"]; break;
         case 1: fieldsToValidate = ["title", "startTime", "endTime", "date"]; break; // Re-valida a data por causa das cotas
-        case 2: fieldsToValidate = ["participants"]; break;
-        case 3: fieldsToValidate = ["participants", "guests"]; break;
+        case 2: fieldsToValidate = ["participants", "date"]; break; // Adiciona date para revalidar cotas
+        case 3: fieldsToValidate = ["participants", "guests", "date"]; break; // Adiciona date para revalidar cotas
     }
 
     const isValid = await form.trigger(fieldsToValidate);
