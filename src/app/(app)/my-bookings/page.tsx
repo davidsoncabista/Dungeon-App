@@ -11,11 +11,7 @@ import { auth, app } from "@/lib/firebase"
 import type { Booking } from "@/lib/types/booking"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-<<<<<<< HEAD
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-=======
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookingRow } from "@/components/app/my-bookings/booking-row"
 import { BookMarked, ShieldAlert } from "lucide-react"
@@ -44,35 +40,9 @@ export default function MyBookingsPage() {
     { upcomingBookings: [] as Booking[], pastBookings: [] as Booking[] }
   );
   
-<<<<<<< HEAD
-  // Query for bookings where the current user is a participant
-  const userBookingsQuery = useMemo(() => 
-    user ? query(bookingsRef, where('participants', 'array-contains', user.uid), orderBy('date', 'desc')) : null, 
-  [user]);
-
-  const [allUserBookings, loadingBookings, error] = useCollectionData<Booking>(userBookingsQuery, { idField: 'id' });
-
-  const { upcomingBookings, pastBookings } = (bookings || []).reduce(
-    (acc, booking) => {
-      const bookingDate = parseISO(`${booking.date}T${booking.endTime}`);
-      if (isPast(bookingDate)) {
-        acc.pastBookings.push(booking);
-      } else {
-        acc.upcomingBookings.push(booking);
-      }
-      return acc;
-    },
-    { upcomingBookings: [] as Booking[], pastBookings: [] as Booking[] }
-  );
-  
   // As próximas reservas devem ser em ordem crescente
   upcomingBookings.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 
-=======
-  // As próximas reservas devem ser em ordem crescente
-  upcomingBookings.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
   const renderTable = (bookingList: Booking[], isLoading: boolean, error?: Error, isEmptyMessage?: string) => {
      if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
