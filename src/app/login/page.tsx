@@ -2,7 +2,8 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { Dices, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Dices, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/firebase';
@@ -86,7 +87,7 @@ export default function LoginPage() {
             <CardDescription>Sistema de Reserva de Salas</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="space-y-4">
                  <Button onClick={handleGoogleLogin} className="w-full py-6 text-lg font-bold" variant="outline" disabled={isSigningIn}>
                     {isSigningIn ? (
                         <>
@@ -100,6 +101,14 @@ export default function LoginPage() {
                         </>
                     )}
                 </Button>
+                <div className="text-center">
+                    <Button asChild variant="link">
+                        <Link href="/landing">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Voltar para a página inicial
+                        </Link>
+                    </Button>
+                </div>
             </div>
              {error && (
                 <p className="mt-4 text-center text-sm text-destructive">
