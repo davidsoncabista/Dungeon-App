@@ -66,7 +66,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso.",
       });
-      router.push('/');
+      router.push('/landing');
     } catch (error) {
       console.error("Erro no logout:", error);
       toast({
