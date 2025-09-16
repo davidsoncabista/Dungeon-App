@@ -11,28 +11,11 @@ import { useCollectionData } from "react-firebase-hooks/firestore";
 import { collection, getFirestore, query, where } from "firebase/firestore";
 import type { User } from "@/lib/types/user";
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 // Rotas de administração, ordenadas da mais restrita para a menos.
 const adminOnlyRoutes = ["/admin"];
 const editorRoutes = ["/rooms", "/statistics", "/users"];
 const revisorRoutes = ["/statistics", "/users", "/rooms", "/admin"]; // Revisores podem ver tudo
 const allAdminRoutes = [...new Set([...adminOnlyRoutes, ...editorRoutes, ...revisorRoutes])];
-<<<<<<< HEAD
->>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
-=======
-// Rotas de administração, ordenadas da mais restrita para a menos.
-const adminOnlyRoutes = ["/admin"];
-const editorRoutes = ["/rooms", "/statistics", "/users"];
-const revisorRoutes = ["/statistics", "/users"];
-const allAdminRoutes = [...adminOnlyRoutes, ...editorRoutes];
->>>>>>> 937bd52b (vamos as regras de navegação dentro do app devido a lgumas mudaças isso)
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
 // Rotas principais para membros ativos.
 const memberRoutes = ["/online-schedule", "/my-bookings", "/subscribe", "/profile", "/notices"];
@@ -68,69 +51,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             return;
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-        // REGRA 2: MATRÍCULA PENDENTE
-        // Se o cadastro está completo (status 'Ativo') mas ele ainda é 'Visitante' (não escolheu um plano),
-        // ele fica "preso" na página de matrícula, mas pode ver o dashboard e suas reservas.
-        if (currentUser.status === 'Ativo' && currentUser.category === 'Visitante') {
-            // Permite acesso apenas às rotas definidas para visitantes.
-            if (!visitorRoutes.includes(pathname)) {
-                router.push('/subscribe');
-                return;
-            }
-        }
-        
-        // REGRA 3: CONTROLE DE ACESSO DE MEMBRO
-        // Se é um membro comum, bloqueia o acesso às rotas de admin.
-        if (currentUser.role === 'Membro') {
-            if (adminRoutes.some(p => pathname.startsWith(p))) {
-                 router.push('/online-schedule');
-                 return;
-            }
-        }
-        
-        // REGRA 4: CONTROLE DE ACESSO DE ADMIN/EDITOR/REVISOR
-        // Se for Editor ou Revisor, bloqueia o acesso à página /admin.
-        if (currentUser.role === 'Editor' || currentUser.role === 'Revisor') {
-             if (pathname === '/admin') {
-                router.push('/dashboard');
-=======
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
-        // REGRA 2: MATRÍCULA PENDENTE (Categoria 'Visitante')
-        // Se o cadastro está completo mas ele ainda é 'Visitante',
-        // ele só pode acessar as rotas de visitante.
-        if (currentUser.category === 'Visitante' && !visitorRoutes.includes(pathname)) {
-            router.push('/subscribe');
-            return;
-        }
-        
-        // REGRA 3: CONTROLE DE ACESSO DE MEMBRO COMUM
-        // Bloqueia o acesso a qualquer rota de administração.
-        if (currentUser.role === 'Membro' && allAdminRoutes.some(p => pathname.startsWith(p))) {
-            router.push('/online-schedule');
-            return;
-        }
-<<<<<<< HEAD
-        
-        // REGRA 4: CONTROLE DE ACESSO DE ADMINS
-        if (currentUser.role === 'Revisor') {
-            // Revisor não pode acessar /admin, /rooms
-            if (pathname.startsWith('/admin') || pathname.startsWith('/rooms')) {
-                 router.push('/online-schedule');
-                 return;
-            }
-        }
-        if (currentUser.role === 'Editor') {
-            // Editor não pode acessar /admin
-             if (pathname.startsWith('/admin')) {
-                router.push('/online-schedule');
->>>>>>> 937bd52b (vamos as regras de navegação dentro do app devido a lgumas mudaças isso)
-                return;
-            }
-=======
         // REGRA 2: MATRÍCULA PENDENTE (Categoria 'Visitante')
         // Se o cadastro está completo mas ele ainda é 'Visitante',
         // ele só pode acessar as rotas de visitante.
@@ -144,10 +64,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         if (currentUser.role === 'Membro' && allAdminRoutes.some(p => pathname.startsWith(p))) {
             router.push('/online-schedule');
             return;
->>>>>>> aa2f8413 (os revisores são como os usuarios comun so editam o que os usuarios comu)
         }
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     }
   }, [user, loading, userLoading, currentUser, pathname, router]);
 
@@ -191,4 +108,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   );
 }
 
-    
