@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -20,16 +21,12 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
-<<<<<<< HEAD
-import { format, parseISO, parse, isBefore, addMinutes, addDays } from "date-fns"
-=======
 import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear } from "date-fns"
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 import { ptBR } from "date-fns/locale"
 import { getBookingDurationAndEnd, FIXED_SLOTS } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DialogFooter } from "@/components/ui/dialog"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth, app } from "@/lib/firebase"
@@ -40,11 +37,6 @@ import type { Plan } from "@/lib/types/plan"
 import { Skeleton } from "../ui/skeleton"
 import { ScrollArea } from "../ui/scroll-area"
 import { Checkbox } from "../ui/checkbox"
-<<<<<<< HEAD
-import { Separator } from "../ui/separator"
-
-const createBookingFormSchema = (maxCapacity: number) => z.object({
-=======
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar as CalendarPicker } from "../ui/calendar"
@@ -56,7 +48,6 @@ const createBookingFormSchema = (
   userPlan: Plan | undefined
 ) => z.object({
   date: z.date({ required_error: "A data da reserva é obrigatória." }),
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
   roomId: z.string({ required_error: "Você deve selecionar uma sala." }),
   title: z.string().min(3, { message: "O título deve ter pelo menos 3 caracteres." }).max(50, { message: "O título não pode ter mais de 50 caracteres."}),
   description: z.string().max(200, {message: "A descrição não pode ter mais de 200 caracteres."}).optional(),
@@ -65,11 +56,7 @@ const createBookingFormSchema = (
   startTime: z.string({ required_error: "O horário de início é obrigatório."}),
   endTime: z.string({ required_error: "O horário de fim é obrigatório."}),
 }).superRefine((data, ctx) => {
-<<<<<<< HEAD
-    // Lógica de validação da capacidade em tempo real.
-=======
     // 1. Validação de capacidade da sala
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     const selectedRoom = allRooms.find(r => r.id === data.roomId);
     if (selectedRoom) {
         const totalParticipants = data.participants.length + (data.guests?.length ?? 0);
@@ -77,9 +64,6 @@ const createBookingFormSchema = (
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: `O número total de participantes (${totalParticipants}) não pode exceder a capacidade da sala (${selectedRoom.capacity}).`,
-<<<<<<< HEAD
-                path: ["guests"], // Associa o erro ao campo de convidados para exibição
-=======
                 path: ["guests"], 
             });
         }
@@ -134,7 +118,6 @@ const createBookingFormSchema = (
                 code: z.ZodIssueCode.custom,
                 message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
                 path: ["startTime"],
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
             });
         }
     }
@@ -144,28 +127,17 @@ const createBookingFormSchema = (
 type BookingFormValues = z.infer<ReturnType<typeof createBookingFormSchema>>;
 
 interface BookingFormProps {
-<<<<<<< HEAD
-    date: Date;
-=======
     initialDate: Date;
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     allBookings: Booking[];
     onSuccess: (data: Omit<Booking, 'id' | 'status'>) => void;
     onCancel: () => void;
 }
 
-<<<<<<< HEAD
-export function BookingForm({ date, allBookings, onSuccess, onCancel }: BookingFormProps) {
-  const [user] = useAuthState(auth);
-  const firestore = getFirestore(app);
-
-=======
 export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: BookingFormProps) {
   const [user] = useAuthState(auth);
   const firestore = getFirestore(app);
 
   // --- Buscas no Firestore ---
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
   const roomsRef = collection(firestore, 'rooms');
   const [allRooms, loadingRooms] = useCollectionData<Room>(query(roomsRef, orderBy("name")), { idField: 'id' });
   const availableRooms = allRooms?.filter(r => r.status === 'Disponível');
@@ -174,14 +146,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy("name")), { idField: 'id' });
   const currentUser = allUsers?.find(u => u.uid === user?.uid);
 
-<<<<<<< HEAD
-  const [step, setStep] = useState(1);
-  const [memberSearchTerm, setMemberSearchTerm] = useState("");
-  const [guestSearchTerm, setGuestSearchTerm] = useState("");
-
-  const bookingFormSchema = createBookingFormSchema(room.capacity);
-  type BookingFormValues = z.infer<typeof bookingFormSchema>;
-=======
   const plansRef = collection(firestore, 'plans');
   const [plans, loadingPlans] = useCollectionData<Plan>(plansRef, { idField: 'id' });
   const userPlan = plans?.find(p => p.name === currentUser?.category);
@@ -197,16 +161,12 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   const [guestSearchTerm, setGuestSearchTerm] = useState("");
   
   const formSchema = useMemo(() => createBookingFormSchema(allRooms || [], allUserBookings || [], userPlan), [allRooms, allUserBookings, userPlan]);
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
-<<<<<<< HEAD
-=======
       date: initialDate,
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
       roomId: "",
       title: "",
       description: "",
@@ -216,52 +176,27 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
       endTime: "",
     },
   });
-<<<<<<< HEAD
-
-  const selectedRoomId = form.watch('roomId');
-  const selectedRoom = useMemo(() => allRooms?.find(r => r.id === selectedRoomId), [allRooms, selectedRoomId]);
-
-  // Atualiza a validação do schema quando a sala muda
-  useEffect(() => {
-    form.trigger(); // Força a revalidação com a nova capacidade
-  }, [selectedRoomId, form]);
-
-  const formSchema = useMemo(() => createBookingFormSchema(selectedRoom?.capacity ?? 1), [selectedRoom]);
-  // Use `form` de useForm, não recrie um novo.
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
   const selectedRoomId = form.watch('roomId');
   const selectedDate = form.watch('date');
   const selectedRoom = useMemo(() => allRooms?.find(r => r.id === selectedRoomId), [allRooms, selectedRoomId]);
   
   const { availableStartTimes, availableEndTimes } = useMemo(() => {
-<<<<<<< HEAD
-    if (!selectedRoomId) return { availableStartTimes: [], availableEndTimes: [] };
-
-    const bookingsForDayAndRoom = allBookings.filter(b => 
-        b.roomId === selectedRoomId && format(parseISO(b.date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
-=======
     const selectedRoomId = form.watch('roomId');
     const selectedDate = form.watch('date');
     if (!selectedRoomId || !selectedDate) return { availableStartTimes: [], availableEndTimes: [] };
 
     const bookingsForDayAndRoom = allBookings.filter(b => 
         b.roomId === selectedRoomId && b.date === format(selectedDate, "yyyy-MM-dd")
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     );
 
     const occupiedSlots = new Set<string>();
     bookingsForDayAndRoom.forEach(booking => {
         const start = parse(booking.startTime, 'HH:mm', selectedDate);
-<<<<<<< HEAD
-        const end = parse(booking.endTime, 'HH:mm', selectedDate);
-=======
         let end = parse(booking.endTime, 'HH:mm', selectedDate);
         if (isBefore(end, start)) { // Corujão
             end = addDays(end, 1);
         }
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
         let current = start;
         while(isBefore(current, end)) {
@@ -306,17 +241,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     }
     
     return { availableStartTimes: availableStarts, availableEndTimes: availableEnds };
-<<<<<<< HEAD
-  }, [selectedRoomId, date, allBookings, form.watch("startTime")]);
-
-
-  const handleNextStep = async () => {
-    const fieldsToValidate = step === 1 
-      ? ["title", "description", "startTime", "endTime"]
-      : ["participants"];
-    
-    const isValid = await form.trigger(fieldsToValidate as any);
-=======
   }, [form.watch("roomId"), form.watch("date"), allBookings, form.watch("startTime")]);
 
 
@@ -330,7 +254,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     }
 
     const isValid = await form.trigger(fieldsToValidate);
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     if (isValid) {
         setStep(step + 1);
     }
@@ -342,11 +265,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     const newBooking = {
         ...data,
         organizerId: user.uid,
-<<<<<<< HEAD
-        date: format(date, "yyyy-MM-dd"),
-=======
         date: format(data.date, "yyyy-MM-dd"),
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     };
     
     onSuccess(newBooking as any);
@@ -359,11 +278,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     
     const active = allUsers.filter(u => u.status === 'Ativo' && u.category !== 'Visitante' && u.uid !== user?.uid);
     const organizer = allUsers.find(u => u.uid === user?.uid);
-<<<<<<< HEAD
-    if(organizer) active.unshift(organizer); // Garante que o organizador esteja no topo
-=======
     if(organizer) active.unshift(organizer);
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
     const inactive = allUsers.filter(u => u.status !== 'Ativo' || u.category === 'Visitante');
     return { activeMembers: active, inactiveOrVisitors: inactive };
@@ -384,20 +299,12 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
 
   const handleToggle = (userId: string, isGuest: boolean) => {
       const field = isGuest ? "guests" : "participants";
-<<<<<<< HEAD
-      const currentValues = form.getValues(field);
-=======
       const currentValues = form.getValues(field) || [];
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
       const newValues = currentValues.includes(userId)
           ? currentValues.filter(id => id !== userId)
           : [...currentValues, userId];
       
-<<<<<<< HEAD
-      if (userId === user?.uid) return; // Não permite desmarcar o organizador
-=======
       if (!isGuest && userId === user?.uid) return;
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 
       form.setValue(field, newValues, { shouldValidate: true });
   };
@@ -409,13 +316,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-2 border-b pb-4 mb-4">
             <div className="flex items-center gap-4 text-sm flex-wrap">
-<<<<<<< HEAD
-                <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{formattedDate}</span>
-                </div>
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                  {selectedRoom && (
                     <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
@@ -429,22 +329,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
 
         {step === 0 && (
             <div className="space-y-4">
-<<<<<<< HEAD
-                <FormField
-                    control={form.control}
-                    name="roomId"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                            <FormLabel className="text-base font-semibold">Qual sala você quer reservar?</FormLabel>
-                            {loadingRooms ? <Skeleton className="h-24 w-full" /> : (
-                                <FormControl>
-                                    <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="grid grid-cols-1 gap-4"
-                                    >
-                                    {availableRooms?.map(room => (
-=======
                  <FormField
                     control={form.control}
                     name="date"
@@ -520,7 +404,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                     className="grid grid-cols-1 gap-4"
                                     >
                                     {(availableRooms || []).map(room => (
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                                         <FormItem key={room.id} className="flex items-center space-x-3 space-y-0">
                                             <FormControl>
                                                 <RadioGroupItem value={room.id} id={`room-${room.id}`}/>
@@ -626,8 +509,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                   </FormItem>
                 )}
               />
-<<<<<<< HEAD
-=======
                {form.formState.errors.date && (
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
@@ -636,7 +517,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                         </AlertDescription>
                     </Alert>
                 )}
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
             </div>
         )}
 
@@ -648,54 +528,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                     <FormDescription>Selecione os membros que participarão.</FormDescription>
                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-<<<<<<< HEAD
-                        <Input placeholder="Buscar por nome ou apelido..." className="pl-9" onChange={(e) => setMemberSearchTerm(e.target.value)} />
-                    </div>
-                    <ScrollArea className="h-48 rounded-md border">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                        <div className="p-4 space-y-2">
-=======
-                        <div className="p-4 space-y-1">
->>>>>>> ecd1ecee (I see this error with the app, reported by NextJS, please fix it. The er)
-                            {filteredUsers.map(u => {
-                                const isGuest = potentialGuests.some(g => g.uid === u.uid);
-                                const isChecked = form.watch('participants').includes(u.uid) || form.watch('guests').includes(u.uid);
-                                const checkboxId = `user-${u.uid}`;
-                                return (
-                                    <div 
-                                        key={u.uid} 
-                                        className={cn(
-                                            "flex items-center space-x-3 p-2 rounded-md",
-                                            isGuest && "opacity-75"
-                                        )}
-                                    >
-                                        <Checkbox 
-                                            id={checkboxId}
-                                            checked={isChecked}
-                                            onCheckedChange={() => handleUserToggle(u)}
-                                            disabled={u.uid === user?.uid}
-                                            aria-label={`Selecionar ${u.name}`}
-                                        />
-                                        <label
-                                            htmlFor={checkboxId}
-                                            className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                        >
-                                            {u.name}
-                                        </label>
-                                        {isGuest && <Badge variant="outline">{u.category}</Badge>}
-                                    </div>
-                                )
-                            })}
-                            {filteredUsers.length === 0 && (
-                                <p className="text-center text-sm text-muted-foreground py-4">Nenhum usuário encontrado.</p>
-                            )}
-=======
-                        <div className="p-4 space-y-1">
-                            {filteredMembers.map(u => (
-                                <div key={u.uid} className="flex items-center space-x-3 p-2 rounded-md">
-                                    <Checkbox id={`member-${u.uid}`} checked={form.watch('participants').includes(u.uid)} onCheckedChange={() => handleToggle(u.uid, false)} disabled={u.uid === user?.uid} />
-=======
                         <Input placeholder="Buscar por nome ou apelido..." className="pl-9" value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
                     </div>
                     <ScrollArea className="h-48 rounded-md border">
@@ -708,7 +540,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                         onCheckedChange={() => handleToggle(u.uid, false)} 
                                         disabled={u.uid === user?.uid} 
                                     />
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                                     <label htmlFor={`member-${u.uid}`} className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
                                         {u.name} {u.nickname && `(${u.nickname})`}
                                     </label>
@@ -725,30 +556,17 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
 
         {step === 3 && (
             <div className="space-y-4">
-<<<<<<< HEAD
-                {loadingUsers ? <Skeleton className="h-40 w-full" /> : (
-=======
                 {isLoading ? <Skeleton className="h-40 w-full" /> : (
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                   <div className="space-y-2">
                     <FormLabel>Convidados (Visitantes e Não-Ativos)</FormLabel>
                     <FormDescription>Selecione os convidados para a sessão.</FormDescription>
                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-<<<<<<< HEAD
-                        <Input placeholder="Buscar por nome ou apelido..." className="pl-9" onChange={(e) => setGuestSearchTerm(e.target.value)} />
-=======
                         <Input placeholder="Buscar por nome ou apelido..." className="pl-9" value={guestSearchTerm} onChange={(e) => setGuestSearchTerm(e.target.value)} />
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                     </div>
                     <ScrollArea className="h-48 rounded-md border">
                         <div className="p-4 space-y-1">
                             {filteredGuests.map(u => (
-<<<<<<< HEAD
-                                <div key={u.uid} className="flex items-center space-x-3 p-2 rounded-md opacity-75">
-                                    <Checkbox id={`guest-${u.uid}`} checked={form.watch('guests').includes(u.uid)} onCheckedChange={() => handleToggle(u.uid, true)} />
-                                    <label htmlFor={`guest-${u.uid}`} className="flex-1 text-sm font-medium leading-none cursor-pointer">
-=======
                                 <div key={u.uid} className="flex items-center space-x-3 p-2 rounded-md">
                                     <Checkbox 
                                         id={`guest-${u.uid}`} 
@@ -756,17 +574,12 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                         onCheckedChange={() => handleToggle(u.uid, true)} 
                                     />
                                     <label htmlFor={`guest-${u.uid}`} className="flex-1 text-sm font-medium leading-none cursor-pointer opacity-75">
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                                         {u.name} {u.nickname && `(${u.nickname})`}
                                     </label>
                                     <Badge variant="outline">{u.category}</Badge>
                                 </div>
                             ))}
                             {filteredGuests.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">Nenhum convidado encontrado.</p>}
-<<<<<<< HEAD
->>>>>>> 6892017e (vamos mudar essa lista vamos almentar mais um step do modal, o segundo s)
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                         </div>
                     </ScrollArea>
                     <FormMessage />
@@ -785,22 +598,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
         )}
         
         <DialogFooter>
-<<<<<<< HEAD
-            {step === 1 && 
-                <>
-                    <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-                    <Button type="button" onClick={handleNextStep}>Avançar</Button>
-                </>
-            }
-            {step > 1 && 
-                <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>Voltar</Button>
-            }
-            {step === 2 && 
-                <Button type="button" onClick={handleNextStep}>Adicionar Convidados</Button>
-            }
-            {step === 3 && (
-                <Button type="submit" disabled={form.formState.isSubmitting || loadingUsers}>
-=======
             {step === 0 && 
                 <>
                     <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
@@ -818,7 +615,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
             }
             {step === 3 && (
                 <Button type="submit" disabled={form.formState.isSubmitting || isLoading || !form.formState.isValid}>
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                     {form.formState.isSubmitting ? "Confirmando..." : "Confirmar Reserva"}
                 </Button>
             )}
@@ -827,5 +623,3 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     </Form>
   )
 }
-
-    
