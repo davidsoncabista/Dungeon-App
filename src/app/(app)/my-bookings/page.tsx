@@ -5,7 +5,7 @@ import { useMemo } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
-import { isPast, parseISO, startOfMonth, endOfMonth, getDate, getMonth, getYear, setDate, addMonths, subMonths, isWithinInterval, format } from "date-fns"
+import { isPast, parseISO, setDate, addMonths, subMonths, isWithinInterval, format, parse } from "date-fns"
 import { ptBR } from 'date-fns/locale';
 
 import { auth, app } from "@/lib/firebase"
@@ -17,7 +17,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookingRow } from "@/components/app/my-bookings/booking-row"
-import { BookMarked, ShieldAlert, TrendingUp, CalendarClock } from "lucide-react"
+import { BookMarked, ShieldAlert, TrendingUp, Users, Moon } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 
 export default function MyBookingsPage() {
   const [user, loadingAuth] = useAuthState(auth);
@@ -57,45 +58,61 @@ export default function MyBookingsPage() {
   upcomingBookings.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
 
   // --- Quota Calculation Logic ---
-  const { usedQuota, totalQuota, nextRenewalDate } = useMemo(() => {
-    if (!userPlan || !bookings) {
-      return { usedQuota: 0, totalQuota: 0, nextRenewalDate: null };
+  const { 
+    usedMonthlyQuota, totalMonthlyQuota,
+    usedCorujaoQuota, totalCorujaoQuota,
+    usedInvitesQuota, totalInvitesQuota,
+    nextRenewalDate 
+  } = useMemo(() => {
+    if (!userPlan || !bookings || !user) {
+      return { 
+        usedMonthlyQuota: 0, totalMonthlyQuota: 0, 
+        usedCorujaoQuota: 0, totalCorujaoQuota: 0,
+        usedInvitesQuota: 0, totalInvitesQuota: 0,
+        nextRenewalDate: null 
+      };
     }
 
     const today = new Date();
-    const dayOfMonth = getDate(today);
-    const renewalDay = 15;
-
+    const renewalDay = 15; 
+    
     let cycleStart: Date;
     let cycleEnd: Date;
     let renewalDate: Date;
 
-    if (dayOfMonth < renewalDay) {
-      // Current cycle is from 15th of last month to 14th of this month
+    if (today.getDate() < renewalDay) {
       cycleStart = setDate(subMonths(today, 1), renewalDay);
       cycleEnd = setDate(today, renewalDay - 1);
       renewalDate = setDate(today, renewalDay);
     } else {
-      // Current cycle is from 15th of this month to 14th of next month
       cycleStart = setDate(today, renewalDay);
       cycleEnd = setDate(addMonths(today, 1), renewalDay - 1);
       renewalDate = setDate(addMonths(today, 1), renewalDay);
     }
-    
+
     const bookingsInCycle = bookings.filter(b => {
-      const bookingDate = parseISO(b.date);
-      // We need to adjust for timezone, so we create date without it
-      const bookingDateUTC = new Date(bookingDate.getUTCFullYear(), bookingDate.getUTCMonth(), bookingDate.getUTCDate());
-      return isWithinInterval(bookingDateUTC, { start: cycleStart, end: cycleEnd });
-    }).length;
+      // Filtra apenas as reservas organizadas pelo usuário para contar nas cotas
+      if (b.organizerId !== user.uid) return false;
+      
+      const bookingDate = parse(b.date, 'yyyy-MM-dd', new Date());
+      return isWithinInterval(bookingDate, { start: cycleStart, end: cycleEnd });
+    });
+    
+    const monthlyUsed = bookingsInCycle.length;
+    const corujaoUsed = bookingsInCycle.filter(b => b.startTime === '23:00').length;
+    const invitesUsed = bookingsInCycle.reduce((acc, b) => acc + (b.guests?.length || 0), 0);
     
     return {
-      usedQuota: bookingsInCycle,
-      totalQuota: userPlan.monthlyQuota,
+      usedMonthlyQuota: monthlyUsed,
+      totalMonthlyQuota: userPlan.monthlyQuota,
+      usedCorujaoQuota: corujaoUsed,
+      totalCorujaoQuota: userPlan.corujaoQuota,
+      usedInvitesQuota: invitesUsed,
+      totalInvitesQuota: userPlan.invites,
       nextRenewalDate: format(renewalDate, "dd 'de' MMMM", { locale: ptBR })
     };
 
-  }, [userPlan, bookings]);
+  }, [userPlan, bookings, user]);
 
 
   const renderTable = (bookingList: Booking[], isLoading: boolean, error?: Error, isEmptyMessage?: string) => {
@@ -136,6 +153,8 @@ export default function MyBookingsPage() {
 
     return bookingList.map(booking => <BookingRow key={booking.id} booking={booking} />);
   }
+  
+  const isLoading = loadingAuth || loadingUser || loadingPlans || loadingBookings;
 
 
   return (
@@ -149,24 +168,49 @@ export default function MyBookingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Minha Cota de Reservas
+            Minhas Cotas de Uso
           </CardTitle>
           <CardDescription>
-            Sua contagem de reservas para o ciclo atual.
+            Sua contagem para o ciclo atual.
             {nextRenewalDate && ` A cota reinicia em ${nextRenewalDate}.`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loadingAuth || loadingUser || loadingPlans || loadingBookings ? (
-            <div className="flex items-end gap-2">
-              <Skeleton className="h-10 w-16" />
-              <Skeleton className="h-6 w-24" />
+          {isLoading ? (
+            <div className="flex items-center gap-6">
+              <Skeleton className="h-16 w-32" />
+              <Skeleton className="h-16 w-32" />
+              <Skeleton className="h-16 w-32" />
             </div>
           ) : (
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-bold">{totalQuota > 0 ? totalQuota - usedQuota : '∞'}</span>
-              <span className="text-xl text-muted-foreground font-medium">/{totalQuota > 0 ? totalQuota : '∞'}</span>
-              <span className="text-lg text-muted-foreground pb-1">reservas restantes</span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
+               <div className="flex flex-col items-center justify-center p-4">
+                  <div className="flex items-end gap-2">
+                    <span className="text-4xl font-bold">{totalMonthlyQuota > 0 ? Math.max(0, totalMonthlyQuota - usedMonthlyQuota) : '∞'}</span>
+                    <span className="text-xl text-muted-foreground font-medium">/{totalMonthlyQuota > 0 ? totalMonthlyQuota : '∞'}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground mt-1">Reservas Mensais</span>
+               </div>
+               <div className="flex flex-col items-center justify-center p-4">
+                   <div className="flex items-center gap-2">
+                      <Moon className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex items-end gap-2">
+                        <span className="text-4xl font-bold">{totalCorujaoQuota > 0 ? Math.max(0, totalCorujaoQuota - usedCorujaoQuota) : '0'}</span>
+                        <span className="text-xl text-muted-foreground font-medium">/{totalCorujaoQuota > 0 ? totalCorujaoQuota : '0'}</span>
+                      </div>
+                   </div>
+                  <span className="text-sm text-muted-foreground mt-1">Cotas Corujão</span>
+               </div>
+               <div className="flex flex-col items-center justify-center p-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex items-end gap-2">
+                        <span className="text-4xl font-bold">{totalInvitesQuota > 0 ? Math.max(0, totalInvitesQuota - usedInvitesQuota) : '0'}</span>
+                        <span className="text-xl text-muted-foreground font-medium">/{totalInvitesQuota > 0 ? totalInvitesQuota : '0'}</span>
+                    </div>
+                  </div>
+                  <span className="text-sm text-muted-foreground mt-1">Convidados no Mês</span>
+               </div>
             </div>
           )}
         </CardContent>
@@ -188,7 +232,7 @@ export default function MyBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {renderTable(upcomingBookings, loadingAuth || loadingBookings, errorBookings, "Você não tem nenhuma reserva futura.")}
+              {renderTable(upcomingBookings, isLoading, errorBookings, "Você não tem nenhuma reserva futura.")}
             </TableBody>
           </Table>
         </CardContent>
@@ -210,7 +254,7 @@ export default function MyBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-                {renderTable(pastBookings, loadingAuth || loadingBookings, errorBookings, "Seu histórico de reservas está vazio.")}
+                {renderTable(pastBookings, isLoading, errorBookings, "Seu histórico de reservas está vazio.")}
             </TableBody>
           </Table>
         </CardContent>
@@ -219,3 +263,5 @@ export default function MyBookingsPage() {
     </div>
   )
 }
+
+    
