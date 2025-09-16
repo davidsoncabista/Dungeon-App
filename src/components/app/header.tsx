@@ -33,22 +33,15 @@ const navItems = [
 const visitorNavItems = [
     { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
     { href: "/profile", label: "Meu Perfil", icon: User, roles: ["Visitante", "Pendente"] },
-<<<<<<< HEAD
     { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante", "Pendente"] },
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
 ];
 
 
 const adminNavItems = [
     { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
-<<<<<<< HEAD
     { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
-=======
-    { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Revisor", "Editor", "Administrador"] },
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
-    { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador", "Editor", "Revisor"] },
+    { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador"] },
 ]
 
 interface AppHeaderProps {
@@ -85,18 +78,9 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   };
 
   const getVisibleNavItems = () => {
-<<<<<<< HEAD
     if (userStatus === 'Pendente' || userCategory === 'Visitante') {
         return visitorNavItems.filter(item => item.roles.includes(userStatus) || item.roles.includes(userCategory));
     }
-=======
-    if (userStatus === 'Pendente') {
-        return [{ href: "/profile", label: "Meu Perfil", icon: User, roles: ["Pendente"] }];
-    }
-    if (userCategory === 'Visitante') {
-        return visitorNavItems;
-    }
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     // Membros ativos e admins
     return navItems.filter(item => item.roles.includes(userRole));
   }
@@ -222,5 +206,3 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
     </header>
   );
 }
-
-    

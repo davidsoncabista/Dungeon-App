@@ -8,14 +8,9 @@ import { BookingForm } from "@/components/app/booking-form"
 import { useToast } from "@/hooks/use-toast"
 import { getFirestore, collection, doc, setDoc } from "firebase/firestore"
 import { app } from "@/lib/firebase"
-import type { Room } from "@/lib/types/room"
 
 // --- Componente de Reserva (Modal) ---
-<<<<<<< HEAD
-export const BookingModal = ({ date, onOpenChange, allBookings, children }: { date: Date, onOpenChange: (open: boolean) => void, allBookings: Booking[], children: React.ReactNode }) => {
-=======
 export const BookingModal = ({ initialDate, onOpenChange, allBookings, children }: { initialDate: Date, onOpenChange: (open: boolean) => void, allBookings: Booking[], children: React.ReactNode }) => {
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const firestore = getFirestore(app);
@@ -63,11 +58,7 @@ export const BookingModal = ({ initialDate, onOpenChange, allBookings, children 
                     </DialogDescription>
                 </DialogHeader>
                 <BookingForm 
-<<<<<<< HEAD
-                    date={date} 
-=======
                     initialDate={initialDate} 
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
                     allBookings={allBookings} 
                     onSuccess={handleSuccess}
                     onCancel={() => handleOpenChange(false)}
@@ -76,8 +67,3 @@ export const BookingModal = ({ initialDate, onOpenChange, allBookings, children 
         </Dialog>
     )
 }
-<<<<<<< HEAD
-
-    
-=======
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
