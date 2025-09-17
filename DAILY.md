@@ -2,19 +2,31 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Sprint Atual: Sprint 5 (Iniciando)
+## Sprint Atual: Sprint 6 (Iniciando)
+
+### Foco: Refinamento da Experiência do Usuário e Polimento
+
+- [ ] **Página de Histórico de Avisos**:
+  - [ ] Criar a página `/notices` para que os usuários possam visualizar todos os comunicados passados.
+- [ ] **Melhoria no Fluxo de Onboarding**:
+  - [ ] Implementar um modal de boas-vindas no primeiro login após o cadastro, guiando o usuário sobre os próximos passos (completar perfil e se matricular).
+- [ ] **Refinamento da Agenda Online**:
+  - [ ] Reintroduzir a visualização de agenda por dia/semana, permitindo ao usuário alternar entre a visão de calendário mensal e uma timeline detalhada.
+- [ ] **Polimento Geral da UI/UX**:
+  - [ ] Realizar uma revisão completa da responsividade em todas as telas, especialmente em modais e formulários complexos.
+  - [ ] Garantir que os feedbacks de sucesso e erro (toasts) sejam consistentes em toda a aplicação.
+
+## Concluído: Sprint 5
 
 ### Foco: Validações Finais e Ferramentas de Admin
 
-- [ ] **Validação Final de Cotas de Reserva**:
-  - [ ] Implementar a verificação no formulário de reserva para impedir o agendamento se o usuário já atingiu sua cota (semanal, mensal ou corujão).
-
-- [ ] **Interatividade do Usuário**:
-  - [ ] Implementar a funcionalidade de "Sair da Reserva".
-
-- [ ] **Ferramentas de Administrador**:
-  - [ ] Implementar as ações de moderação restantes (bloquear usuário, etc.).
-  - [ ] Criar a interface para o administrador criar e enviar avisos.
+- [x] **Validação Final de Cotas de Reserva**:
+  - [x] Implementada a verificação no formulário de reserva para impedir o agendamento se o usuário já atingiu sua cota (semanal, mensal ou corujão).
+- [x] **Interatividade do Usuário**:
+  - [x] Implementada a funcionalidade de "Sair da Reserva".
+- [x] **Ferramentas de Administrador**:
+  - [x] Implementadas as ações de moderação (bloquear/desbloquear usuário, alterar permissões).
+  - [x] Criada a interface para o administrador criar e enviar avisos.
 
 ## Concluído: Sprint 4
 
