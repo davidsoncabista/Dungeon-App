@@ -111,29 +111,31 @@ export function BookingRow({ booking }: { booking: Booking }) {
         <TableCell className="text-right">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" disabled={isBookingInThePast}>
+                    <Button variant="ghost" size="icon">
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Ações</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                    
                     {isOrganizer ? (
-                         <DropdownMenuItem onSelect={() => setIsEditModalOpen(true)} disabled={isBookingInThePast}>
-                            <Pencil className="mr-2 h-4 w-4" /> Editar Reserva
+                        <DropdownMenuItem onSelect={() => isBookingInThePast ? setIsDetailsModalOpen(true) : setIsEditModalOpen(true)}>
+                            {isBookingInThePast ? <Eye className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
+                            {isBookingInThePast ? 'Ver Detalhes' : 'Editar Reserva'}
                         </DropdownMenuItem>
                     ) : (
-                         <DropdownMenuItem onSelect={() => setIsDetailsModalOpen(true)}>
+                        <DropdownMenuItem onSelect={() => setIsDetailsModalOpen(true)}>
                             <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
                         </DropdownMenuItem>
                     )}
                     
-                    {!isOrganizer && (
+                    {!isOrganizer && !isBookingInThePast && (
                         <>
                             <DropdownMenuSeparator />
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={e => e.preventDefault()} disabled={isBookingInThePast}>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={e => e.preventDefault()}>
                                         <LogOut className="mr-2 h-4 w-4" /> Sair da Reserva
                                     </DropdownMenuItem>
                                 </AlertDialogTrigger>
@@ -155,18 +157,15 @@ export function BookingRow({ booking }: { booking: Booking }) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {isOrganizer ? (
-                <EditBookingModal booking={booking} onOpenChange={setIsEditModalOpen}>
-                    <div data-state={isEditModalOpen ? 'open' : 'closed'} />
-                </EditBookingModal>
-            ) : (
-                <BookingDetailsModal booking={booking} onOpenChange={setIsDetailsModalOpen}>
-                    <div data-state={isDetailsModalOpen ? 'open' : 'closed'} />
-                </BookingDetailsModal>
-            )}
+            {/* O trigger do modal é substituído pelo item do menu, mas o componente precisa existir */}
+            <EditBookingModal booking={booking} onOpenChange={setIsEditModalOpen}>
+                <div data-state={isEditModalOpen ? 'open' : 'closed'} className="hidden" />
+            </EditBookingModal>
+            
+            <BookingDetailsModal booking={booking} onOpenChange={setIsDetailsModalOpen}>
+                 <div data-state={isDetailsModalOpen ? 'open' : 'closed'} className="hidden" />
+            </BookingDetailsModal>
         </TableCell>
       </TableRow>
     );
 };
-
-    
