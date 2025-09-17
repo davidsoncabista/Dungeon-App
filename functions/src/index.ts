@@ -116,3 +116,4 @@ export const handleBookingUpdate = functions
     
     return null;
   });
+
