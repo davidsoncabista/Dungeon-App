@@ -1,3 +1,4 @@
+import { Timestamp } from "firebase/firestore";
 
 export type UserCategory = "Player" | "Gamer" | "Master" | "Visitante";
 export type UserStatus = "Ativo" | "Pendente" | "Bloqueado";
@@ -13,6 +14,7 @@ export interface User {
   category: UserCategory;
   status: UserStatus;
   role: AdminRole;
+  createdAt: Timestamp; // Adicionado para rastrear data de criação
 
   // Novos campos
   nickname?: string;

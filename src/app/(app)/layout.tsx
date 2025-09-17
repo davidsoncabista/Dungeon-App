@@ -18,10 +18,10 @@ const revisorRoutes = ["/statistics", "/users", "/rooms", "/admin"]; // Revisore
 const allAdminRoutes = [...new Set([...adminOnlyRoutes, ...editorRoutes, ...revisorRoutes])];
 
 // Rotas principais para membros ativos.
-const memberRoutes = ["/online-schedule", "/my-bookings", "/subscribe", "/profile", "/notices"];
+const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile", "/notices"];
 
 // Rotas permitidas para usuários que ainda não se matricularam (Visitantes).
-const visitorRoutes = ["/subscribe", "/profile"];
+const visitorRoutes = ["/billing", "/profile"];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
@@ -55,7 +55,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         // Se o cadastro está completo mas ele ainda é 'Visitante',
         // ele só pode acessar as rotas de visitante.
         if (currentUser.category === 'Visitante' && !visitorRoutes.includes(pathname) && !pathname.startsWith('/my-bookings')) {
-            router.push('/subscribe');
+            router.push('/billing');
             return;
         }
         

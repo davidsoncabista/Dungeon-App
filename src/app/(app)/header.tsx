@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays } from "lucide-react"
@@ -25,12 +26,12 @@ import { useToast } from "@/hooks/use-toast"
 const navItems = [
   { href: "/online-schedule", label: "Agenda Online", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
-  { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/billing", label: "Cobranças", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
 ];
 
 // Navegação visível para usuários 'Visitante' ou 'Pendente'
 const visitorNavItems = [
-    { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
+    { href: "/billing", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
     { href: "/profile", label: "Meu Perfil", icon: User, roles: ["Visitante", "Pendente"] },
 ];
 
@@ -64,7 +65,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso.",
       });
-      router.push('/');
+      router.push('/landing');
     } catch (error) {
       console.error("Erro no logout:", error);
       toast({
@@ -76,13 +77,9 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   };
 
   const getVisibleNavItems = () => {
-<<<<<<< HEAD
-    // Visitantes veem um conjunto específico de páginas.
-=======
     if (userStatus === 'Pendente') {
         return [{ href: "/profile", label: "Meu Perfil", icon: User, roles: ["Pendente"] }];
     }
->>>>>>> 132f773a (feat: Adicionar funcionalidades e correções em diversas áreas do app)
     if (userCategory === 'Visitante') {
         return visitorNavItems;
     }
