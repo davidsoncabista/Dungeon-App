@@ -91,7 +91,9 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
                              <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="absolute inset-0 w-full h-full z-0 cursor-pointer" aria-label={`Reservar ${room.name}`} />
+                                        <BookingModal initialDate={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
+                                            <div className="absolute inset-0 w-full h-full z-0 cursor-pointer" aria-label={`Reservar ${room.name}`} />
+                                        </BookingModal>
                                     </TooltipTrigger>
                                      <TooltipContent side="top" align="center">
                                         <p>Clique para reservar um horário nesta sala.</p>

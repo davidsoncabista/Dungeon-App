@@ -61,17 +61,19 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
     
     return (
         <div>
-            <div className="flex justify-end mb-4">
-                <BookingModal
-                    initialDate={selectedDate}
-                    onOpenChange={setIsModalOpen}
-                    allBookings={bookings || []}
-                >
-                    <Button disabled={!canBook}>
-                        <PlusCircle className="mr-2 h-4 w-4" />Nova Reserva
-                    </Button>
-                </BookingModal>
-            </div>
+            {isMobile && (
+                 <div className="flex justify-end mb-4">
+                    <BookingModal
+                        initialDate={selectedDate}
+                        onOpenChange={setIsModalOpen}
+                        allBookings={bookings || []}
+                    >
+                        <Button disabled={!canBook}>
+                            <PlusCircle className="mr-2 h-4 w-4" />Nova Reserva
+                        </Button>
+                    </BookingModal>
+                </div>
+            )}
             {isMobile ? (
                 <AccordionScheduleView
                     rooms={availableRooms}
@@ -80,6 +82,7 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
                     setModalOpen={setIsModalOpen}
                     allBookings={bookings || []}
                     canBook={canBook}
+                    currentUser={currentUser}
                 />
             ) : (
                 <ScheduleView
@@ -89,9 +92,9 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
                     setModalOpen={setIsModalOpen}
                     allBookings={bookings || []}
                     canBook={canBook}
+                    currentUser={currentUser}
                 />
             )}
         </div>
     );
 }
-
