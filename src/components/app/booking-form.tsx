@@ -177,6 +177,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   const [step, setStep] = useState(0);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
   const [guestSearchTerm, setGuestSearchTerm] = useState("");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
   const formSchema = useMemo(() => createBookingFormSchema(allRooms || [], allUserBookings || [], userPlan, user?.uid), [allRooms, allUserBookings, userPlan, user]);
 
@@ -353,7 +354,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel className="text-base font-semibold">Qual a data da reserva?</FormLabel>
-                        <Popover>
+                        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -384,7 +385,8 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                         date,
                                         startTime: '',
                                         endTime: ''
-                                      })
+                                      });
+                                      setIsCalendarOpen(false);
                                     }
                                 }}
                                 fromDate={new Date()}
@@ -641,5 +643,3 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     </Form>
   )
 }
-
-    
