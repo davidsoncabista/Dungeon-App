@@ -6,14 +6,30 @@ import { BookingDetailsModal } from "./booking-details-modal"
 import { BookingModal } from "./booking-modal"
 import type { Booking } from "@/lib/types/booking"
 import type { Room } from "@/lib/types/room"
+import type { User as AppUser } from "@/lib/types/user";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
+import { Lock } from "lucide-react"
+import { EditBookingModal } from "./edit-booking-modal"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
+
 
 const BOOKING_COLORS = ["bg-blue-300/70", "bg-purple-300/70", "bg-green-300/70", "bg-yellow-300/70"];
 
+interface ScheduleViewProps {
+    rooms: Room[];
+    bookings: Booking[];
+    selectedDate: Date;
+    setModalOpen: (open: boolean) => void;
+    allBookings: Booking[];
+    canBook: boolean | undefined;
+    currentUser?: AppUser;
+}
+
 // --- Componente da Agenda (Timeline - Desktop/Landscape) ---
-export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings, canBook }: { rooms: Room[], bookings: Booking[], selectedDate: Date, setModalOpen: (open: boolean) => void, allBookings: Booking[], canBook: boolean | undefined }) => {
-    
+export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allBookings, canBook, currentUser }: ScheduleViewProps) => {
+    const [user] = useAuthState(auth);
     const totalHours = 24;
     const hourColumns = 4; // Cada hora tem 4 colunas (intervalos de 15 min)
     const totalColumns = totalHours * hourColumns;
@@ -30,14 +46,10 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
         let startHour = getHours(startTime) + getMinutes(startTime) / 60;
         let endHour = getHours(endTime) + getMinutes(endTime) / 60;
 
-        // Se a reserva começou no dia anterior e atravessou a meia-noite,
-        // ela deve começar na coluna 0 da grade do dia atual.
         if (bookingDay < selectedDay && endHour < startHour) {
             startHour = 0;
         }
 
-        // Se a reserva atravessa a meia-noite e estamos visualizando o dia em que ela começa,
-        // ela deve terminar no final da grade (24h).
         if (endHour < startHour && bookingDay === selectedDay) {
             endHour = 24; 
         }
@@ -48,7 +60,6 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
         let columnSpan = endColumn - startColumn;
         if (columnSpan < 0) columnSpan = 0;
 
-
         return {
             gridColumnStart: startColumn,
             gridColumnEnd: `span ${columnSpan}`,
@@ -57,9 +68,8 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
 
     return (
         <div className="relative overflow-hidden">
-            {/* Header da Timeline */}
             <div className="flex sticky top-0 z-20 bg-background">
-                <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div> {/* Espaço para o nome da sala */}
+                <div className="w-32 shrink-0 pr-4 font-semibold text-right"></div>
                 <div className="grid flex-1" style={{gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`}}>
                     {hours.map(hour => (
                         <div key={hour} className="text-center text-xs text-muted-foreground border-l -ml-px pt-2 col-span-4">
@@ -69,7 +79,6 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
                 </div>
             </div>
 
-            {/* Linhas da Timeline por Sala */}
             <div className="space-y-4 relative">
             {rooms.map((room: Room, roomIndex) => {
                 const roomBookings = bookings.filter(b => b.roomId === room.id);
@@ -82,37 +91,57 @@ export const ScheduleView = ({ rooms, bookings, selectedDate, setModalOpen, allB
                              <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div>
-                                            <BookingModal room={room} date={selectedDate} onOpenChange={setModalOpen} allBookings={allBookings}>
-                                                <button 
-                                                    className="absolute inset-0 w-full h-full z-0" 
-                                                    aria-label={`Reservar ${room.name}`}
-                                                    disabled={!canBook}
-                                                />
-                                            </BookingModal>
-                                        </div>
+                                        <div className="absolute inset-0 w-full h-full z-0 cursor-pointer" aria-label={`Reservar ${room.name}`} />
                                     </TooltipTrigger>
-                                    {!canBook && (
-                                        <TooltipContent side="top" align="center">
-                                            <p>Apenas membros associados podem fazer reservas.</p>
-                                        </TooltipContent>
-                                    )}
+                                     <TooltipContent side="top" align="center">
+                                        <p>Clique para reservar um horário nesta sala.</p>
+                                    </TooltipContent>
                                 </Tooltip>
                              </TooltipProvider>
-
                         
-                            {roomBookings.map((booking) => {
-                                const style = calculateBookingStyle(booking);
+                            {roomBookings.map((b) => {
+                                const style = calculateBookingStyle(b);
                                 const colorClass = BOOKING_COLORS[roomIndex % BOOKING_COLORS.length];
                                 
+                                if (!currentUser) return null;
+                                    
+                                const isOrganizer = b.organizerId === user?.uid;
+                                const canEdit = isOrganizer || currentUser.role === 'Administrador' || currentUser.role === 'Editor';
+                                const canView = currentUser.status !== 'Pendente' && currentUser.category !== 'Visitante';
+                                const bookingContent = (
+                                    <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
+                                        <p className="font-bold whitespace-nowrap">{b.title || 'Reserva Rápida'}</p>
+                                        <p className="text-black/60 whitespace-nowrap">{b.startTime} - {b.endTime}</p>
+                                    </div>
+                                );
+                                
+                                const lockedContent = (
+                                    <div className="h-full p-2 overflow-hidden rounded-md text-xs bg-muted text-muted-foreground transition-all cursor-not-allowed flex items-center justify-center gap-1">
+                                        <Lock className="h-3 w-3 shrink-0" />
+                                        <span className="font-bold whitespace-nowrap truncate">{b.title || 'Reserva'}</span>
+                                    </div>
+                                );
+
+
+                                let modalWrapper;
+                                if (canEdit) {
+                                    modalWrapper = <EditBookingModal booking={b} onOpenChange={setModalOpen}>{bookingContent}</EditBookingModal>;
+                                } else if (canView) {
+                                    modalWrapper = <BookingDetailsModal booking={b} onOpenChange={setModalOpen}>{bookingContent}</BookingDetailsModal>;
+                                } else {
+                                     modalWrapper = (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild><div>{lockedContent}</div></TooltipTrigger>
+                                                <TooltipContent><p>Complete seu cadastro e matrícula para ver os detalhes.</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    );
+                                }
+
                                 return (
-                                    <div key={`${booking.id}-${booking.date}`} style={style} className="h-full p-1 z-10">
-                                        <BookingDetailsModal booking={booking} onOpenChange={setModalOpen}>
-                                            <div className={`h-full p-2 overflow-hidden rounded-md text-xs text-black/80 transition-all hover:opacity-80 cursor-pointer flex flex-col justify-center ${colorClass}`}>
-                                                <p className="font-bold whitespace-nowrap">{booking.title || 'Reserva Rápida'}</p>
-                                                <p className="text-black/60 whitespace-nowrap">{booking.startTime} - {booking.endTime}</p>
-                                            </div>
-                                        </BookingDetailsModal>
+                                    <div key={`${b.id}-${b.date}`} style={style} className="h-full p-1 z-10">
+                                       {modalWrapper}
                                     </div>
                                 );
                             })}

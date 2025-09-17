@@ -2,42 +2,29 @@
 "use client"
 
 import * as React from "react";
-import { addMonths, format, isSameMonth, isToday, startOfMonth, startOfWeek, addDays, isBefore, startOfDay } from "date-fns";
+import { addMonths, format, startOfMonth, subMonths, startOfDay, addDays, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, PlusCircle, Plus, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { getFirestore, collection, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
 import { app, auth } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/lib/types/room";
 import type { User as AppUser } from "@/lib/types/user";
-import type { Plan } from "@/lib/types/plan";
-import { cn } from "@/lib/utils";
-import { BookingModal } from "@/components/app/dashboard/booking-modal";
-import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal";
-import { BookingDetailsModal } from "@/components/app/dashboard/booking-details-modal";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MonthlyCalendarView } from "@/components/app/dashboard/monthly-calendar-view";
+import { TimelineView } from "@/components/app/dashboard/timeline-view";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-
-const DaySkeleton = () => (
-    <div className="border-t border-l p-2 h-32 md:h-40 flex flex-col">
-        <span className="font-semibold"><Skeleton className="h-5 w-5 mb-2"/></span>
-        <div className="space-y-1 mt-1">
-            <Skeleton className="h-3 w-full"/>
-            <Skeleton className="h-3 w-5/6"/>
-        </div>
-    </div>
-)
+type ViewMode = 'day' | 'week' | 'month';
 
 export default function OnlineSchedulePage() {
     const [user, loadingAuth] = useAuthState(auth);
     const firestore = getFirestore(app);
 
-    const [currentMonth, setCurrentMonth] = React.useState(startOfMonth(new Date()));
-    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [currentDate, setCurrentDate] = React.useState(startOfDay(new Date()));
+    const [viewMode, setViewMode] = React.useState<ViewMode>('day');
 
     // --- Firestore Data ---
     const bookingsRef = collection(firestore, 'bookings');
@@ -47,162 +34,105 @@ export default function OnlineSchedulePage() {
     const [rooms, loadingRooms] = useCollectionData<Room>(query(roomsRef, orderBy('name')), { idField: 'id' });
 
     const usersRef = collection(firestore, 'users');
-    const [users, loadingUsers] = useCollectionData<AppUser>(query(usersRef, orderBy('name')), { idField: 'id' });
-    const currentUser = users?.find(u => u.uid === user?.uid);
-    
-    const plansRef = collection(firestore, 'plans');
-    const [plans, loadingPlans] = useCollectionData<Plan>(plansRef, { idField: 'id' });
-    const userPlan = React.useMemo(() => plans?.find(p => p.name === currentUser?.category), [plans, currentUser]);
+    const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
+    const [appUserData, loadingUsers] = useCollectionData<AppUser>(userQuery);
+    const currentUser = appUserData?.[0];
 
-
-    const handlePrevMonth = () => setCurrentMonth(prev => addMonths(prev, -1));
-    const handleNextMonth = () => setCurrentMonth(prev => addMonths(prev, 1));
-    const handleToday = () => setCurrentMonth(startOfMonth(new Date()));
-
-    const daysInMonth = React.useMemo(() => {
-        const start = startOfWeek(currentMonth, { weekStartsOn: 0 }); // Dom=0
-        const days = [];
-        let day = start;
-        for (let i = 0; i < 42; i++) {
-            days.push(new Date(day));
-            day.setDate(day.getDate() + 1);
+    const handlePrev = () => {
+        if (viewMode === 'month') {
+            setCurrentDate(prev => subMonths(prev, 1));
+        } else if (viewMode === 'week') {
+            setCurrentDate(prev => addDays(prev, -7));
+        } else {
+            setCurrentDate(prev => addDays(prev, -1));
         }
-        return days;
-    }, [currentMonth]);
+    };
+    
+    const handleNext = () => {
+        if (viewMode === 'month') {
+            setCurrentDate(prev => addMonths(prev, 1));
+        } else if (viewMode === 'week') {
+            setCurrentDate(prev => addDays(prev, 7));
+        } else {
+            setCurrentDate(prev => addDays(prev, 1));
+        }
+    };
 
+    const handleToday = () => {
+        setCurrentDate(startOfDay(new Date()));
+    };
+    
+    const getHeaderText = () => {
+        if (viewMode === 'month') {
+            return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
+        }
+        if (viewMode === 'week') {
+            const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+            const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+            return `${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`;
+        }
+        return format(currentDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    }
 
-    const bookingsByDay = React.useMemo(() => {
-        if (!bookings) return new Map();
-        return bookings.reduce((acc, booking) => {
-            const date = format(new Date(booking.date + 'T00:00:00'), 'yyyy-MM-dd');
-            if (!acc.has(date)) {
-                acc.set(date, []);
-            }
-            acc.get(date)?.push(booking);
-            return acc;
-        }, new Map<string, Booking[]>());
-    }, [bookings]);
+    const isLoading = loadingAuth || loadingBookings || loadingRooms || loadingUsers;
 
-    const canBook = currentUser?.status === 'Ativo';
-
-    const today = startOfDay(new Date());
-    const bookingLimitDate = addDays(today, 15);
+    const startOfWeek = (date: Date) => addDays(startOfDay(date), -date.getDay());
+    const endOfWeek = (date: Date) => addDays(startOfWeek(date), 6);
+    const weekDays = eachDayOfInterval({ start: startOfWeek(currentDate), end: endOfWeek(currentDate) });
 
     return (
-        <div className="flex flex-col h-full">
-            <header className="flex items-center justify-between pb-4">
+        <div className="flex flex-col h-full gap-4">
+            <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleToday}>Hoje</Button>
-                    <Button variant="ghost" size="icon" onClick={handlePrevMonth}><ChevronLeft/></Button>
-                    <Button variant="ghost" size="icon" onClick={handleNextMonth}><ChevronRight/></Button>
+                    <Button variant="outline" onClick={handleToday} className="h-9">Hoje</Button>
+                    <Button variant="ghost" size="icon" onClick={handlePrev} className="h-9 w-9"><ChevronLeft /></Button>
+                    <Button variant="ghost" size="icon" onClick={handleNext} className="h-9 w-9"><ChevronRight /></Button>
+                    <h2 className="text-lg md:text-xl font-semibold font-headline capitalize text-center sm:text-left">
+                       {getHeaderText()}
+                    </h2>
                 </div>
-                <h2 className="text-xl md:text-2xl font-semibold font-headline capitalize">
-                    {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
-                </h2>
-                <div>
-                     <BookingModal 
-                        initialDate={new Date()}
-                        onOpenChange={setIsModalOpen} 
-                        allBookings={bookings || []} 
-                    >
-                        <Button disabled={!canBook}>
-                            <PlusCircle className="mr-2 h-4 w-4"/>Nova Reserva
-                        </Button>
-                    </BookingModal>
-                </div>
+                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
+                    <TabsList>
+                        <TabsTrigger value="day">Dia</TabsTrigger>
+                        <TabsTrigger value="week">Semana</TabsTrigger>
+                        <TabsTrigger value="month">Mês</TabsTrigger>
+                    </TabsList>
+                </Tabs>
             </header>
 
-            <div className="grid grid-cols-7 text-center font-semibold text-muted-foreground text-sm border-b pb-2">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => <div key={day}>{day}</div>)}
-            </div>
-
-            <div className="grid grid-cols-7 flex-1">
-                {(loadingBookings || loadingRooms || loadingAuth || loadingPlans || loadingUsers) 
-                    ? Array.from({length: 42}).map((_, i) => <DaySkeleton key={i}/>)
-                    : daysInMonth.map(day => {
-                    const dayBookings = bookingsByDay.get(format(day, 'yyyy-MM-dd')) || [];
-                    const isPastDay = isBefore(day, today);
-                    const isWithinBookingLimit = !isPastDay && isBefore(day, bookingLimitDate);
-                    
-                    return (
-                        <div 
-                            key={day.toString()}
-                            className={cn(
-                                "border-t border-l p-1.5 h-32 md:h-40 flex flex-col relative",
-                                !isSameMonth(day, currentMonth) && "bg-muted/30 text-muted-foreground",
-                                isToday(day) && "bg-blue-50",
-                                isPastDay && "bg-muted/50"
-                            )}
-                        >
-                            <div className="flex justify-between items-center">
-                                <span className={cn("font-semibold text-xs md:text-sm", isToday(day) && "text-primary font-bold")}>
-                                    {format(day, 'd')}
-                                </span>
-                                {isWithinBookingLimit && isSameMonth(day, currentMonth) && (
-                                    <BookingModal initialDate={day} onOpenChange={setIsModalOpen} allBookings={bookings || []}>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!canBook}>
-                                            <Plus className="h-4 w-4" />
-                                            <span className="sr-only">Adicionar Reserva</span>
-                                        </Button>
-                                    </BookingModal>
-                                )}
-                            </div>
-                            <div className="flex-1 overflow-y-auto text-xs space-y-1 mt-1 pr-1">
-                                {dayBookings.slice(0, 3).map(b => {
-                                    const room = rooms?.find(r => r.id === b.roomId);
-                                    if (!currentUser || !room) return null;
-                                    
-                                    const isOrganizer = b.organizerId === user?.uid;
-                                    const canEdit = isOrganizer || currentUser.role === 'Administrador' || currentUser.role === 'Editor';
-                                    const canView = currentUser.status !== 'Pendente' && currentUser.category !== 'Visitante';
-
-                                    if (canEdit) {
-                                        return (
-                                            <EditBookingModal key={b.id} booking={b} onOpenChange={setIsModalOpen}>
-                                                <div className="p-1 bg-primary/20 text-primary-foreground rounded-sm truncate cursor-pointer hover:bg-primary/30">
-                                                    <span className="font-semibold text-primary">{room?.name.slice(0,5)}:</span> <span className="text-primary/80">{b.title}</span>
-                                                </div>
-                                            </EditBookingModal>
-                                        )
-                                    }
-
-                                    if(canView) {
-                                        return (
-                                            <BookingDetailsModal key={b.id} booking={b} onOpenChange={setIsModalOpen}>
-                                                <div className="p-1 bg-secondary text-secondary-foreground rounded-sm truncate cursor-pointer hover:bg-secondary/80">
-                                                    <span className="font-semibold">{room?.name.slice(0,5)}:</span> <span>{b.title}</span>
-                                                </div>
-                                            </BookingDetailsModal>
-                                        )
-                                    }
-
-                                    // Renderização para Visitantes/Pendentes
-                                    return (
-                                        <TooltipProvider key={b.id}>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="p-1 bg-muted/50 text-muted-foreground rounded-sm truncate cursor-not-allowed flex items-center gap-1">
-                                                        <Lock className="h-3 w-3 shrink-0" />
-                                                        <span className="truncate">{b.title}</span>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Complete seu cadastro e matrícula para ver os detalhes.</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    )
-                                })}
-                                {dayBookings.length > 3 && (
-                                    <div className="text-center text-muted-foreground font-bold text-xs">...</div>
-                                )}
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
+            <TabsContent value="day" className="flex-1">
+                <TimelineView 
+                    selectedDate={currentDate}
+                    bookings={bookings}
+                    rooms={rooms}
+                    isLoading={isLoading}
+                    currentUser={currentUser}
+                />
+            </TabsContent>
+            <TabsContent value="week" className="space-y-8 flex-1">
+                {weekDays.map(day => (
+                    <div key={day.toString()}>
+                        <h3 className="font-headline font-bold text-lg mb-2 capitalize">{format(day, "EEEE, dd/MM", { locale: ptBR })}</h3>
+                         <TimelineView 
+                            selectedDate={day}
+                            bookings={bookings}
+                            rooms={rooms}
+                            isLoading={isLoading}
+                            currentUser={currentUser}
+                        />
+                    </div>
+                ))}
+            </TabsContent>
+            <TabsContent value="month" className="flex-1">
+                 <MonthlyCalendarView
+                    currentMonth={startOfMonth(currentDate)}
+                    bookings={bookings || []}
+                    rooms={rooms || []}
+                    isLoading={isLoading}
+                    currentUser={currentUser}
+                />
+            </TabsContent>
         </div>
     );
 }
 
-    
