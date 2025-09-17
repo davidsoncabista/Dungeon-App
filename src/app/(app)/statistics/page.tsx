@@ -2,7 +2,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { BookOpenCheck, Crown, Users, TrendingUp, UserCheck, UserX } from "lucide-react"
 import type { UserCategory, User as AppUser } from "@/lib/types/user"
@@ -192,14 +192,32 @@ export default function StatisticsPage() {
             {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Ocupação</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Reservas por Categoria de Membro</CardTitle>
+            <CardDescription>Participações em reservas por tipo de plano.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">78%</div>
-            <p className="text-xs text-muted-foreground">(valor simulado)</p>
+            {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <BarChart accessibilityLayer data={categoryChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                    dataKey="category"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                    />
+                    <YAxis />
+                    <Tooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Bar dataKey="bookings" radius={8} />
+                </BarChart>
+                </ChartContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -243,36 +261,7 @@ export default function StatisticsPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Reservas por Categoria de Membro</CardTitle>
-            <CardDescription>Total de participações em reservas por cada tipo de plano.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
-                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                <BarChart accessibilityLayer data={categoryChartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                    dataKey="category"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                    />
-                    <YAxis />
-                    <Tooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Bar dataKey="bookings" radius={8} />
-                </BarChart>
-                </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle>Salas Mais Usadas</CardTitle>
             <CardDescription>Distribuição de reservas pelas salas disponíveis.</CardDescription>
@@ -283,24 +272,15 @@ export default function StatisticsPage() {
                 <PieChart>
                     <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                     <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={50} strokeWidth={5} />
-                    <Legend content={({ payload }) => {
-                        return (
-                            <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
-                            {payload?.map((entry, index) => (
-                                <li key={`item-${index}`} className="flex items-center gap-2 text-sm">
-                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                                {entry.value}
-                                </li>
-                            ))}
-                            </ul>
-                        )
-                    }}/>
+                    <ChartLegend
+                      content={<ChartLegendContent nameKey="room" />}
+                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                    />
                 </PieChart>
                 </ChartContainer>
              )}
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 }
