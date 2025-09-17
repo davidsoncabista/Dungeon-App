@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.7.0 - 2025-09-17 19:00:00 - studio-ai
+## v0.7.0 - 2025-09-17 19:00:00 - davidson.dev.br
 
 - **feat(cotas): Adiciona card de controle de cotas e corrige lógica de convidados**
   - **Card de Cotas em "Minhas Reservas"**: Implementado um novo card que exibe em tempo real o uso e o saldo das cotas do usuário para o ciclo mensal (renovado todo dia 15). O card detalha:
@@ -12,7 +12,7 @@
   - **Página de Matrícula Dinâmica**: A página `/subscribe` agora busca os planos de associação (preços, nomes, benefícios) diretamente do Firestore.
   - **Gerenciamento Centralizado**: Administradores podem alterar os planos na página de "Administração", e as mudanças são refletidas instantaneamente para os novos usuários, sem necessidade de deploy.
 
-## v0.6.0 - 2025-09-17 10:00:00 - studio-ai
+## v0.6.0 - 2025-09-17 10:00:00 - davidson.dev.br
 
 - **feat(arquitetura): Adota estratégia de 'Fonte da Verdade Única' para sincronizar UI e DB**
   - **Refatoração Global do Estado:** Eliminada a manipulação manual do estado local (useState) após operações de CRUD (Criação, Edição, Exclusão) em todo o aplicativo.
