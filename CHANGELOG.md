@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.9.0 - 2025-09-18 10:00:00 - davidson.dev.br
+
+- **feat(onboarding): Adiciona modal de boas-vindas para o primeiro login**
+  - Implementado um tour guiado em múltiplos passos (`WelcomeModal`) que é exibido aos novos usuários.
+  - O modal orienta o usuário a completar o perfil, escolher um plano de associação e explica como visualizar reservas como convidado, melhorando significativamente a experiência inicial.
+- **feat(agenda): Reintroduz visualizações de timeline diária e semanal**
+  - A página da "Agenda Online" agora possui abas para alternar entre as visualizações de **Mês**, **Semana** e **Dia**.
+  - A visão de timeline, ideal para verificar horários detalhados, foi encapsulada no componente `TimelineView` e é usada para as abas de dia e semana.
+- **feat(avisos): Cria página de histórico de comunicados**
+  - Adicionada a nova página `/notices` que exibe um histórico completo de todos os avisos enviados pela administração.
+  - O ícone de megafone no header agora leva para esta página, permitindo que os usuários consultem mensagens passadas a qualquer momento.
+- **refactor(UI): Revisa a responsividade e consistência da interface**
+  - Realizados ajustes finos em diversos componentes para garantir que o layout se adapte corretamente a diferentes tamanhos de tela.
+  - Corrigida a responsividade do formulário de reserva e das tabelas em telas menores, melhorando a consistência visual do aplicativo.
+
+## v0.8.0 - 2025-09-17 22:00:00 - davidson.dev.br
+
+- **feat(reservas): Implementa a funcionalidade 'Sair da Reserva'**
+  - Membros que foram convidados para uma reserva, mas não são os organizadores, agora podem se remover de uma sessão futura através do menu de ações na página "Minhas Reservas".
+  - Um diálogo de confirmação foi adicionado para evitar remoções acidentais.
+- **feat(reservas): Adiciona contagem de participantes e ordenação à lista**
+  - As tabelas na página "Minhas Reservas" agora exibem uma coluna com o número total de participantes.
+  - Os cabeçalhos das colunas "Sessão / Sala" e "Participantes" foram transformados em botões que permitem ordenar a lista de reservas, facilitando a visualização.
+- **feat(reservas): Finaliza o fluxo de edição e visualização**
+  - O menu de ações na lista de reservas foi habilitado para agendamentos passados, permitindo que os usuários visualizem os detalhes do histórico.
+  - O fluxo de edição de uma reserva futura agora está totalmente funcional a partir do menu na página "Minhas Reservas".
+
 ## v0.7.0 - 2025-09-17 19:00:00 - davidson.dev.br
 
 - **feat(cotas): Adiciona card de controle de cotas e corrige lógica de convidados**

@@ -6,25 +6,24 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 
 ### 1. Estrutura e Telas
 - **Landing Page**: Uma página de apresentação pública para novos usuários, com as principais funcionalidades do sistema e um link para a área de login.
-- **Dashboard (Agenda Online)**: Exibir agenda completa com disponibilidade de salas em formato de calendário ou timeline.
-- **Minhas Reservas**: Listar reservas do usuário (atuais e passadas) e exibir um painel com o saldo de cotas de uso (mensal, corujão, convidados).
+- **Dashboard (Agenda Online)**: Exibir agenda completa com disponibilidade de salas em formato de calendário (mensal) e timeline (diária/semanal).
+- **Minhas Reservas**: Listar reservas do usuário (atuais e passadas) com ordenação e exibir um painel com o saldo de cotas de uso (mensal, corujão, convidados).
 - **Reservar Sala**: Fluxo integrado ao Dashboard para agendamento, com validação de cotas em tempo real.
 - **Meu Perfil**: Permitir visualização e edição completa dos dados do usuário, incluindo informações pessoais, de associação e preferências de jogo.
-- **Cobranças**: Exibir status de pagamento e permitir quitação.
+- **Cobranças/Matrícula**: Exibir status de pagamento, permitir quitação e guiar o usuário na escolha de um plano de associação.
+- **Mural de Avisos**: Página para consultar o histórico de comunicados da administração.
 - **Área do Administrador**: Painel para gerenciamento completo do sistema, incluindo planos, usuários, salas e regras de negócio.
 
 ### 2. Funcionalidades do Usuário (Associado)
 - **Autenticação e Onboarding**:
   - **Autenticação**: Login exclusivo com Google (OAuth) e gerenciamento de sessão via Firebase.
-  - **Fluxo de Novo Usuário**: Após o primeiro login, o usuário é registrado automaticamente, direcionado para completar seu perfil e, em seguida, para uma página de inscrição para escolher seu plano de associação.
+  - **Fluxo de Novo Usuário**: Após o primeiro login, o sistema guia o usuário através de um modal de boas-vindas, incentivando-o a completar o perfil e, em seguida, a se matricular em um plano.
   - **Perfil do Usuário**: Página completa para o usuário gerenciar suas informações, incluindo nome, foto (sincronizada com Google), apelido, telefone, documentos (CPF/RG), data de nascimento, redes sociais e preferências de jogo (RPG, Board Game, Card Game).
-- **Sistema de Avisos**: Exibir avisos importantes do administrador após o login.
+- **Sistema de Avisos**: Exibir avisos importantes do administrador após o login e manter um histórico acessível no mural.
 - **Sistema de Reservas**: Calendário de salas com validação baseada em cotas, categoria e horários especiais (Corujão).
 - **Cotas de Reserva**: Implementar limites de reserva por categoria de usuário (Player, Gamer, Master), com controle de cotas semanal, mensal e de corujão.
-- **Confirmação e Cancelamento Automático**: Sistema automatizado para confirmar ou cancelar reservas não confirmadas.
 - **Gerenciamento de Convidados**: Permitir adição de outros membros ou convidados, com controle de cota mensal e cobrança avulsa para convidados extras (se aplicável).
-- **Gerenciamento de Participação**: Permitir que usuários saiam de reservas.
-- **Edição e Cancelamento de Reservas**: Permitir que o criador da reserva edite ou cancele com antecedência.
+- **Gerenciamento de Participação**: Permitir que usuários saiam de reservas futuras e que o criador da reserva possa editar ou cancelar com antecedência.
 - **Sistema de Cobrança**: Geração de cobranças mensais automáticas e QR Code PIX para pagamento.
 
 ### 3. Funcionalidades do Administrador
