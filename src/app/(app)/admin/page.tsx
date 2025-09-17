@@ -28,24 +28,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
     Administrador: {
         description: "Acesso total. Pode gerenciar planos, usuários, salas e as configurações do sistema.",
-        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas", "Administração"]
+        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas", "Administração"]
     },
     Editor: {
         description: "Pode gerenciar usuários, salas e estatísticas, mas não as regras do sistema.",
-        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas"]
+        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas"]
     },
     Revisor: {
         description: "Pode visualizar estatísticas e gerenciar usuários, mas não edita salas ou regras.",
-        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil", "Estatísticas", "Usuários"]
+        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários"]
     },
     Membro: {
         description: "Acesso padrão para associados. Pode fazer reservas e gerenciar seu perfil.",
-        pages: ["Dashboard", "Minhas Reservas", "Matrícula", "Avisos", "Perfil"]
+        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil"]
     },
     // Regra para usuários que completaram o cadastro mas ainda não escolheram um plano.
     Visitante: {
-        description: "Acesso de novo usuário. Pode completar o perfil e se matricular em um plano.",
-        pages: ["Matrícula", "Perfil", "Minhas Reservas"]
+        description: "Acesso de novo usuário. Pode ver a estrutura do app, completar o perfil e se matricular.",
+        pages: ["Minhas Reservas", "Matrícula", "Perfil"]
     }
 };
 
