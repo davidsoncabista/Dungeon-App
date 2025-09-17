@@ -192,10 +192,10 @@ export default function StatisticsPage() {
             {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
           </CardContent>
         </Card>
-         <Card className="md:col-span-2 lg:col-span-1">
+         <Card className="md:col-span-2 lg:col-span-2 xl:col-span-1">
             <CardHeader>
                 <CardTitle>Salas Mais Usadas</CardTitle>
-                <CardDescription>Distribuição de reservas pelas salas.</CardDescription>
+                <CardDescription>Distribuição de reservas.</CardDescription>
             </CardHeader>
             <CardContent className="flex items-center justify-center pb-0">
                 {isLoading ? <Skeleton className="h-[150px] w-full" /> : (
