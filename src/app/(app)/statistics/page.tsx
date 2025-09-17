@@ -4,18 +4,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { BookOpenCheck, Crown, Users, TrendingUp, UserCheck, UserX } from "lucide-react"
+import { BookOpenCheck, Crown, Users, TrendingUp, UserCheck, UserX, ArrowUpDown } from "lucide-react"
 import type { UserCategory, User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
 import { app } from "@/lib/firebase"
-import { useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Booking } from "@/lib/types/booking"
 import type { Room } from "@/lib/types/room"
+import { Button } from "@/components/ui/button"
 
 const chartConfig = {
   bookings: {
@@ -39,9 +40,15 @@ const chartConfig = {
   taverna: { label: "Taverna", color: "hsl(var(--chart-4))" },
 }
 
+type SortKey = "name" | "category";
+
 export default function StatisticsPage() {
   const firestore = getFirestore(app);
   
+  // --- Component State ---
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
   // --- Firestore Data ---
   const [users, loadingUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
   const [bookings, loadingBookings] = useCollectionData<Booking>(query(collection(firestore, 'bookings')), { idField: 'id' });
@@ -49,7 +56,6 @@ export default function StatisticsPage() {
 
   // --- Memoized Data Processing ---
   const { 
-    categoryChartData, 
     roomChartData,
     totalBookings,
     mostPopularRoom,
@@ -60,7 +66,6 @@ export default function StatisticsPage() {
     // Return empty state if data is not ready
     if (!users || !bookings || !rooms) {
         return {
-            categoryChartData: [],
             roomChartData: [],
             totalBookings: 0,
             mostPopularRoom: { room: 'N/A', bookings: 0 },
@@ -70,28 +75,7 @@ export default function StatisticsPage() {
         };
     }
 
-    // 1. Total bookings by category
-    const bookingsByCategory = bookings.reduce((acc, booking) => {
-        const participantUsers = booking.participants.map(uid => users?.find(u => u.uid === uid)).filter(Boolean) as AppUser[];
-        participantUsers.forEach(participant => {
-            const category = participant.category;
-            if (category !== 'Visitante') {
-                if (!acc[category]) {
-                    acc[category] = 0;
-                }
-                acc[category]++;
-            }
-        });
-        return acc;
-    }, {} as Record<UserCategory, number>);
-
-    const categoryData = [
-      { category: "Player", bookings: bookingsByCategory.Player || 0, fill: "var(--color-player)" },
-      { category: "Gamer", bookings: bookingsByCategory.Gamer || 0, fill: "var(--color-gamer)" },
-      { category: "Master", bookings: bookingsByCategory.Master || 0, fill: "var(--color-master)" },
-    ]
-
-    // 2. Bookings by room
+    // 1. Bookings by room
     const bookingsByRoom = bookings.reduce((acc, booking) => {
         const room = rooms.find(r => r.id === booking.roomId);
         if (room) {
@@ -117,18 +101,32 @@ export default function StatisticsPage() {
         fill: roomColors[room] || "var(--color-default)",
     }));
     
-    // 3. Stats Cards
+    // 2. Stats Cards
     const totalBookingsCount = bookings.length;
     const popularRoom = roomData.length > 0 ? roomData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current) : {room: 'N/A', bookings: 0};
     const totalBookingsInPopularRoom = popularRoom.bookings;
     const percent = totalBookingsCount > 0 ? ((totalBookingsInPopularRoom / totalBookingsCount) * 100).toFixed(0) : 0;
     
-    // 4. User lists
+    // 3. User lists (active and inactive)
     const active = users?.filter(u => u.status === 'Ativo' && u.category !== 'Visitante') || [];
     const inactive = users?.filter(u => u.status !== 'Ativo' || u.category === 'Visitante') || [];
+    
+    // 4. Sorting logic
+    const categoryOrder: Record<UserCategory, number> = { "Master": 1, "Gamer": 2, "Player": 3, "Visitante": 4 };
+    const sortFunction = (a: AppUser, b: AppUser) => {
+        let comparison = 0;
+        if (sortKey === 'name') {
+            comparison = a.name.localeCompare(b.name);
+        } else { // sort by category
+            comparison = (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99);
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+    };
+    
+    active.sort(sortFunction);
+    inactive.sort(sortFunction);
 
     return {
-        categoryChartData: categoryData,
         roomChartData: roomData,
         totalBookings: totalBookingsCount,
         mostPopularRoom: popularRoom,
@@ -136,19 +134,31 @@ export default function StatisticsPage() {
         activeMembers: active,
         inactiveOrVisitors: inactive
     };
-  }, [bookings, rooms, users]);
+  }, [bookings, rooms, users, sortKey, sortOrder]);
   
   const isLoading = loadingUsers || loadingBookings || loadingRooms;
+  
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+        setSortKey(key);
+        setSortOrder('asc');
+    }
+  }
 
   const renderUserList = (userList: AppUser[]) => (
     <ul className="space-y-3">
         {userList.map(user => (
-            <li key={user.uid} className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person"/>
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium truncate">{user.name}</span>
+            <li key={user.uid} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 truncate">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person"/>
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium truncate">{user.name}</span>
+                </div>
+                <Badge variant={user.category === 'Visitante' ? 'outline' : 'secondary'} className="shrink-0">{user.category}</Badge>
             </li>
         ))}
     </ul>
@@ -161,7 +171,7 @@ export default function StatisticsPage() {
         <p className="text-muted-foreground">Análise de uso e engajamento do sistema.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
@@ -192,7 +202,7 @@ export default function StatisticsPage() {
             {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
           </CardContent>
         </Card>
-         <Card className="md:col-span-2 lg:col-span-2 xl:col-span-1">
+         <Card>
             <CardHeader>
                 <CardTitle>Salas Mais Usadas</CardTitle>
                 <CardDescription>Distribuição de reservas.</CardDescription>
@@ -211,22 +221,30 @@ export default function StatisticsPage() {
                     </ChartContainer>
                 )}
             </CardContent>
-            </Card>
+        </Card>
       </div>
       
        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-green-600" />
-                  Membros Ativos
-              </CardTitle>
-               {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
+                  <CardTitle>Membros Ativos</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
+                    Nome <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleSort('category')}>
+                    Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+                {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-              <ScrollArea className="h-72">
+              <ScrollArea className="h-72 pr-4">
                 {isLoading ? (
                   <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
                 ) : renderUserList(activeMembers)}
@@ -236,15 +254,23 @@ export default function StatisticsPage() {
          <Card>
           <CardHeader>
              <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+               <div className="flex items-center gap-2">
                   <UserX className="h-5 w-5 text-amber-600" />
-                  Inativos e Visitantes
-              </CardTitle>
-               {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
+                  <CardTitle>Inativos e Visitantes</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                 <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
+                    Nome <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleSort('category')}>
+                    Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+                {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-               <ScrollArea className="h-72">
+               <ScrollArea className="h-72 pr-4">
                  {isLoading ? (
                   <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
                 ) : renderUserList(inactiveOrVisitors)}
