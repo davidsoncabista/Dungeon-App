@@ -161,7 +161,7 @@ export default function StatisticsPage() {
         <p className="text-muted-foreground">Análise de uso e engajamento do sistema.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
@@ -192,35 +192,28 @@ export default function StatisticsPage() {
             {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
           </CardContent>
         </Card>
-        <Card className="lg:col-span-1">
+      </div>
+
+      <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Reservas por Categoria de Membro</CardTitle>
-            <CardDescription>Participações em reservas por tipo de plano.</CardDescription>
+            <CardTitle>Salas Mais Usadas</CardTitle>
+            <CardDescription>Distribuição de reservas pelas salas disponíveis.</CardDescription>
           </CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
-                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                <BarChart accessibilityLayer data={categoryChartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                    dataKey="category"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickFormatter={(value) => value.slice(0, 3)}
+          <CardContent className="flex items-center justify-center pb-0">
+             {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
+                <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+                <PieChart>
+                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                    <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={60} strokeWidth={5} />
+                    <ChartLegend
+                      content={<ChartLegendContent nameKey="room" />}
+                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
                     />
-                    <YAxis />
-                    <Tooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Bar dataKey="bookings" radius={8} />
-                </BarChart>
+                </PieChart>
                 </ChartContainer>
-            )}
+             )}
           </CardContent>
         </Card>
-      </div>
 
        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Card>
@@ -261,26 +254,6 @@ export default function StatisticsPage() {
         </Card>
       </div>
 
-      <Card>
-          <CardHeader>
-            <CardTitle>Salas Mais Usadas</CardTitle>
-            <CardDescription>Distribuição de reservas pelas salas disponíveis.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center pb-0">
-             {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
-                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                <PieChart>
-                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={50} strokeWidth={5} />
-                    <ChartLegend
-                      content={<ChartLegendContent nameKey="room" />}
-                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                    />
-                </PieChart>
-                </ChartContainer>
-             )}
-          </CardContent>
-        </Card>
     </div>
   )
 }
