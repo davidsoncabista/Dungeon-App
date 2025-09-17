@@ -63,23 +63,56 @@ export const setAdminClaim = functions
 
     const newRole = newData.role;
     const auth = admin.auth();
+    let claims = {};
+
+    switch(newRole) {
+        case 'Administrador':
+            claims = { admin: true, role: 'Administrador' };
+            break;
+        case 'Editor':
+            claims = { admin: false, role: 'Editor' };
+            break;
+        case 'Revisor':
+            claims = { admin: false, role: 'Revisor' };
+            break;
+        default:
+             claims = { admin: false, role: 'Membro' };
+             break;
+    }
 
     try {
-      // Se o novo 'role' é 'Administrador', define o custom claim.
-      if (newRole === "Administrador") {
-        await auth.setCustomUserClaims(userId, { admin: true });
-        console.log(`[Claims] Successfully set admin claim for user ${userId}.`);
-      } 
-      // Se o 'role' anterior era 'Administrador' e o novo não é, remove o claim.
-      else if (oldData.role === "Administrador" && newRole !== "Administrador") {
-        await auth.setCustomUserClaims(userId, { admin: false });
-        console.log(`[Claims] Successfully removed admin claim for user ${userId}.`);
-      } else {
-        console.log(`[Claims] Role changed for ${userId} to ${newRole}, but no action required for claims.`);
-      }
-      return null;
+        await auth.setCustomUserClaims(userId, claims);
+        console.log(`[Claims] Successfully set claims for user ${userId} to ${JSON.stringify(claims)}.`);
+        return null;
     } catch (error) {
       console.error(`[Claims] Error setting custom claims for user ${userId}:`, error);
       return null;
     }
+  });
+
+
+/**
+ * Gatilho do Firestore que monitora atualizações em reservas.
+ * Se uma reserva ficar sem participantes, ela é automaticamente excluída.
+ */
+export const handleBookingUpdate = functions
+  .region("southamerica-east1")
+  .firestore.document("bookings/{bookingId}")
+  .onUpdate(async (change, context) => {
+    const { bookingId } = context.params;
+    const newData = change.after.data();
+    
+    // Verifica se a lista de participantes está vazia
+    if (newData.participants && newData.participants.length === 0) {
+      console.log(`[Bookings] A reserva ${bookingId} não tem mais participantes. Excluindo...`);
+      
+      try {
+        await change.after.ref.delete();
+        console.log(`[Bookings] Reserva ${bookingId} excluída com sucesso.`);
+      } catch (error) {
+        console.error(`[Bookings] Erro ao excluir a reserva ${bookingId}:`, error);
+      }
+    }
+    
+    return null;
   });
