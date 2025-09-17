@@ -55,6 +55,9 @@ export function BookingRow({ booking }: { booking: Booking }) {
     
     const isOrganizer = user?.uid === booking.organizerId;
     const isBookingInThePast = isPast(parseISO(`${booking.date}T${booking.endTime}`));
+    
+    const totalParticipants = (booking.participants?.length || 0) + (booking.guests?.length || 0);
+
 
     const handleLeaveBooking = async () => {
         if (!user || isOrganizer) return; // Apenas participantes que não são organizadores podem sair.
@@ -80,7 +83,7 @@ export function BookingRow({ booking }: { booking: Booking }) {
     if (loadingRoom) {
         return (
              <TableRow>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={5}>
                     <Skeleton className="h-12 w-full" />
                 </TableCell>
             </TableRow>
@@ -98,6 +101,12 @@ export function BookingRow({ booking }: { booking: Booking }) {
         </TableCell>
         <TableCell className="hidden sm:table-cell">
             {booking.startTime} - {booking.endTime}
+        </TableCell>
+        <TableCell>
+            <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span>{totalParticipants}</span>
+            </div>
         </TableCell>
         <TableCell className="text-right">
             <DropdownMenu>
@@ -159,3 +168,5 @@ export function BookingRow({ booking }: { booking: Booking }) {
       </TableRow>
     );
 };
+
+    

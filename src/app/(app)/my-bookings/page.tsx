@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
@@ -17,12 +17,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookingRow } from "@/components/app/my-bookings/booking-row"
-import { BookMarked, ShieldAlert, TrendingUp, Users, Moon } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import { BookMarked, ShieldAlert, TrendingUp, Users, Moon, ArrowUpDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+type SortKey = "date" | "participants";
 
 export default function MyBookingsPage() {
   const [user, loadingAuth] = useAuthState(auth);
   const firestore = getFirestore(app);
+  
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
 
   // --- Data Fetching ---
   const bookingsRef = collection(firestore, 'bookings');
@@ -42,20 +48,48 @@ export default function MyBookingsPage() {
 
 
   // --- Logic for Upcoming and Past Bookings ---
-  const { upcomingBookings, pastBookings } = (bookings || []).reduce(
-    (acc, booking) => {
-      const bookingDate = parseISO(`${booking.date}T${booking.endTime}`);
-      if (isPast(bookingDate)) {
-        acc.pastBookings.push(booking);
-      } else {
-        acc.upcomingBookings.push(booking);
-      }
-      return acc;
-    },
-    { upcomingBookings: [] as Booking[], pastBookings: [] as Booking[] }
-  );
+  const { upcomingBookings, pastBookings } = useMemo(() => {
+    const allBookings = (bookings || []).reduce(
+        (acc, booking) => {
+          const bookingDate = parseISO(`${booking.date}T${booking.endTime}`);
+          if (isPast(bookingDate)) {
+            acc.pastBookings.push(booking);
+          } else {
+            acc.upcomingBookings.push(booking);
+          }
+          return acc;
+        },
+        { upcomingBookings: [] as Booking[], pastBookings: [] as Booking[] }
+    );
+    
+    const sortFunction = (a: Booking, b: Booking) => {
+        let comparison = 0;
+        if (sortKey === 'date') {
+            comparison = a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime);
+        } else { // sort by participants
+            const countA = (a.participants?.length || 0) + (a.guests?.length || 0);
+            const countB = (b.participants?.length || 0) + (b.guests?.length || 0);
+            comparison = countA - countB;
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+    };
+    
+    allBookings.upcomingBookings.sort(sortFunction);
+    allBookings.pastBookings.sort(sortFunction);
+
+    return allBookings;
+
+  }, [bookings, sortKey, sortOrder]);
   
-  upcomingBookings.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+  
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+        setSortKey(key);
+        setSortOrder('asc');
+    }
+  }
 
   // --- Quota Calculation Logic ---
   const { 
@@ -122,6 +156,7 @@ export default function MyBookingsPage() {
           <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
           <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-16" /></TableCell>
           <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
         </TableRow>
       ));
@@ -229,8 +264,17 @@ export default function MyBookingsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Sessão / Sala</TableHead>
-                <TableHead className="hidden md:table-cell">Data</TableHead>
+                <TableHead className="hidden md:table-cell">
+                    <Button variant="ghost" onClick={() => handleSort('date')} className="px-0">
+                        Data <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
                 <TableHead className="hidden sm:table-cell">Horário</TableHead>
+                <TableHead>
+                     <Button variant="ghost" onClick={() => handleSort('participants')} className="px-0">
+                        Participantes <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -251,8 +295,17 @@ export default function MyBookingsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Sessão / Sala</TableHead>
-                <TableHead className="hidden md:table-cell">Data</TableHead>
+                 <TableHead className="hidden md:table-cell">
+                    <Button variant="ghost" onClick={() => handleSort('date')} className="px-0">
+                        Data <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
                 <TableHead className="hidden sm:table-cell">Horário</TableHead>
+                 <TableHead>
+                     <Button variant="ghost" onClick={() => handleSort('participants')} className="px-0">
+                        Participantes <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -266,3 +319,5 @@ export default function MyBookingsPage() {
     </div>
   )
 }
+
+    
