@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { BookOpenCheck, Crown, Users, TrendingUp, UserCheck, UserX } from "lucide-react"
-import { getBookings, getRooms } from "@/lib/mock-service"
 import type { UserCategory, User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
@@ -15,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import type { Booking } from "@/lib/types/booking"
+import type { Room } from "@/lib/types/room"
 
 const chartConfig = {
   bookings: {
@@ -43,8 +44,8 @@ export default function StatisticsPage() {
   
   // --- Firestore Data ---
   const [users, loadingUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
-  const bookings = getBookings(); // Mock data for now
-  const rooms = getRooms(); // Mock data for now
+  const [bookings, loadingBookings] = useCollectionData<Booking>(query(collection(firestore, 'bookings')), { idField: 'id' });
+  const [rooms, loadingRooms] = useCollectionData<Room>(query(collection(firestore, 'rooms')), { idField: 'id' });
 
   // --- Memoized Data Processing ---
   const { 
@@ -56,6 +57,19 @@ export default function StatisticsPage() {
     activeMembers,
     inactiveOrVisitors
   } = useMemo(() => {
+    // Return empty state if data is not ready
+    if (!users || !bookings || !rooms) {
+        return {
+            categoryChartData: [],
+            roomChartData: [],
+            totalBookings: 0,
+            mostPopularRoom: { room: 'N/A', bookings: 0 },
+            percentageOfTotal: '0',
+            activeMembers: [],
+            inactiveOrVisitors: []
+        };
+    }
+
     // 1. Total bookings by category
     const bookingsByCategory = bookings.reduce((acc, booking) => {
         const participantUsers = booking.participants.map(uid => users?.find(u => u.uid === uid)).filter(Boolean) as AppUser[];
@@ -105,7 +119,7 @@ export default function StatisticsPage() {
     
     // 3. Stats Cards
     const totalBookingsCount = bookings.length;
-    const popularRoom = roomData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current, {room: 'N/A', bookings: 0});
+    const popularRoom = roomData.length > 0 ? roomData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current) : {room: 'N/A', bookings: 0};
     const totalBookingsInPopularRoom = popularRoom.bookings;
     const percent = totalBookingsCount > 0 ? ((totalBookingsInPopularRoom / totalBookingsCount) * 100).toFixed(0) : 0;
     
@@ -124,6 +138,7 @@ export default function StatisticsPage() {
     };
   }, [bookings, rooms, users]);
   
+  const isLoading = loadingUsers || loadingBookings || loadingRooms;
 
   const renderUserList = (userList: AppUser[]) => (
     <ul className="space-y-3">
@@ -153,7 +168,7 @@ export default function StatisticsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             {loadingUsers ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users?.length || 0}</div>}
+             {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">usuários cadastrados</p>
           </CardContent>
         </Card>
@@ -163,7 +178,7 @@ export default function StatisticsPage() {
             <BookOpenCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalBookings}</div>
+            {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalBookings}</div>}
             <p className="text-xs text-muted-foreground">agendamentos no total</p>
           </CardContent>
         </Card>
@@ -173,8 +188,8 @@ export default function StatisticsPage() {
             <Crown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mostPopularRoom.room}</div>
-            <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{mostPopularRoom.room}</div>}
+            {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
           </CardContent>
         </Card>
         <Card>
@@ -197,12 +212,12 @@ export default function StatisticsPage() {
                   <UserCheck className="h-5 w-5 text-green-600" />
                   Membros Ativos
               </CardTitle>
-               {loadingUsers ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
+               {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
             </div>
           </CardHeader>
           <CardContent>
               <ScrollArea className="h-72">
-                {loadingUsers ? (
+                {isLoading ? (
                   <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
                 ) : renderUserList(activeMembers)}
               </ScrollArea>
@@ -215,12 +230,12 @@ export default function StatisticsPage() {
                   <UserX className="h-5 w-5 text-amber-600" />
                   Inativos e Visitantes
               </CardTitle>
-               {loadingUsers ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
+               {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
             </div>
           </CardHeader>
           <CardContent>
                <ScrollArea className="h-72">
-                 {loadingUsers ? (
+                 {isLoading ? (
                   <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
                 ) : renderUserList(inactiveOrVisitors)}
                </ScrollArea>
@@ -235,24 +250,26 @@ export default function StatisticsPage() {
             <CardDescription>Total de participações em reservas por cada tipo de plano.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-              <BarChart accessibilityLayer data={categoryChartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="category"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
-                />
-                <YAxis />
-                <Tooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Bar dataKey="bookings" radius={8} />
-              </BarChart>
-            </ChartContainer>
+            {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <BarChart accessibilityLayer data={categoryChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                    dataKey="category"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                    />
+                    <YAxis />
+                    <Tooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Bar dataKey="bookings" radius={8} />
+                </BarChart>
+                </ChartContainer>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -261,24 +278,26 @@ export default function StatisticsPage() {
             <CardDescription>Distribuição de reservas pelas salas disponíveis.</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center pb-0">
-            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-              <PieChart>
-                <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={50} strokeWidth={5} />
-                <Legend content={({ payload }) => {
-                    return (
-                        <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
-                        {payload?.map((entry, index) => (
-                            <li key={`item-${index}`} className="flex items-center gap-2 text-sm">
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                            {entry.value}
-                            </li>
-                        ))}
-                        </ul>
-                    )
-                }}/>
-              </PieChart>
-            </ChartContainer>
+             {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <PieChart>
+                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                    <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={50} strokeWidth={5} />
+                    <Legend content={({ payload }) => {
+                        return (
+                            <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
+                            {payload?.map((entry, index) => (
+                                <li key={`item-${index}`} className="flex items-center gap-2 text-sm">
+                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                {entry.value}
+                                </li>
+                            ))}
+                            </ul>
+                        )
+                    }}/>
+                </PieChart>
+                </ChartContainer>
+             )}
           </CardContent>
         </Card>
       </div>
