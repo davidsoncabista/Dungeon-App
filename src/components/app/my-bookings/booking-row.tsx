@@ -52,19 +52,12 @@ export function BookingRow({ booking }: { booking: Booking }) {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
     const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
-    const totalParticipants = booking.participants.length + (booking.guests?.length ?? 0);
     
     const isOrganizer = user?.uid === booking.organizerId;
     const isBookingInThePast = isPast(parseISO(`${booking.date}T${booking.endTime}`));
 
-    const statusVariant: { [key: string]: "secondary" | "destructive" | "outline" } = {
-        'Confirmada': 'secondary',
-        'Cancelada': 'destructive',
-        'Pendente': 'outline'
-    }
-
     const handleLeaveBooking = async () => {
-        if (!user) return;
+        if (!user || isOrganizer) return; // Apenas participantes que não são organizadores podem sair.
         const bookingRef = doc(firestore, 'bookings', booking.id);
         try {
             await updateDoc(bookingRef, {
