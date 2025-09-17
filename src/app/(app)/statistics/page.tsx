@@ -3,8 +3,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { BookOpenCheck, Crown, Users, TrendingUp, UserCheck, UserX, ArrowUpDown } from "lucide-react"
+import { Pie, PieChart, Tooltip } from "recharts"
+import { BookOpenCheck, Crown, Users, ArrowUpDown, UserCheck, UserX } from "lucide-react"
 import type { UserCategory, User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Booking } from "@/lib/types/booking"
 import type { Room } from "@/lib/types/room"
 import { Button } from "@/components/ui/button"
+import { isPast, parseISO } from "date-fns"
 
 const chartConfig = {
   bookings: {
@@ -61,7 +62,8 @@ export default function StatisticsPage() {
     mostPopularRoom,
     percentageOfTotal,
     activeMembers,
-    inactiveOrVisitors
+    inactiveOrVisitors,
+    upcomingBookingsCount
   } = useMemo(() => {
     // Return empty state if data is not ready
     if (!users || !bookings || !rooms) {
@@ -71,7 +73,8 @@ export default function StatisticsPage() {
             mostPopularRoom: { room: 'N/A', bookings: 0 },
             percentageOfTotal: '0',
             activeMembers: [],
-            inactiveOrVisitors: []
+            inactiveOrVisitors: [],
+            upcomingBookingsCount: 0
         };
     }
 
@@ -103,9 +106,10 @@ export default function StatisticsPage() {
     
     // 2. Stats Cards
     const totalBookingsCount = bookings.length;
+    const upcomingCount = bookings.filter(b => !isPast(parseISO(`${b.date}T${b.endTime}`))).length;
     const popularRoom = roomData.length > 0 ? roomData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current) : {room: 'N/A', bookings: 0};
     const totalBookingsInPopularRoom = popularRoom.bookings;
-    const percent = totalBookingsCount > 0 ? ((totalBookingsInPopularRoom / totalBookingsCount) * 100).toFixed(0) : 0;
+    const percent = totalBookingsCount > 0 ? ((totalBookingsInPopularRoom / totalBookingsCount) * 100).toFixed(0) : '0';
     
     // 3. User lists (active and inactive)
     const active = users?.filter(u => u.status === 'Ativo' && u.category !== 'Visitante') || [];
@@ -132,7 +136,8 @@ export default function StatisticsPage() {
         mostPopularRoom: popularRoom,
         percentageOfTotal: percent,
         activeMembers: active,
-        inactiveOrVisitors: inactive
+        inactiveOrVisitors: inactive,
+        upcomingBookingsCount: upcomingCount,
     };
   }, [bookings, rooms, users, sortKey, sortOrder]);
   
@@ -189,7 +194,7 @@ export default function StatisticsPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalBookings}</div>}
-            <p className="text-xs text-muted-foreground">agendamentos no total</p>
+            {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{upcomingBookingsCount} agendamentos futuros</p>}
           </CardContent>
         </Card>
         <Card>
@@ -203,19 +208,19 @@ export default function StatisticsPage() {
           </CardContent>
         </Card>
          <Card>
-            <CardHeader>
-                <CardTitle>Salas Mais Usadas</CardTitle>
-                <CardDescription>Distribuição de reservas.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Salas Mais Usadas</CardTitle>
+                <CardDescription className="sr-only">Distribuição de reservas.</CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center justify-center pb-0">
-                {isLoading ? <Skeleton className="h-[150px] w-full" /> : (
-                    <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
+            <CardContent className="flex items-center justify-center pb-4">
+                {isLoading ? <Skeleton className="h-[120px] w-full" /> : (
+                    <ChartContainer config={chartConfig} className="min-h-[120px] w-full max-w-[250px]">
                     <PieChart>
                         <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={40} strokeWidth={5} />
+                        <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={30} strokeWidth={5} />
                         <ChartLegend
-                        content={<ChartLegendContent nameKey="room" />}
-                        className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                            content={<ChartLegendContent nameKey="room" />}
+                            className="-translate-y-1 flex-wrap gap-x-4 gap-y-1 text-xs"
                         />
                     </PieChart>
                     </ChartContainer>
