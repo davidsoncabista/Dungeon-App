@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react";
-import { addMonths, format, startOfMonth, subMonths, startOfDay, addDays, eachDayOfInterval } from "date-fns";
+import { addMonths, format, startOfMonth, subMonths, startOfDay, addDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -24,7 +24,7 @@ export default function OnlineSchedulePage() {
     const firestore = getFirestore(app);
 
     const [currentDate, setCurrentDate] = React.useState(startOfDay(new Date()));
-    const [viewMode, setViewMode] = React.useState<ViewMode>('day');
+    const [viewMode, setViewMode] = React.useState<ViewMode>('month');
 
     // --- Firestore Data ---
     const bookingsRef = collection(firestore, 'bookings');
@@ -76,12 +76,10 @@ export default function OnlineSchedulePage() {
 
     const isLoading = loadingAuth || loadingBookings || loadingRooms || loadingUsers;
 
-    const startOfWeek = (date: Date) => addDays(startOfDay(date), -date.getDay());
-    const endOfWeek = (date: Date) => addDays(startOfWeek(date), 6);
-    const weekDays = eachDayOfInterval({ start: startOfWeek(currentDate), end: endOfWeek(currentDate) });
+    const weekDays = eachDayOfInterval({ start: startOfWeek(currentDate, { weekStartsOn: 1 }), end: endOfWeek(currentDate, { weekStartsOn: 1 }) });
 
     return (
-        <div className="flex flex-col h-full gap-4">
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="flex flex-col h-full gap-4">
             <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={handleToday} className="h-9">Hoje</Button>
@@ -91,16 +89,14 @@ export default function OnlineSchedulePage() {
                        {getHeaderText()}
                     </h2>
                 </div>
-                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-                    <TabsList>
-                        <TabsTrigger value="day">Dia</TabsTrigger>
-                        <TabsTrigger value="week">Semana</TabsTrigger>
-                        <TabsTrigger value="month">Mês</TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                <TabsList>
+                    <TabsTrigger value="day">Dia</TabsTrigger>
+                    <TabsTrigger value="week">Semana</TabsTrigger>
+                    <TabsTrigger value="month">Mês</TabsTrigger>
+                </TabsList>
             </header>
 
-            <TabsContent value="day" className="flex-1">
+            <TabsContent value="day" className="flex-1 mt-0">
                 <TimelineView 
                     selectedDate={currentDate}
                     bookings={bookings}
@@ -109,7 +105,7 @@ export default function OnlineSchedulePage() {
                     currentUser={currentUser}
                 />
             </TabsContent>
-            <TabsContent value="week" className="space-y-8 flex-1">
+            <TabsContent value="week" className="space-y-8 flex-1 mt-0">
                 {weekDays.map(day => (
                     <div key={day.toString()}>
                         <h3 className="font-headline font-bold text-lg mb-2 capitalize">{format(day, "EEEE, dd/MM", { locale: ptBR })}</h3>
@@ -123,7 +119,7 @@ export default function OnlineSchedulePage() {
                     </div>
                 ))}
             </TabsContent>
-            <TabsContent value="month" className="flex-1">
+            <TabsContent value="month" className="flex-1 mt-0">
                  <MonthlyCalendarView
                     currentMonth={startOfMonth(currentDate)}
                     bookings={bookings || []}
@@ -132,7 +128,6 @@ export default function OnlineSchedulePage() {
                     currentUser={currentUser}
                 />
             </TabsContent>
-        </div>
+        </Tabs>
     );
 }
-
