@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
-import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear } from "date-fns"
+import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getBookingDurationAndEnd, FIXED_SLOTS } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -45,7 +45,8 @@ import { Calendar as CalendarPicker } from "../ui/calendar"
 const createBookingFormSchema = (
   allRooms: Room[] = [],
   allUserBookings: Booking[] = [],
-  userPlan: Plan | undefined
+  userPlan: Plan | undefined,
+  userId: string | undefined
 ) => z.object({
   date: z.date({ required_error: "A data da reserva é obrigatória." }),
   roomId: z.string({ required_error: "Você deve selecionar uma sala." }),
@@ -69,44 +70,44 @@ const createBookingFormSchema = (
         }
     }
 
-    // 2. Validação de cotas
-    if (userPlan && allUserBookings) {
+    // 2. Validação de cotas (Apenas para o organizador)
+    if (userPlan && allUserBookings && userId) {
         const bookingDate = data.date;
-        const bookingWeek = getWeek(bookingDate, { weekStartsOn: 1 });
-        const bookingMonth = getMonth(bookingDate);
-        const bookingYear = getYear(bookingDate);
 
-        // Conta reservas na mesma semana
-        const weeklyBookings = allUserBookings.filter(b => {
+        // Filtra apenas as reservas organizadas pelo usuário atual
+        const organizedBookings = allUserBookings.filter(b => b.organizerId === userId);
+
+        // --- CÁLCULO DE USO ---
+        const startOfBookingWeek = startOfWeek(bookingDate, { weekStartsOn: 1 });
+        const endOfBookingWeek = endOfWeek(bookingDate, { weekStartsOn: 1 });
+        const startOfBookingMonth = startOfMonth(bookingDate);
+        const endOfBookingMonth = endOfMonth(bookingDate);
+
+        // Contagem para o período relevante
+        const weeklyBookings = organizedBookings.filter(b => {
             const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return getWeek(d, { weekStartsOn: 1 }) === bookingWeek && getYear(d) === bookingYear;
+            return d >= startOfBookingWeek && d <= endOfBookingWeek;
         }).length;
 
-        // Conta reservas no mesmo mês
-        const monthlyBookings = allUserBookings.filter(b => {
+        const monthlyBookings = organizedBookings.filter(b => {
             const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return getMonth(d) === bookingMonth && getYear(d) === bookingYear;
-        }).length;
-        
-        // Conta reservas "Corujão" no mesmo mês
-        const corujaoBookings = allUserBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return getMonth(d) === bookingMonth && getYear(d) === bookingYear && b.startTime === '23:00';
+            return d >= startOfBookingMonth && d <= endOfBookingMonth;
         }).length;
 
-        // Conta convidados no mesmo mês
-        const monthlyGuestsCount = allUserBookings.reduce((acc, b) => {
+        const corujaoBookings = organizedBookings.filter(b => {
             const d = parse(b.date, 'yyyy-MM-dd', new Date());
-             if (getMonth(d) === bookingMonth && getYear(d) === bookingYear) {
+            return b.startTime === '23:00' && d >= startOfBookingMonth && d <= endOfBookingMonth;
+        }).length;
+
+        const monthlyGuestsCount = organizedBookings.reduce((acc, b) => {
+            const d = parse(b.date, 'yyyy-MM-dd', new Date());
+            if (d >= startOfBookingMonth && d <= endOfBookingMonth) {
                 return acc + (b.guests?.length || 0);
             }
             return acc;
         }, 0);
         
-        const currentGuests = data.guests?.length || 0;
-        const totalGuestsThisMonth = monthlyGuestsCount + currentGuests;
-        
-        // Valida cota semanal
+        // --- VALIDAÇÕES ---
         if (userPlan.weeklyQuota > 0 && weeklyBookings >= userPlan.weeklyQuota) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -115,7 +116,6 @@ const createBookingFormSchema = (
             });
         }
         
-        // Valida cota mensal
         if (userPlan.monthlyQuota > 0 && monthlyBookings >= userPlan.monthlyQuota) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -124,7 +124,6 @@ const createBookingFormSchema = (
             });
         }
         
-        // Valida cota Corujão
         if (data.startTime === '23:00' && userPlan.corujaoQuota > 0 && corujaoBookings >= userPlan.corujaoQuota) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -133,8 +132,8 @@ const createBookingFormSchema = (
             });
         }
 
-        // Valida cota de convidados mensal
-        if (userPlan.invites > 0 && totalGuestsThisMonth > userPlan.invites) {
+        const currentGuests = data.guests?.length || 0;
+        if (userPlan.invites > 0 && (monthlyGuestsCount + currentGuests) > userPlan.invites) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: `Você excedeu sua cota mensal de ${userPlan.invites} convidado(s). Você já convidou ${monthlyGuestsCount} este mês.`,
@@ -171,17 +170,15 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   const [plans, loadingPlans] = useCollectionData<Plan>(plansRef, { idField: 'id' });
   const userPlan = plans?.find(p => p.name === currentUser?.category);
   
-  const userBookingsQuery = useMemo(() => 
-    user ? query(collection(firestore, 'bookings'), where('organizerId', '==', user.uid)) : null,
-  [user]);
-  const [allUserBookings, loadingUserBookings] = useCollectionData<Booking>(userBookingsQuery);
+  // Busca todas as reservas para validar cotas corretamente
+  const [allUserBookings, loadingUserBookings] = useCollectionData<Booking>(collection(firestore, 'bookings'));
 
   // --- State do formulário ---
   const [step, setStep] = useState(0);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
   const [guestSearchTerm, setGuestSearchTerm] = useState("");
   
-  const formSchema = useMemo(() => createBookingFormSchema(allRooms || [], allUserBookings || [], userPlan), [allRooms, allUserBookings, userPlan]);
+  const formSchema = useMemo(() => createBookingFormSchema(allRooms || [], allUserBookings || [], userPlan, user?.uid), [allRooms, allUserBookings, userPlan, user]);
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
@@ -644,3 +641,5 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     </Form>
   )
 }
+
+    
