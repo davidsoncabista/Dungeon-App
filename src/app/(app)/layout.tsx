@@ -1,7 +1,7 @@
 
 "use client"
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from 'next/navigation';
 import { AppHeader } from "@/components/app/header";
 import { auth } from '@/lib/firebase';
@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { collection, getFirestore, query, where } from "firebase/firestore";
 import type { User } from "@/lib/types/user";
+import { WelcomeModal } from "@/components/app/welcome-modal";
 
 // Rotas de administração, ordenadas da mais restrita para a menos.
 const adminOnlyRoutes = ["/admin"];
@@ -33,6 +34,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   );
   
   const currentUser = appUser?.[0];
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+
 
   useEffect(() => {
     // Se o usuário não está logado, manda para a página de login.
@@ -44,29 +47,46 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     // Se os dados do usuário carregaram
     if (user && currentUser && !userLoading) {
         
-        // REGRA 1: CADASTRO INCOMPLETO (Status 'Pendente')
+        // REGRA 1: EXIBIR MODAL DE BOAS-VINDAS
+        // Verifica se o usuário já viu o modal e se ele é um novo usuário.
+        const hasSeenWelcome = localStorage.getItem(`welcome_${user.uid}`);
+        if (!hasSeenWelcome && (currentUser.status === 'Pendente' || currentUser.category === 'Visitante')) {
+            setIsWelcomeModalOpen(true);
+        }
+
+        // REGRA 2: CADASTRO INCOMPLETO (Status 'Pendente')
         // O usuário fica "preso" na página de perfil até completá-lo.
         if (currentUser.status === 'Pendente' && pathname !== '/profile') {
             router.push('/profile');
             return;
         }
 
-        // REGRA 2: MATRÍCULA PENDENTE (Categoria 'Visitante')
+        // REGRA 3: MATRÍCULA PENDENTE (Categoria 'Visitante')
         // Se o cadastro está completo mas ele ainda é 'Visitante',
         // ele só pode acessar as rotas de visitante.
         if (currentUser.category === 'Visitante' && !visitorRoutes.includes(pathname)) {
-            router.push('/billing');
+            // Permite o acesso se o modal de boas-vindas estiver aberto para evitar redirecionamento durante o tutorial
+            if (!isWelcomeModalOpen) {
+                router.push('/billing');
+            }
             return;
         }
         
-        // REGRA 3: CONTROLE DE ACESSO DE MEMBRO COMUM
+        // REGRA 4: CONTROLE DE ACESSO DE MEMBRO COMUM
         // Bloqueia o acesso a qualquer rota de administração.
         if (currentUser.role === 'Membro' && allAdminRoutes.some(p => pathname.startsWith(p))) {
             router.push('/online-schedule');
             return;
         }
     }
-  }, [user, loading, userLoading, currentUser, pathname, router]);
+  }, [user, loading, userLoading, currentUser, pathname, router, isWelcomeModalOpen]);
+
+  const handleCloseWelcomeModal = () => {
+    setIsWelcomeModalOpen(false);
+    if (user) {
+        localStorage.setItem(`welcome_${user.uid}`, 'true');
+    }
+  };
 
 
   if (loading || userLoading || (user && !currentUser)) {
@@ -100,6 +120,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      {currentUser && (
+        <WelcomeModal 
+            isOpen={isWelcomeModalOpen}
+            onClose={handleCloseWelcomeModal}
+            userName={currentUser.name}
+            userStatus={currentUser.status}
+            userCategory={currentUser.category}
+        />
+      )}
       <AppHeader user={user} currentUserData={currentUser} />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         {children}
