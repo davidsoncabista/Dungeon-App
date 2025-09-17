@@ -31,6 +31,7 @@ const navItems = [
 
 // Navegação visível para usuários 'Visitante' ou 'Pendente'
 const visitorNavItems = [
+    { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante"] },
     { href: "/billing", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
     { href: "/profile", label: "Meu Perfil", icon: User, roles: ["Visitante", "Pendente"] },
 ];
@@ -81,7 +82,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
         return [{ href: "/profile", label: "Meu Perfil", icon: User, roles: ["Pendente"] }];
     }
     if (userCategory === 'Visitante') {
-        return visitorNavItems;
+        return visitorNavItems.filter(item => item.roles.includes(userCategory));
     }
     // Membros ativos e admins
     return navItems.filter(item => item.roles.includes(userRole));

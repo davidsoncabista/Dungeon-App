@@ -21,7 +21,7 @@ const allAdminRoutes = [...new Set([...adminOnlyRoutes, ...editorRoutes, ...revi
 const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile", "/notices"];
 
 // Rotas permitidas para usuários que ainda não se matricularam (Visitantes).
-const visitorRoutes = ["/billing", "/profile"];
+const visitorRoutes = ["/billing", "/profile", "/my-bookings"];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);

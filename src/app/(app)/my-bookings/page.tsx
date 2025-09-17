@@ -155,6 +155,7 @@ export default function MyBookingsPage() {
   }
   
   const isLoading = loadingAuth || loadingUser || loadingPlans || loadingBookings;
+  const isVisitor = currentUser?.category === 'Visitante';
 
 
   return (
@@ -164,57 +165,59 @@ export default function MyBookingsPage() {
         <p className="text-muted-foreground">Acompanhe seus agendamentos e seu histórico de jogos.</p>
       </div>
 
-       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Minhas Cotas de Uso
-          </CardTitle>
-          <CardDescription>
-            Sua contagem para o ciclo atual.
-            {nextRenewalDate && ` A cota reinicia em ${nextRenewalDate}.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center gap-6">
-              <Skeleton className="h-16 w-32" />
-              <Skeleton className="h-16 w-32" />
-              <Skeleton className="h-16 w-32" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
-               <div className="flex flex-col items-center justify-center p-4">
-                  <div className="flex items-end gap-2">
-                    <span className="text-4xl font-bold">{totalMonthlyQuota > 0 ? Math.max(0, totalMonthlyQuota - usedMonthlyQuota) : '∞'}</span>
-                    <span className="text-xl text-muted-foreground font-medium">/{totalMonthlyQuota > 0 ? totalMonthlyQuota : '∞'}</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground mt-1">Reservas Mensais</span>
-               </div>
-               <div className="flex flex-col items-center justify-center p-4">
-                   <div className="flex items-center gap-2">
-                      <Moon className="h-5 w-5 text-muted-foreground" />
-                      <div className="flex items-end gap-2">
-                        <span className="text-4xl font-bold">{totalCorujaoQuota > 0 ? Math.max(0, totalCorujaoQuota - usedCorujaoQuota) : '0'}</span>
-                        <span className="text-xl text-muted-foreground font-medium">/{totalCorujaoQuota > 0 ? totalCorujaoQuota : '0'}</span>
-                      </div>
-                   </div>
-                  <span className="text-sm text-muted-foreground mt-1">Cotas Corujão</span>
-               </div>
-               <div className="flex flex-col items-center justify-center p-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-muted-foreground" />
+       {!isVisitor && (
+         <Card>
+            <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Minhas Cotas de Uso
+            </CardTitle>
+            <CardDescription>
+                Sua contagem para o ciclo atual.
+                {nextRenewalDate && ` A cota reinicia em ${nextRenewalDate}.`}
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            {isLoading ? (
+                <div className="flex items-center gap-6">
+                <Skeleton className="h-16 w-32" />
+                <Skeleton className="h-16 w-32" />
+                <Skeleton className="h-16 w-32" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
+                <div className="flex flex-col items-center justify-center p-4">
                     <div className="flex items-end gap-2">
-                        <span className="text-4xl font-bold">{totalInvitesQuota > 0 ? Math.max(0, totalInvitesQuota - usedInvitesQuota) : '0'}</span>
-                        <span className="text-xl text-muted-foreground font-medium">/{totalInvitesQuota > 0 ? totalInvitesQuota : '0'}</span>
+                        <span className="text-4xl font-bold">{totalMonthlyQuota > 0 ? Math.max(0, totalMonthlyQuota - usedMonthlyQuota) : '∞'}</span>
+                        <span className="text-xl text-muted-foreground font-medium">/{totalMonthlyQuota > 0 ? totalMonthlyQuota : '∞'}</span>
                     </div>
-                  </div>
-                  <span className="text-sm text-muted-foreground mt-1">Convidados no Mês</span>
-               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    <span className="text-sm text-muted-foreground mt-1">Reservas Mensais</span>
+                </div>
+                <div className="flex flex-col items-center justify-center p-4">
+                    <div className="flex items-center gap-2">
+                        <Moon className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex items-end gap-2">
+                            <span className="text-4xl font-bold">{totalCorujaoQuota > 0 ? Math.max(0, totalCorujaoQuota - usedCorujaoQuota) : '0'}</span>
+                            <span className="text-xl text-muted-foreground font-medium">/{totalCorujaoQuota > 0 ? totalCorujaoQuota : '0'}</span>
+                        </div>
+                    </div>
+                    <span className="text-sm text-muted-foreground mt-1">Cotas Corujão</span>
+                </div>
+                <div className="flex flex-col items-center justify-center p-4">
+                    <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex items-end gap-2">
+                            <span className="text-4xl font-bold">{totalInvitesQuota > 0 ? Math.max(0, totalInvitesQuota - usedInvitesQuota) : '0'}</span>
+                            <span className="text-xl text-muted-foreground font-medium">/{totalInvitesQuota > 0 ? totalInvitesQuota : '0'}</span>
+                        </div>
+                    </div>
+                    <span className="text-sm text-muted-foreground mt-1">Convidados no Mês</span>
+                </div>
+                </div>
+            )}
+            </CardContent>
+        </Card>
+       )}
 
       <Card>
         <CardHeader>
@@ -232,7 +235,7 @@ export default function MyBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {renderTable(upcomingBookings, isLoading, errorBookings, "Você não tem nenhuma reserva futura.")}
+              {renderTable(upcomingBookings, isLoading, errorBookings, isVisitor ? "Associe-se para poder criar e gerenciar suas reservas." : "Você não tem nenhuma reserva futura.")}
             </TableBody>
           </Table>
         </CardContent>
@@ -263,5 +266,3 @@ export default function MyBookingsPage() {
     </div>
   )
 }
-
-    
