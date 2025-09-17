@@ -54,7 +54,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         // REGRA 2: MATRÍCULA PENDENTE (Categoria 'Visitante')
         // Se o cadastro está completo mas ele ainda é 'Visitante',
         // ele só pode acessar as rotas de visitante.
-        if (currentUser.category === 'Visitante' && !visitorRoutes.includes(pathname) && !pathname.startsWith('/my-bookings')) {
+        if (currentUser.category === 'Visitante' && !visitorRoutes.includes(pathname)) {
             router.push('/billing');
             return;
         }
@@ -107,4 +107,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-

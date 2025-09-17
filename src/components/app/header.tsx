@@ -26,14 +26,13 @@ import { useToast } from "@/hooks/use-toast"
 const navItems = [
   { href: "/online-schedule", label: "Agenda Online", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
-  { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/billing", label: "Cobranças", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
 ];
 
 // Navegação visível para usuários 'Visitante' ou 'Pendente'
 const visitorNavItems = [
-    { href: "/subscribe", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
+    { href: "/billing", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
     { href: "/profile", label: "Meu Perfil", icon: User, roles: ["Visitante", "Pendente"] },
-    { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante", "Pendente"] },
 ];
 
 
@@ -78,8 +77,11 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   };
 
   const getVisibleNavItems = () => {
-    if (userStatus === 'Pendente' || userCategory === 'Visitante') {
-        return visitorNavItems.filter(item => item.roles.includes(userStatus) || item.roles.includes(userCategory));
+    if (userStatus === 'Pendente') {
+        return [{ href: "/profile", label: "Meu Perfil", icon: User, roles: ["Pendente"] }];
+    }
+    if (userCategory === 'Visitante') {
+        return visitorNavItems;
     }
     // Membros ativos e admins
     return navItems.filter(item => item.roles.includes(userRole));
