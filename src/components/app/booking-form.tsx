@@ -347,13 +347,13 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
         </div>
 
         {step === 0 && (
-            <div className="space-y-4">
+            <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
                  <FormField
                     control={form.control}
                     name="date"
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                        <FormLabel className="text-base font-semibold">Qual a data da reserva?</FormLabel>
+                        <FormLabel className="text-base font-semibold">Data da Reserva</FormLabel>
                         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
@@ -406,12 +406,10 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                     control={form.control}
                     name="roomId"
                     render={({ field }) => (
-                        <FormItem className="space-y-3">
-                            <FormLabel className="text-base font-semibold">Em qual sala?</FormLabel>
-                            {loadingRooms ? <Skeleton className="h-24 w-full" /> : (
-                                <FormControl>
-                                    <RadioGroup
-                                    onValueChange={(value) => {
+                        <FormItem className="space-y-2">
+                            <FormLabel className="text-base font-semibold">Sala</FormLabel>
+                            {loadingRooms ? <Skeleton className="h-10 w-full" /> : (
+                                 <Select onValueChange={(value) => {
                                         field.onChange(value);
                                         form.reset({
                                             ...form.getValues(),
@@ -421,24 +419,20 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                         });
                                     }}
                                     value={field.value}
-                                    className="grid grid-cols-1 gap-4"
                                     >
-                                    {(availableRooms || []).map(room => (
-                                        <FormItem key={room.id} className="flex items-center space-x-3 space-y-0">
-                                            <FormControl>
-                                                <RadioGroupItem value={room.id} id={`room-${room.id}`}/>
-                                            </FormControl>
-                                            <FormLabel htmlFor={`room-${room.id}`} className="font-normal flex-1 cursor-pointer rounded-md border p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="font-semibold">{room.name}</span>
-                                                    <Badge variant="outline">Cap. {room.capacity}</Badge>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground mt-1">{room.description}</p>
-                                            </FormLabel>
-                                        </FormItem>
-                                    ))}
-                                    </RadioGroup>
-                                </FormControl>
+                                     <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione uma sala..." />
+                                        </SelectTrigger>
+                                     </FormControl>
+                                     <SelectContent>
+                                        {(availableRooms || []).map(room => (
+                                            <SelectItem key={room.id} value={room.id}>
+                                                {room.name} (Cap. {room.capacity})
+                                            </SelectItem>
+                                        ))}
+                                     </SelectContent>
+                                 </Select>
                             )}
                             <FormMessage />
                         </FormItem>
