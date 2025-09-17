@@ -11,7 +11,6 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 
 - [ ] **Interatividade do Usuário**:
   - [ ] Implementar a funcionalidade de "Sair da Reserva".
-  - [ ] Simular o fluxo de confirmação e cancelamento automático de reservas não confirmadas.
 
 - [ ] **Ferramentas de Administrador**:
   - [ ] Implementar as ações de moderação restantes (bloquear usuário, etc.).
