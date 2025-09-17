@@ -2,43 +2,52 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Sprint Atual: Sprint 4 (Iniciando)
+## Sprint Atual: Sprint 5 (Iniciando)
 
-### Foco: Lógica de Negócio e Ferramentas de Admin
+### Foco: Validações Finais e Ferramentas de Admin
 
-- [ ] **Lógica de Cotas e Reservas**:
-  - [ ] Implementar a validação de cotas por categoria de usuário (Player, Gamer, Master).
-  - [ ] Implementar a lógica de convidados (associados vs. não-associados) e a geração de cobrança avulsa.
-  - [ ] Implementar as regras para o horário "Corujão".
+- [ ] **Validação Final de Cotas de Reserva**:
+  - [ ] Implementar a verificação no formulário de reserva para impedir o agendamento se o usuário já atingiu sua cota (semanal, mensal ou corujão).
 
 - [ ] **Interatividade do Usuário**:
   - [ ] Implementar a funcionalidade de "Sair da Reserva".
-  - [ ] Simular o fluxo de confirmação e cancelamento automático de reservas.
+  - [ ] Simular o fluxo de confirmação e cancelamento automático de reservas não confirmadas.
 
 - [ ] **Ferramentas de Administrador**:
-  - [ ] Implementar as ações de moderação (bloquear usuário, editar/excluir sala).
+  - [ ] Implementar as ações de moderação restantes (bloquear usuário, etc.).
   - [ ] Criar a interface para o administrador criar e enviar avisos.
 
+## Concluído: Sprint 4
+
+### Foco: Lógica de Negócio e Transparência de Cotas
+
+- [x] **Lógica de Cotas e Reservas**:
+  - [x] Implementada a validação da cota mensal de convidados.
+  - [x] Implementada a lógica de contagem de cotas para "Corujão", mensal e de convidados.
+- [x] **Transparência para o Usuário**:
+  - [x] Criado um card na página "Minhas Reservas" que exibe em tempo real o uso e saldo de todas as cotas do usuário (reservas, corujão, convidados).
+- [x] **Integração Admin-Usuário**:
+  - [x] A página de "Matrícula" agora é 100% dinâmica, buscando os planos e preços diretamente da configuração feita pelo administrador.
 
 ## Concluído: Sprint 3
 
 ### Foco: Backend com Firebase, Autenticação e Perfis
 
 - [x] **Implementar Autenticação com Google**:
-  - [x] Integrar o Firebase Authentication para permitir o login com contas Google.
-  - [x] Gerenciar a sessão do usuário (login/logout).
+  - [x] Integrado o Firebase Authentication para permitir o login com contas Google.
+  - [x] Gerenciada a sessão do usuário (login/logout).
 - [x] **Controle de Acesso com Firestore e Cloud Functions**:
-  - [x] Criar a função `createUserDocument` para registrar novos usuários no Firestore.
-  - [x] Criar a função `setAdminClaim` para gerenciar permissões de administrador via `Custom Claims`.
-  - [x] Implementar Regras de Segurança (`firestore.rules`) para proteger todo o banco de dados.
+  - [x] Criada a função `createUserDocument` para registrar novos usuários no Firestore.
+  - [x] Criada a função `setAdminClaim` para gerenciar permissões de administrador via `Custom Claims`.
+  - [x] Implementadas Regras de Segurança (`firestore.rules`) para proteger todo o banco de dados.
 - [x] **Fluxo de Novos Usuários e Perfis**:
-  - [x] Redirecionar novos usuários (`Visitante`) para a página de inscrição (`/subscribe`).
-  - [x] Implementar a lógica para que a seleção de plano atualize o `status` e a `category` do usuário.
-  - [x] Expandir o modelo de dados do usuário (`User`) com campos adicionais (telefone, preferências, etc.).
-  - [x] Reformular a página de Perfil (`/profile`) para permitir a edição de todos os novos campos.
+  - [x] Redirecionamento de novos usuários (`Visitante`) para a página de inscrição (`/subscribe`).
+  - [x] Implementada a lógica para que a seleção de plano atualize o `status` e a `category` do usuário.
+  - [x] Expandido o modelo de dados do usuário (`User`) com campos adicionais (telefone, preferências, etc.).
+  - [x] Reformulada a página de Perfil (`/profile`) para permitir a edição de todos os novos campos.
 - [x] **Dinamização do App**:
-  - [x] Remover o `mock-service` das páginas de Usuários, Layout e Header.
-  - [x] Criar a Landing Page pública para usuários não logados.
+  - [x] Removido o `mock-service` das páginas de Usuários, Layout e Header.
+  - [x] Criada a Landing Page pública para usuários não logados.
 
 
 ## Concluído: Sprint 2

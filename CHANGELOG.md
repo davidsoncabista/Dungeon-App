@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.7.0 - 2025-09-17 19:00:00 - studio-ai
+
+- **feat(cotas): Adiciona card de controle de cotas e corrige lógica de convidados**
+  - **Card de Cotas em "Minhas Reservas"**: Implementado um novo card que exibe em tempo real o uso e o saldo das cotas do usuário para o ciclo mensal (renovado todo dia 15). O card detalha:
+    - Reservas mensais restantes.
+    - Cotas "Corujão" restantes.
+    - Convites para não-sócios restantes no mês.
+  - **Correção da Cota de Convidados**: A lógica de validação de reservas foi ajustada para que o limite de convidados seja contabilizado mensalmente, e não mais por sessão, alinhando o sistema à regra de negócio.
+- **feat(planos): Integração da página de matrícula com a administração**
+  - **Página de Matrícula Dinâmica**: A página `/subscribe` agora busca os planos de associação (preços, nomes, benefícios) diretamente do Firestore.
+  - **Gerenciamento Centralizado**: Administradores podem alterar os planos na página de "Administração", e as mudanças são refletidas instantaneamente para os novos usuários, sem necessidade de deploy.
+
 ## v0.6.0 - 2025-09-17 10:00:00 - studio-ai
 
 - **feat(arquitetura): Adota estratégia de 'Fonte da Verdade Única' para sincronizar UI e DB**
@@ -69,5 +81,3 @@
   - `README.md`: Para detalhar as funcionalidades do aplicativo.
   - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
   - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
-
-    
