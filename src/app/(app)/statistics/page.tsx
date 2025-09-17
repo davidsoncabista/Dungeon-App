@@ -161,7 +161,7 @@ export default function StatisticsPage() {
         <p className="text-muted-foreground">Análise de uso e engajamento do sistema.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
@@ -192,29 +192,28 @@ export default function StatisticsPage() {
             {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
           </CardContent>
         </Card>
+         <Card className="md:col-span-2 lg:col-span-1">
+            <CardHeader>
+                <CardTitle>Salas Mais Usadas</CardTitle>
+                <CardDescription>Distribuição de reservas pelas salas.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center pb-0">
+                {isLoading ? <Skeleton className="h-[150px] w-full" /> : (
+                    <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
+                    <PieChart>
+                        <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                        <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={40} strokeWidth={5} />
+                        <ChartLegend
+                        content={<ChartLegendContent nameKey="room" />}
+                        className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                        />
+                    </PieChart>
+                    </ChartContainer>
+                )}
+            </CardContent>
+            </Card>
       </div>
-
-      <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Salas Mais Usadas</CardTitle>
-            <CardDescription>Distribuição de reservas pelas salas disponíveis.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center pb-0">
-             {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
-                <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                <PieChart>
-                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={60} strokeWidth={5} />
-                    <ChartLegend
-                      content={<ChartLegendContent nameKey="room" />}
-                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                    />
-                </PieChart>
-                </ChartContainer>
-             )}
-          </CardContent>
-        </Card>
-
+      
        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader>
