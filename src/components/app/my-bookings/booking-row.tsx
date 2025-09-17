@@ -39,6 +39,7 @@ import { Users, MoreHorizontal, Pencil, Eye, LogOut } from "lucide-react"
 import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal"
 import { BookingDetailsModal } from "@/components/app/dashboard/booking-details-modal"
 import { useToast } from "@/hooks/use-toast"
+import { DialogTrigger } from "@/components/ui/dialog"
 
 export function BookingRow({ booking }: { booking: Booking }) {
     const { toast } = useToast();
@@ -47,8 +48,7 @@ export function BookingRow({ booking }: { booking: Booking }) {
     const roomRef = doc(firestore, 'rooms', booking.roomId);
     const [room, loadingRoom] = useDocumentData<Room>(roomRef, { idField: 'id' });
     
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const formattedDate = format(parseISO(`${booking.date}T00:00:00`), "dd/MM/yyyy", { locale: ptBR });
     
@@ -108,9 +108,9 @@ export function BookingRow({ booking }: { booking: Booking }) {
             </div>
         </TableCell>
         <TableCell className="text-right">
-            <EditBookingModal booking={booking} onOpenChange={setIsEditModalOpen}>
-            <BookingDetailsModal booking={booking} onOpenChange={setIsDetailsModalOpen}>
-                 <DropdownMenu>
+             <EditBookingModal booking={booking} onOpenChange={setIsModalOpen}>
+             <BookingDetailsModal booking={booking} onOpenChange={setIsModalOpen}>
+                <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
@@ -120,25 +120,31 @@ export function BookingRow({ booking }: { booking: Booking }) {
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         
-                        {isOrganizer && !isBookingInThePast && (
-                             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsEditModalOpen(true); }}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Editar Reserva
-                            </DropdownMenuItem>
-                        )}
-
-                        {isBookingInThePast ? (
-                             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsDetailsModalOpen(true); }}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver Detalhes
-                            </DropdownMenuItem>
-                        ) : (
-                             !isOrganizer && (
-                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsDetailsModalOpen(true); }}>
+                         {isBookingInThePast ? (
+                            <DialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Ver Detalhes
                                 </DropdownMenuItem>
-                            )
+                            </DialogTrigger>
+                        ) : (
+                            <>
+                                {isOrganizer ? (
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Editar Reserva
+                                        </DropdownMenuItem>
+                                    </DialogTrigger>
+                                ) : (
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Ver Detalhes
+                                        </DropdownMenuItem>
+                                    </DialogTrigger>
+                                )}
+                            </>
                         )}
                         
                         {!isOrganizer && !isBookingInThePast && (
