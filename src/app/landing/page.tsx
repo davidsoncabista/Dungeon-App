@@ -60,7 +60,7 @@ export default function LandingPage() {
           </div>
           <div className="flex justify-center">
             <Image 
-                src="https://fv5-4.files.fm/thumb_show.php?i=wajt5qh5ms&view&v=1&PHPSESSID=a55dd55fdf433b38beedef40ba48ee0ab8a7cc21" 
+                src="https://picsum.photos/seed/landing-hero/600/500" 
                 width={600} 
                 height={500} 
                 alt="Um grupo de aventureiros jogando RPG de mesa em uma sala temática."
