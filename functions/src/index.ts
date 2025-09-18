@@ -120,16 +120,16 @@ export const handleBookingWrite = functions
     const { bookingId } = context.params;
 
     // --- CASO 1: RESERVA EXCLUÍDA ---
-    // Se o documento `after` não existe, significa que a reserva foi deletada.
-    // Nada a fazer aqui, mas a lógica de cobrança não será executada.
+    // Se o documento `after` não existe, a reserva foi deletada. Nenhuma ação a tomar.
     if (!change.after.exists) {
-        console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
-        return null;
+      console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
+      return null;
     }
-    
+
     // --- O DOCUMENTO EXISTE (CRIAÇÃO OU ATUALIZAÇÃO) ---
+    // A partir daqui, é seguro assumir que `change.after.data()` não é undefined.
     const newData = change.after.data();
-    
+
     // --- LÓGICA 1: EXCLUIR RESERVA VAZIA ---
     if (newData.participants && newData.participants.length === 0) {
       console.log(`[Bookings] A reserva ${bookingId} não tem mais participantes. Excluindo...`);
@@ -143,13 +143,13 @@ export const handleBookingWrite = functions
     }
 
     // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS ---
-    const oldData = change.before.exists ? change.before.data() : {};
+    const oldData = change.before.exists ? change.before.data() : null;
     const newGuests = newData.guests || [];
-    const oldGuests = oldData.guests || [];
+    const oldGuests = oldData ? oldData.guests || [] : [];
 
     // Se for uma atualização e a lista de convidados não mudou, não faz nada
     if (change.before.exists && JSON.stringify(newGuests) === JSON.stringify(oldGuests)) {
-        return null;
+      return null;
     }
 
     const organizerId = newData.organizerId;
@@ -408,5 +408,7 @@ export const createPixPayment = functions
         throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
     }
   });
+
+    
 
     
