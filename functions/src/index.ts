@@ -1,10 +1,19 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
+import Stripe from "stripe";
 
 // Inicializa o Firebase Admin SDK para que as funções tenham acesso aos serviços.
 admin.initializeApp();
 const db = admin.firestore();
+
+// Inicializa o cliente Stripe.
+// As chaves devem ser configuradas como variáveis de ambiente no Firebase:
+// firebase functions:config:set stripe.secret="sk_test_..."
+// firebase functions:config:set stripe.webhook_secret="whsec_..."
+const stripe = new Stripe(functions.config().stripe.secret, {
+  apiVersion: "2024-06-20",
+});
 
 
 /**
@@ -104,6 +113,7 @@ export const handleBookingWrite = functions
     const { bookingId } = context.params;
 
     // --- CASO 1: RESERVA EXCLUÍDA ---
+    // Se o documento `after` não existe, significa que a reserva foi deletada.
     if (!change.after.exists) {
         console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
         return null;
@@ -111,8 +121,8 @@ export const handleBookingWrite = functions
     
     // A partir daqui, o documento existe (foi criado ou atualizado)
     const newData = change.after.data();
-
-    // Verificação explícita para garantir que newData não é undefined.
+    
+    // Verificação de segurança adicional para o TypeScript
     if (!newData) {
         console.error(`[Bookings] Erro crítico: O documento ${bookingId} existe, mas não foi possível ler os dados.`);
         return null;
@@ -234,4 +244,61 @@ export const handleBookingWrite = functions
     return null;
   });
 
-    
+/**
+ * Endpoint de Webhook para receber eventos do Stripe e atualizar o status
+ * dos pagamentos no Firestore.
+ */
+export const stripeWebhook = functions
+  .region("southamerica-east1")
+  .https.onRequest(async (request, response) => {
+    const sig = request.headers["stripe-signature"];
+    const webhookSecret = functions.config().stripe.webhook_secret;
+
+    if (!sig || !webhookSecret) {
+      console.error("Webhook Error: Stripe signature or webhook secret is missing.");
+      response.status(400).send("Webhook Error: Missing signature or secret.");
+      return;
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(request.rawBody, sig, webhookSecret);
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed.`, err.message);
+      response.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    // Lida com o evento
+    switch (event.type) {
+      case "checkout.session.completed":
+        const session = event.data.object as Stripe.Checkout.Session;
+        const transactionId = session.metadata?.transaction_id;
+
+        if (!transactionId) {
+          console.error("Webhook Error: transaction_id not found in session metadata.", session.id);
+          break;
+        }
+
+        try {
+          const transactionRef = db.collection("transactions").doc(transactionId);
+          await transactionRef.update({
+            status: "Pago",
+            paidAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log(`Transaction ${transactionId} successfully marked as paid.`);
+        } catch (error) {
+          console.error(`Error updating transaction ${transactionId} in Firestore:`, error);
+          // Mesmo que falhe, retornamos 200 para o Stripe não reenviar.
+          // O erro será logado para investigação.
+        }
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // Retorna uma resposta 200 para o Stripe saber que o evento foi recebido.
+    response.status(200).send();
+  });
