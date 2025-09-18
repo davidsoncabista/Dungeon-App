@@ -1,24 +1,27 @@
 
 "use client"
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, QrCode, Calendar, Award } from "lucide-react";
+import { Check, Dices, ShieldAlert, FileText, QrCode, Calendar, Award, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
 import { getFirestore, doc, updateDoc, collection, query, orderBy, where } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { useRouter } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import type { Plan } from "@/lib/types/plan";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from "@/components/ui/table";
-import { getTransactions } from "@/lib/mock-service"; // Usando mock por enquanto
 import { format, setDate, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Transaction } from "@/lib/types/transaction";
+import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import Image from "next/image";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -128,8 +131,18 @@ const SubscribeView = () => {
 
 // --- COMPONENTE PARA USUÁRIOS JÁ MATRICULADOS ---
 const BillingView = ({ currentUser }: { currentUser: User }) => {
-    const transactions = getTransactions();
     const { toast } = useToast();
+    const firestore = getFirestore(app);
+    const functions = getFunctions(app, 'southamerica-east1');
+
+    const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+    const [pixData, setPixData] = useState<{ qrCodeUrl: string; qrCodeText: string } | null>(null);
+    const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+    
+    // --- Buscando transações do Firestore ---
+    const transactionsRef = collection(firestore, 'transactions');
+    const transactionsQuery = query(transactionsRef, where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+    const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
     const nextBillingDate = useMemo(() => {
         const today = new Date();
@@ -141,11 +154,75 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    const handleGeneratePix = () => {
-        toast({
-            title: "QR Code Gerado!",
-            description: "Funcionalidade de pagamento via PIX em desenvolvimento.",
-        });
+    const handleGeneratePix = async (transactionId: string) => {
+        setIsGeneratingPix(true);
+        try {
+            const createPixPayment = httpsCallable(functions, 'createPixPayment');
+            const result = await createPixPayment({ transactionId });
+            const data = result.data as { qrCodeUrl: string; qrCodeText: string };
+            setPixData(data);
+            setIsPixModalOpen(true);
+        } catch (error: any) {
+            console.error("Erro ao gerar PIX:", error);
+            toast({
+                title: "Erro ao Gerar PIX",
+                description: error.message || "Não foi possível gerar o código de pagamento.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsGeneratingPix(false);
+        }
+    };
+    
+    const getStatusBadge = (status: TransactionStatus) => {
+        switch (status) {
+            case "Pago": return "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300";
+            case "Pendente": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300";
+            case "Vencido": return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300";
+            default: return "bg-gray-100 text-gray-800";
+        }
+    };
+
+    const renderTransactionRows = () => {
+        if (loadingTransactions) {
+            return Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                </TableRow>
+            ));
+        }
+
+        if (errorTransactions) {
+            return <TableRow><TableCell colSpan={4} className="text-center text-destructive">Erro ao carregar seu histórico.</TableCell></TableRow>;
+        }
+
+        if (!transactions || transactions.length === 0) {
+            return <TableRow><TableCell colSpan={4} className="text-center h-24">Nenhuma cobrança encontrada em seu histórico.</TableCell></TableRow>;
+        }
+
+        return transactions.map((t: Transaction) => (
+            <TableRow key={t.id}>
+                <TableCell>{t.createdAt ? format(t.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
+                <TableCell>{t.description}</TableCell>
+                <TableCell>R$ {t.amount.toFixed(2).replace('.', ',')}</TableCell>
+                <TableCell className="text-right">
+                    {t.status === "Pendente" ? (
+                        <Button 
+                            size="sm" 
+                            onClick={() => handleGeneratePix(t.id)}
+                            disabled={isGeneratingPix}
+                        >
+                            {isGeneratingPix ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com PIX"}
+                        </Button>
+                    ) : (
+                        <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
+                    )}
+                </TableCell>
+            </TableRow>
+        ));
     };
     
     return (
@@ -168,18 +245,11 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                                         <TableHead>Data</TableHead>
                                         <TableHead>Descrição</TableHead>
                                         <TableHead>Valor</TableHead>
-                                        <TableHead className="text-right">Status</TableHead>
+                                        <TableHead className="text-right">Ação</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {transactions.map((t: Transaction) => (
-                                        <TableRow key={t.id}>
-                                            <TableCell>{t.date}</TableCell>
-                                            <TableCell>{t.description}</TableCell>
-                                            <TableCell>{t.amount}</TableCell>
-                                            <TableCell className="text-right">{t.status}</TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {renderTransactionRows()}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -205,19 +275,36 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><QrCode className="h-5 w-5" /> Pagamento</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground mb-4">Realize o pagamento da sua mensalidade de forma rápida e segura.</p>
-                            <Button className="w-full" onClick={handleGeneratePix}>
-                                Pagar com PIX
-                            </Button>
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
+
+            <Dialog open={isPixModalOpen} onOpenChange={setIsPixModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-center">Pague com PIX</DialogTitle>
+                        <DialogDescription className="text-center">
+                            Escaneie o QR Code abaixo com o app do seu banco ou use o "Copia e Cola".
+                        </DialogDescription>
+                    </DialogHeader>
+                    {pixData?.qrCodeUrl && (
+                        <div className="flex justify-center p-4">
+                            <Image src={pixData.qrCodeUrl} alt="PIX QR Code" width={256} height={256} />
+                        </div>
+                    )}
+                    {pixData?.qrCodeText && (
+                        <div className="space-y-2">
+                            <Label htmlFor="pix-code">PIX Copia e Cola</Label>
+                            <div className="flex items-center gap-2">
+                                <Input id="pix-code" value={pixData.qrCodeText} readOnly className="text-xs" />
+                                <Button onClick={() => {
+                                    navigator.clipboard.writeText(pixData.qrCodeText);
+                                    toast({ title: "Copiado!", description: "O código PIX foi copiado." });
+                                }}>Copiar</Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
@@ -248,8 +335,6 @@ export default function BillingPage() {
         )
     }
     
-    // Se o usuário não tem plano (Visitante), mostra a tela de seleção de planos.
-    // Caso contrário, mostra a tela de cobranças.
     if (currentUser && currentUser.category !== 'Visitante') {
         return <BillingView currentUser={currentUser} />;
     } else {
