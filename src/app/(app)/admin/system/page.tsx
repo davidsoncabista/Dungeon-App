@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -152,12 +153,12 @@ export default function AdminPage() {
         <TableRow key={i}>
             <TableCell><Skeleton className="h-6 w-24" /></TableCell>
             <TableCell><Skeleton className="h-10 w-24 mx-auto" /></TableCell>
+            <TableCell className="hidden md:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+            <TableCell className="hidden md:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+            <TableCell className="hidden lg:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-            <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+            <TableCell className="hidden lg:table-cell"><Skeleton className="h-10 w-24 mx-auto" /></TableCell>
+            <TableCell className="hidden lg:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-10 w-10 ml-auto" /></TableCell>
         </TableRow>
       ));
@@ -190,66 +191,66 @@ export default function AdminPage() {
     return plans.map(plan => (
       <TableRow key={plan.id}>
           <TableCell className="font-bold">{plan.name}</TableCell>
-          <TableCell className="text-center">
+          <TableCell>
               <Input 
                 type="number" 
                 defaultValue={plan.price}
                 onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)}
-                className="w-24 mx-auto"
+                className="w-24 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="hidden md:table-cell">
               <Input 
                 type="number" 
                 defaultValue={plan.weeklyQuota} 
                 onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)}
-                className="w-20 mx-auto"
+                className="w-20 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
-          <TableCell className="text-center">
+          <TableCell className="hidden md:table-cell">
               <Input 
                 type="number" 
                 defaultValue={plan.monthlyQuota} 
                 onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)}
-                className="w-20 mx-auto"
+                className="w-20 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
-          <TableCell className="text-center">
+          <TableCell className="hidden lg:table-cell">
               <Input 
                 type="number" 
                 defaultValue={plan.corujaoQuota || 0} 
                 onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)}
-                className="w-20 mx-auto"
+                className="w-20 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
-          <TableCell className="text-center">
+          <TableCell>
               <Input 
                 type="number" 
                 defaultValue={plan.invites} 
                 onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)}
-                className="w-20 mx-auto"
+                className="w-20 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
-           <TableCell className="text-center">
+           <TableCell className="hidden lg:table-cell">
               <Input 
                 type="number" 
                 defaultValue={plan.extraInvitePrice || 0} 
                 onBlur={(e) => handleFieldChange(plan.id, 'extraInvitePrice', e.target.value)}
-                className="w-24 mx-auto"
+                className="w-24 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
-          <TableCell className="text-center">
+          <TableCell className="hidden lg:table-cell">
               <Input 
                 type="number" 
                 defaultValue={plan.votingWeight} 
                 onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)}
-                className="w-20 mx-auto"
+                className="w-20 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
@@ -329,12 +330,12 @@ export default function AdminPage() {
                                     <TableRow>
                                         <TableHead>Plano</TableHead>
                                         <TableHead className="text-center">Preço (R$)</TableHead>
-                                        <TableHead className="text-center">Cota Semanal</TableHead>
-                                        <TableHead className="text-center">Cota Mensal</TableHead>
-                                        <TableHead className="text-center">Cota Corujão</TableHead>
+                                        <TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead>
+                                        <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
+                                        <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
                                         <TableHead className="text-center">Cota Convites</TableHead>
-                                        <TableHead className="text-center">Preço Convite Extra (R$)</TableHead>
-                                        <TableHead className="text-center">Peso de Voto</TableHead>
+                                        <TableHead className="text-center hidden lg:table-cell">Convite Extra (R$)</TableHead>
+                                        <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
                                         <TableHead className="text-right">Ações</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -418,3 +419,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
+    
