@@ -4,13 +4,15 @@
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from 'next/navigation';
 import { AppHeader } from "@/components/app/header";
-import { auth } from '@/lib/firebase';
+import { auth, app } from '@/lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { collection, getFirestore, query, where } from "firebase/firestore";
+import { collection, getFirestore, query, where, orderBy, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import type { User } from "@/lib/types/user";
+import type { Notice } from "@/lib/types/notice";
 import { WelcomeModal } from "@/components/app/welcome-modal";
+import { NoticeModal } from "@/components/app/notice-modal";
 
 // Rotas de administração, ordenadas da mais restrita para a menos.
 const adminOnlyRoutes = ["/admin"];
@@ -28,13 +30,48 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
   const router = useRouter();
   const pathname = usePathname();
+  const firestore = getFirestore(app);
 
   const [appUser, userLoading, userError] = useCollectionData<User>(
-    user ? query(collection(getFirestore(), 'users'), where('uid', '==', user.uid)) as any : null
+    user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) as any : null
   );
   
   const currentUser = appUser?.[0];
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+  
+  // --- Lógica de Avisos ---
+  const noticesRef = collection(firestore, 'notices');
+  const noticesQuery = query(noticesRef, orderBy("createdAt", "desc"), where('link', '!=', ''));
+  const [notices] = useCollectionData<Notice>(noticesQuery);
+  const [showNotice, setShowNotice] = useState(false);
+  
+  const lastNotice = notices?.[0];
+
+  useEffect(() => {
+    // Só mostra o aviso se:
+    // 1. O usuário e o aviso existirem.
+    // 2. O usuário ainda não leu o aviso.
+    if (user && lastNotice && !lastNotice.readBy?.includes(user.uid)) {
+      setShowNotice(true);
+    } else {
+      setShowNotice(false);
+    }
+  }, [user, lastNotice]);
+
+  const handleDismissNotice = async (noticeId: string) => {
+    if (!user) return;
+    
+    const noticeRef = doc(firestore, 'notices', noticeId);
+    try {
+      // Adiciona o UID do usuário à lista de quem leu o aviso.
+      await updateDoc(noticeRef, {
+        readBy: arrayUnion(user.uid)
+      });
+    } catch (error) {
+      console.error("Erro ao marcar aviso como lido:", error);
+    }
+    setShowNotice(false);
+  };
 
 
   useEffect(() => {
@@ -128,6 +165,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             userStatus={currentUser.status}
             userCategory={currentUser.category}
         />
+      )}
+       {showNotice && lastNotice && (
+        <NoticeModal notice={lastNotice} onDismiss={handleDismissNotice} />
       )}
       <AppHeader user={user} currentUserData={currentUser} />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
