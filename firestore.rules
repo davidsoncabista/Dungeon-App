@@ -8,10 +8,10 @@ service cloud.firestore {
       // Qualquer usuário autenticado pode criar seu próprio perfil.
       allow create: if request.auth != null;
       
-      // Qualquer usuário autenticado pode ler os dados de outros usuários.
+      // Qualquer usuário autenticado pode ler os perfis (necessário para listar participantes).
       allow read: if request.auth != null;
 
-      // Um usuário só pode escrever em seu próprio perfil. Administradores podem escrever em qualquer perfil.
+      // Um usuário só pode atualizar seu próprio perfil. Administradores podem atualizar qualquer um.
       allow update: if request.auth.uid == userId || request.auth.token.admin == true;
       
       // Apenas administradores podem deletar usuários.
@@ -59,8 +59,18 @@ service cloud.firestore {
     match /notices/{noticeId} {
         // Todos podem ler os avisos
         allow read: if true;
-        // Apenas administradores podem criar, editar ou excluir avisos
-        allow write: if request.auth.token.admin == true;
+        
+        // Apenas administradores podem criar ou excluir avisos.
+        allow create, delete: if request.auth.token.admin == true;
+
+        // Admins podem atualizar qualquer coisa.
+        // Usuários autenticados podem atualizar um aviso APENAS para adicionar a si mesmos na lista 'readBy'.
+        allow update: if request.auth.token.admin == true ||
+                        (
+                          request.auth != null &&
+                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+                          request.resource.data.readBy.hasAny([request.auth.uid])
+                        );
     }
     
     // --- REGRAS PARA PLANOS ---
