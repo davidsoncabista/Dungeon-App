@@ -30,15 +30,6 @@
     --chart-4: 274 70% 80%;
     --chart-5: 274 80% 90%;
 
-    --sidebar-background: 274 40% 18%;
-    --sidebar-foreground: 274 25% 85%;
-    --sidebar-primary: 274 51.1% 50%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 274 51.1% 40%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 274 30% 30%;
-    --sidebar-ring: 274.4 51.1% 50%;
-
     --role-admin-bg: hsl(350, 78%, 55%);
     --role-admin-foreground: hsl(0, 0%, 100%);
     --role-editor-bg: hsl(210, 85%, 55%);
@@ -72,15 +63,6 @@
     --chart-3: 274 40% 40%;
     --chart-4: 274 30% 30%;
     --chart-5: 274 20% 20%;
-
-    --sidebar-background: 274 20% 10%;
-    --sidebar-foreground: 274 25% 90%;
-    --sidebar-primary: 274 51.1% 60%;
-    --sidebar-primary-foreground: 274 20% 10%;
-    --sidebar-accent: 274 20% 18%;
-    --sidebar-accent-foreground: 274 25% 90%;
-    --sidebar-border: 274 20% 20%;
-    --sidebar-ring: 274 51.1% 60%;
 
     --role-admin-bg: hsl(350, 78%, 50%);
     --role-admin-foreground: hsl(0, 0%, 100%);
