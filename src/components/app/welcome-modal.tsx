@@ -31,10 +31,9 @@ export function WelcomeModal({ isOpen, onClose, userName, userStatus, userCatego
       title: `Bem-vindo(a) à Guilda, ${userName.split(' ')[0]}!`,
       description: "Seu primeiro passo como aventureiro é registrar suas informações. Para ter acesso completo ao sistema e poder se associar, precisamos que você complete seu perfil.",
       footer: (
-        <>
-            <Button variant="ghost" onClick={handleNext}>Pular</Button>
-            <Button asChild onClick={onClose}><Link href="/profile">Completar Cadastro</Link></Button>
-        </>
+        <div className="w-full flex justify-end">
+            <Button onClick={handleNext}>Avançar</Button>
+        </div>
       )
     },
     // Step 1: Associar-se
@@ -43,10 +42,10 @@ export function WelcomeModal({ isOpen, onClose, userName, userStatus, userCatego
       title: "Torne-se um Membro Associado",
       description: "Como membro associado, você pode reservar salas, participar de eventos exclusivos e gerenciar suas sessões. Explore nossos planos e encontre o que melhor se adapta à sua jornada!",
       footer: (
-        <>
-            <Button variant="ghost" onClick={handleNext}>Pular</Button>
-            <Button asChild onClick={onClose}><Link href="/billing">Ver Planos de Associação</Link></Button>
-        </>
+        <div className="w-full flex justify-between">
+            <Button variant="ghost" onClick={handlePrev}>Voltar</Button>
+            <Button onClick={handleNext}>Avançar</Button>
+        </div>
       )
     },
      // Step 2: Visualizar Reservas como Convidado
@@ -55,10 +54,10 @@ export function WelcomeModal({ isOpen, onClose, userName, userStatus, userCatego
       title: "Já foi convidado para uma sessão?",
       description: "Mesmo sem ser um associado, se alguém o convidou para uma reserva, você pode visualizá-la na página 'Minhas Reservas'. Faça seu cadastro para não perder nenhum chamado!",
       footer: (
-        <>
+        <div className="w-full flex justify-between">
             <Button variant="ghost" onClick={handlePrev}>Voltar</Button>
-            <Button onClick={handleNext}>Próximo</Button>
-        </>
+            <Button onClick={handleNext}>Avançar</Button>
+        </div>
       )
     },
     // Step 3: Conclusão
@@ -67,10 +66,10 @@ export function WelcomeModal({ isOpen, onClose, userName, userStatus, userCatego
       title: "Tudo Pronto!",
       description: "Agora você já conhece os caminhos. Explore a agenda, veja suas reservas e gerencie seu perfil. Que seus dados rolem sempre alto!",
       footer: (
-        <>
+        <div className="w-full flex justify-between">
             <Button variant="ghost" onClick={handlePrev}>Voltar</Button>
             <Button onClick={onClose}>Começar a Usar</Button>
-        </>
+        </div>
       )
     },
   ];
