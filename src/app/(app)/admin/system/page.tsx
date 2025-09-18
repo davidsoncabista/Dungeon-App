@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock, MessageSquareText } from "lucide-react"
 import { useState } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -355,31 +355,50 @@ export default function AdminPage() {
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Visualização das Regras de Acesso
-            </CardTitle>
-            <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(accessRules).map(([role, rule]) => (
-            <div key={role} className="p-4 rounded-lg border bg-muted/50">
-              <h4 className="font-bold flex items-center gap-2">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                {role}
-              </h4>
-              <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
-              <div className="flex flex-wrap gap-2">
-                {rule.pages.map(page => (
-                    <span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Visualização das Regras de Acesso
+                </CardTitle>
+                <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+            {Object.entries(accessRules).map(([role, rule]) => (
+                <div key={role} className="p-4 rounded-lg border bg-muted/50">
+                <h4 className="font-bold flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    {role}
+                </h4>
+                <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
+                <div className="flex flex-wrap gap-2">
+                    {rule.pages.map(page => (
+                        <span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>
+                    ))}
+                </div>
+                </div>
+            ))}
+            </CardContent>
+        </Card>
+         <Card className="bg-muted/30 border-dashed">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                    <MessageSquareText className="h-5 w-5" />
+                    Mensagens Diretas (Em Breve)
+                </CardTitle>
+                <CardDescription>
+                    Envie notificações e mensagens diretamente para usuários específicos.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-center h-full text-center text-sm text-muted-foreground">
+                    <p>Esta área permitirá a comunicação direta com os membros da associação para avisos importantes, confirmações ou feedbacks.</p>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+
 
       {/* Edit Modal */}
       <Dialog open={!!editingPlan} onOpenChange={(isOpen) => !isOpen && setEditingPlan(null)}>
@@ -419,5 +438,7 @@ export default function AdminPage() {
     </div>
   )
 }
+
+    
 
     
