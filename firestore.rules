@@ -5,88 +5,60 @@ service cloud.firestore {
   
     // --- REGRAS PARA USUÁRIOS ---
     match /users/{userId} {
-      // Qualquer usuário autenticado pode criar seu próprio perfil.
       allow create: if request.auth != null;
-      
-      // Qualquer usuário autenticado pode ler os perfis (necessário para listar participantes).
       allow read: if request.auth != null;
-
-      // Um usuário só pode atualizar seu próprio perfil. Administradores podem atualizar qualquer um.
       allow update: if request.auth.uid == userId || request.auth.token.admin == true;
-      
-      // Apenas administradores podem deletar usuários.
       allow delete: if request.auth.token.admin == true;
     }
     
     // --- REGRAS PARA SALAS ---
     match /rooms/{roomId} {
-      // Qualquer usuário autenticado pode ler a lista de salas.
       allow read: if request.auth != null;
-      
-      // Apenas administradores e editores podem criar, editar ou excluir salas.
       allow write: if request.auth.token.admin == true || request.auth.token.role == 'Editor';
     }
     
     // --- REGRAS PARA RESERVAS ---
     match /bookings/{bookingId} {
-        // Qualquer usuário autenticado pode ler as reservas (para exibir na agenda).
         allow read: if request.auth != null;
         
-        // Regras de criação:
-        // 1. O usuário deve estar autenticado.
-        // 2. O usuário que está criando deve ser o organizador da reserva.
         allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
         
-        // Regras de atualização:
-        // 1. Apenas o organizador pode editar a própria reserva.
-        // 2. Administradores e Editores podem editar qualquer reserva.
-        // 3. Um participante pode se remover da lista (mas não pode adicionar outros).
         allow update: if (request.auth.token.admin == true || request.auth.token.role == 'Editor') ||
                          (resource.data.organizerId == request.auth.uid) ||
                          (
-                           // Permite que um usuário se remova da lista de participantes
                            request.auth.uid in resource.data.participants &&
                            !(request.auth.uid in request.resource.data.participants) &&
-                           // Garante que nenhuma outra alteração foi feita
                            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
                          );
                          
-        // Apenas o organizador, um admin ou um editor podem excluir a reserva.
         allow delete: if request.auth.token.admin == true || request.auth.token.role == 'Editor' || resource.data.organizerId == request.auth.uid;
     }
 
     // --- REGRAS PARA AVISOS ---
     match /notices/{noticeId} {
-        // Todos podem ler os avisos
         allow read: if true;
-        
-        // Apenas administradores podem criar ou excluir avisos.
         allow create, delete: if request.auth.token.admin == true;
-
-        // Admins podem atualizar qualquer coisa.
-        // Usuários autenticados podem atualizar um aviso APENAS para adicionar a si mesmos na lista 'readBy'.
-        allow update: if request.auth.token.admin == true ||
-                        (
-                          request.auth != null &&
-                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
-                          request.resource.data.readBy.hasAny([request.auth.uid])
-                        );
+        allow update: if request.auth.token.admin == true || 
+                        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) && 
+                         request.auth.uid in request.resource.data.readBy);
     }
     
     // --- REGRAS PARA PLANOS ---
     match /plans/{planId} {
-        // Todos podem ler os planos (necessário para a página de matrícula)
         allow read: if true;
-        // Apenas administradores podem gerenciar os planos
         allow write: if request.auth.token.admin == true;
     }
 
     // --- REGRAS PARA TRANSAÇÕES ---
     match /transactions/{transactionId} {
-      // Admins podem ler tudo, usuários podem ler apenas as suas próprias transações.
-      allow read: if request.auth.token.admin == true || resource.data.userId == request.auth.uid;
-      // Apenas admins podem criar, editar ou deletar transações.
-      allow write: if request.auth.token.admin == true;
+      // Admins podem ler e escrever qualquer coisa.
+      allow read, write: if request.auth.token.admin == true;
+
+      // Usuários podem ler documentos individuais (get) se forem seus.
+      allow get: if request.auth.uid == resource.data.userId;
+
+      // Usuários podem listar (query) na coleção SE a consulta filtrar pelo seu próprio UID.
+      allow list: if request.query.limit <= 20 && request.auth.uid == request.query.filters.userId;
     }
     
   }
