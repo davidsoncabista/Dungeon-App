@@ -2,9 +2,22 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Próximos Passos (A definir)
+## Próximos Passos (Sprint 7)
 
-- [ ] (A definir)
+### Foco: Implementação de Pagamentos e Finalização do MVP
+
+- [ ] **Integração de Pagamentos com PIX via Stripe**:
+  - [ ] **Backend (Cloud Functions)**:
+    - [ ] Configurar um endpoint (Cloud Function) para receber webhooks do Stripe.
+    - [ ] Criar uma Cloud Function (`createPixPayment`) que gera uma cobrança PIX no Stripe e armazena o `payment_intent_id` no Firestore, associado ao usuário e à cobrança.
+    - [ ] Na função do webhook, ouvir o evento `checkout.session.completed` para atualizar o status da cobrança no Firestore para "Pago".
+  - [ ] **Frontend (Aplicação)**:
+    - [ ] Na página de "Cobranças", o botão "Pagar com PIX" chamará a função `createPixPayment`.
+    - [ ] Após a chamada, exibir um modal com o QR Code e o código "copia e cola" retornados pelo Stripe.
+    - [ ] Implementar um listener em tempo real na página de cobranças para ouvir as mudanças no documento da cobrança no Firestore. Quando o status mudar para "Pago", o modal é fechado e a UI é atualizada.
+  - [ ] **Segurança e Configuração**:
+    - [ ] Adicionar as chaves de API do Stripe (publicável e secreta) ao Google Secret Manager e configurar o acesso para as Cloud Functions.
+    - [ ] Proteger a Cloud Function `createPixPayment` para ser chamada apenas por usuários autenticados.
 
 ---
 
