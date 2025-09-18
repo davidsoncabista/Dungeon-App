@@ -64,7 +64,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
             </TableCell>
             <TableCell>{transaction.description}</TableCell>
             <TableCell>R$ {transaction.amount.toFixed(2).replace('.', ',')}</TableCell>
-            <TableCell>{format(transaction.createdAt.toDate(), "dd/MM/yyyy")}</TableCell>
+            <TableCell>{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
             <TableCell>
                 <Badge className={getStatusBadge(transaction.status)}>{transaction.status}</Badge>
             </TableCell>
