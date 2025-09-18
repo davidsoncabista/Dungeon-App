@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.4 - 2025-09-18 16:00:00 - davidson.dev.br
+
+- **refactor(admin): Reorganiza a página de administração para melhor usabilidade**
+  - Otimizada a página de administração (`/admin/system`) com a remoção do card de "Modo de Manutenção" e a adição de um placeholder para um futuro sistema de mensagens diretas aos usuários.
+  - Aprimorada a responsividade da tabela de gerenciamento de planos para garantir uma visualização consistente em dispositivos móveis.
+- **refactor(header): Adiciona placeholder para notificações pessoais**
+  - Incluído um novo ícone de sino (`Bell`) no cabeçalho da aplicação, servindo como um indicador visual para a futura implementação de um sistema de notificações individuais.
+
 ## v0.9.3 - 2025-09-18 15:00:00 - davidson.dev.br
 
 - **feat(ui): Adiciona funcionalidade de tema claro/escuro**
