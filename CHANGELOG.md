@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.2 - 2025-09-18 14:00:00 - davidson.dev.br
+
+- **fix(users): Corrige erro de chave única na lista de usuários**
+  - Refatorado o componente de renderização da lista de usuários para garantir que cada `UserTableRow` receba uma `key` única e estável (`user.uid`), resolvendo o erro "Each child in a list should have a unique 'key' prop" do React.
+- **fix(ui): Corrige exibição de colunas na lista de usuários em telas maiores**
+  - Ajustadas as classes de responsividade na tabela de usuários para que as colunas de "Categoria" e "Nível de Acesso" sejam exibidas corretamente em telas de tamanho médio (`md`) em diante, melhorando a visualização em desktops.
+
 ## v0.9.1 - 2025-09-18 13:00:00 - davidson.dev.br
 
 - **fix(timeline): Corrige renderização de reservas na timeline**
