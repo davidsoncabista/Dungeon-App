@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock, Send } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock } from "lucide-react"
 import { useState } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { PlanForm } from "@/components/app/admin/plan-form"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, addDoc, serverTimestamp } from "firebase/firestore"
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore"
 import { app, auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -23,7 +23,6 @@ import { Switch } from "@/components/ui/switch"
 import type { AdminRole, User as AppUser } from "@/lib/types/user";
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Textarea } from "@/components/ui/textarea"
 
 // Objeto que serve como documentação viva das regras de acesso do sistema.
 const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
@@ -73,60 +72,6 @@ export default function AdminPage() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  
-    // --- Form State for new notice ---
-  const [newNoticeTitle, setNewNoticeTitle] = useState('');
-  const [newNoticeDescription, setNewNoticeDescription] = useState('');
-  const [newNoticeLink, setNewNoticeLink] = useState('');
-  const [isPublishing, setIsPublishing] = useState(false);
-
-    const handlePublishNotice = async () => {
-    if (!newNoticeTitle || !newNoticeDescription) {
-        toast({
-            title: "Campos obrigatórios",
-            description: "Por favor, preencha o título e a descrição do aviso.",
-            variant: "destructive",
-        });
-        return;
-    }
-    if (!canEdit) return;
-
-    setIsPublishing(true);
-    try {
-        const noticesRef = collection(firestore, 'notices');
-        const newNoticeRef = doc(noticesRef); // Cria uma referência com ID único
-        const newNoticeId = newNoticeRef.id;
-
-        await setDoc(newNoticeRef, {
-            id: newNoticeId,
-            uid: newNoticeId, // Adiciona o UID
-            title: newNoticeTitle,
-            description: newNoticeDescription,
-            link: newNoticeLink || null,
-            createdAt: serverTimestamp(),
-            readBy: []
-        });
-
-        toast({
-            title: "Aviso Publicado!",
-            description: "O novo aviso já está visível para todos os membros.",
-        });
-        // Clear form
-        setNewNoticeTitle('');
-        setNewNoticeDescription('');
-        setNewNoticeLink('');
-    } catch (error) {
-        console.error("Erro ao publicar aviso:", error);
-        toast({
-            title: "Erro ao Publicar",
-            description: "Não foi possível salvar o aviso. Tente novamente.",
-            variant: "destructive",
-        });
-    } finally {
-        setIsPublishing(false);
-    }
-  }
-
 
   const handleCreatePlan = async (data: { name: string }) => {
     if (!canEdit) return;
@@ -411,57 +356,6 @@ export default function AdminPage() {
             </TooltipProvider>
         </CardContent>
       </Card>
-
-        {canEdit && (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Send className="h-5 w-5" />
-                    Enviar Novo Aviso
-                </CardTitle>
-                <CardDescription>
-                    Publique uma nova mensagem que será exibida para todos os membros no mural e no login.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="notice-title">Título</Label>
-                    <Input 
-                        id="notice-title" 
-                        placeholder="Ex: Novo Horário de Funcionamento" 
-                        value={newNoticeTitle}
-                        onChange={(e) => setNewNoticeTitle(e.target.value)}
-                        disabled={isPublishing}
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="notice-description">Descrição</Label>
-                    <Textarea 
-                        id="notice-description" 
-                        placeholder="Detalhe aqui o comunicado para os membros da associação."
-                        value={newNoticeDescription}
-                        onChange={(e) => setNewNoticeDescription(e.target.value)}
-                        disabled={isPublishing}
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="notice-link">Link (Opcional)</Label>
-                    <Input 
-                        id="notice-link" 
-                        placeholder="https://exemplo.com/mais-informacoes"
-                        value={newNoticeLink}
-                        onChange={(e) => setNewNoticeLink(e.target.value)} 
-                        disabled={isPublishing}
-                    />
-                 </div>
-                 <div className="flex justify-end">
-                    <Button onClick={handlePublishNotice} disabled={isPublishing}>
-                        {isPublishing ? "Publicando..." : "Publicar Aviso"}
-                    </Button>
-                 </div>
-            </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
