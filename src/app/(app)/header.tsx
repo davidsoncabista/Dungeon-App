@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 // Navegação principal para membros ativos
 const navItems = [
@@ -165,6 +166,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
 
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial" />
+        <ThemeToggle />
         <Button variant="ghost" size="icon" className="rounded-full" asChild>
             <Link href="/notices">
               <Megaphone className="h-5 w-5" />
