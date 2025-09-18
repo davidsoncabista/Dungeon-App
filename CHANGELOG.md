@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.9.1 - 2025-09-18 13:00:00 - davidson.dev.br
+
+- **fix(timeline): Corrige renderização de reservas na timeline**
+  - Refatorado o componente `ScheduleView` para garantir que todas as salas e seus respectivos agendamentos sejam corretamente processados e exibidos na grade de horários, resolvendo um bug que ocultava algumas reservas.
+- **fix(bookings): Corrige abertura do modal de detalhes na página "Minhas Reservas"**
+  - Ajustada a estrutura de acionamento dos modais de detalhes e edição na lista de reservas, garantindo que clicar nas opções do menu de ações abra a janela correta de forma confiável.
+- **fix(ui): Corrige exibição de colunas na lista de usuários**
+  - Ajustadas as classes de responsividade na tabela de usuários para que as colunas de "Categoria" e "Nível de Acesso" sejam exibidas corretamente em telas maiores.
+- **refactor(firebase): Permite que usuários saiam de reservas**
+  - Atualizadas as regras de segurança do Firestore e as Cloud Functions para permitir que um usuário autenticado se remova da lista de participantes de uma reserva, e para que reservas vazias sejam automaticamente excluídas.
+- **fix(tabs): Corrige erro de runtime no componente de abas**
+  - Corrigida a estrutura do componente `Tabs` na página da agenda online, envolvendo todos os `TabsContent` dentro do componente `Tabs` para resolver o erro "TabsContent must be used within Tabs".
+
 ## v0.9.0 - 2025-09-18 10:00:00 - davidson.dev.br
 
 - **feat(onboarding): Adiciona modal de boas-vindas para o primeiro login**
@@ -51,7 +64,7 @@
 
 - **Refatoração do Perfil de Usuário e Fluxo de Onboarding**:
   - **Modelo de Dados Extensível**: O schema do usuário no Firestore foi expandido para incluir novos campos essenciais para a associação e futuras funcionalidades, como `nickname`, `phone`, `cpf`, `rg`, `birthdate`, `socialMedia` e `gameTypes`.
-  - **Fluxo de Onboarding Automatizado**: Removida a funcionalidade de criação manual de usuários. O sistema agora depende exclusivamente do registro via Google, que cria um perfil básico a ser complementado pelo próprio usuário.
+  - **Fluxo de Onboarding Automatizado**: Removida a criação manual de usuários. O sistema agora depende exclusivamente do registro via Google, que cria um perfil básico a ser complementado pelo próprio usuário.
   - **Página de Perfil Completa**: A página "Meu Perfil" foi totalmente reformulada. Agora, ela utiliza um formulário robusto com validação (`react-hook-form` e `zod`) e permite que o usuário edite todas as suas informações, incluindo as novas preferências de jogo e dados pessoais.
 
 ## v0.4.0 - 2025-09-15 14:00:00 - davidson.dev.br
