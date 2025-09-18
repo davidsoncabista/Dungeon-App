@@ -379,6 +379,9 @@ export const createPixPayment = functions
                 },
             ],
             mode: "payment",
+            payment_intent_data: {
+              capture_method: 'automatic',
+            },
             // TODO: Substituir por URLs reais do seu app
             success_url: `https://adbelm.web.app/billing?payment_success=true`,
             cancel_url: `https://adbelm.web.app/billing?payment_canceled=true`,
@@ -386,17 +389,12 @@ export const createPixPayment = functions
             metadata: {
                 transaction_id: transactionId,
             },
+            // Expande o payment_intent para obter os dados do PIX na mesma resposta
+            expand: ['payment_intent'],
         });
 
-        const paymentIntent = session.payment_intent;
-        
-        if (typeof paymentIntent !== 'string') {
-             throw new functions.https.HttpsError("internal", "Falha ao obter detalhes do pagamento.");
-        }
-
-        // Recupera o PaymentIntent para obter os dados do PIX
-        const intent = await stripe.paymentIntents.retrieve(paymentIntent);
-        const pixData = intent.next_action?.pix_display_qr_code;
+        // Acessa os dados do PIX diretamente da sessão expandida
+        const pixData = session.payment_intent?.next_action?.pix_display_qr_code;
 
         if (!pixData) {
              throw new functions.https.HttpsError("internal", "Não foi possível gerar os dados do PIX.");
@@ -416,7 +414,5 @@ export const createPixPayment = functions
         throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
     }
   });
-
-    
 
     
