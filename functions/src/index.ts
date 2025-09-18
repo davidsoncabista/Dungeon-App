@@ -1,4 +1,3 @@
-
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
@@ -105,18 +104,21 @@ export const handleBookingWrite = functions
     const { bookingId } = context.params;
 
     // --- CASO 1: RESERVA EXCLUÍDA ---
-    // Se o documento foi excluído (`change.after` não existe), não há mais nada a fazer.
     if (!change.after.exists) {
         console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
         return null;
     }
     
-    // A partir daqui, temos certeza de que a reserva foi criada ou atualizada.
-    // O `newData` definitivamente existe e não é `undefined`.
+    // A partir daqui, o documento existe (foi criado ou atualizado)
     const newData = change.after.data();
 
+    // Verificação explícita para garantir que newData não é undefined.
+    if (!newData) {
+        console.error(`[Bookings] Erro crítico: O documento ${bookingId} existe, mas não foi possível ler os dados.`);
+        return null;
+    }
+
     // --- LÓGICA 1: EXCLUIR RESERVA VAZIA ---
-    // Agora o acesso a `newData.participants` é seguro.
     if (newData.participants && newData.participants.length === 0) {
       console.log(`[Bookings] A reserva ${bookingId} não tem mais participantes. Excluindo...`);
       try {
@@ -125,21 +127,16 @@ export const handleBookingWrite = functions
       } catch (error) {
         console.error(`[Bookings] Erro ao excluir a reserva ${bookingId}:`, error);
       }
-      // A função termina aqui se a reserva for excluída.
-      return null;
+      return null; // Encerra a execução após a exclusão
     }
 
-    // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS ---
-    // Se não há dados anteriores (é uma criação), usamos um objeto vazio como base.
-    // O método `data()` pode retornar undefined, então garantimos um objeto com `|| {}`
-    const oldData = change.before.data() || {};
-    
-    // Agora o acesso a `newData` e `oldData` é seguro.
+    // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS (só executa se a reserva não foi excluída) ---
+    const oldData = change.before.data() || {}; // Se for uma nova reserva, oldData será um objeto vazio
     const newGuests = newData.guests || [];
     const oldGuests = oldData.guests || [];
 
-    // Só executa se a lista de convidados mudou.
-    if (JSON.stringify(newGuests) === JSON.stringify(oldGuests) && change.before.exists) {
+    // Se a lista de convidados não mudou em uma atualização, não faz nada
+    if (change.before.exists && JSON.stringify(newGuests) === JSON.stringify(oldGuests)) {
         console.log(`[Charges] A lista de convidados da reserva ${bookingId} não mudou. Nenhuma ação de cobrança necessária.`);
         return null;
     }
@@ -147,11 +144,10 @@ export const handleBookingWrite = functions
     const organizerId = newData.organizerId;
     if (!organizerId) return null;
     
-    // 1. Obter dados do organizador e seu plano
     const userDoc = await db.collection('users').doc(organizerId).get();
     if (!userDoc.exists) return null;
     const userData = userDoc.data();
-    if (!userData) return null; // Garante que userData não é undefined
+    if (!userData) return null;
 
     const plansSnapshot = await db.collection('plans').where('name', '==', userData.category).limit(1).get();
     if (plansSnapshot.empty) return null;
@@ -160,13 +156,13 @@ export const handleBookingWrite = functions
     const freeInvites = planData.invites || 0;
     const extraInvitePrice = planData.extraInvitePrice || 0;
     
-    // Se o plano não tem cobrança de convidado extra, encerra a função.
+    // Se o plano não tem cobrança por convidado extra, não faz nada
     if (extraInvitePrice <= 0) {
       console.log(`[Charges] Plano "${planData.name}" não possui taxa para convidados extras.`);
       return null;
     }
 
-    // 2. Calcular o ciclo de faturamento (do dia 15 ao 14 do mês seguinte)
+    // Lógica para determinar o ciclo de faturamento (dia 15 de cada mês)
     const today = new Date();
     const renewalDay = 15;
     let cycleStart: Date;
@@ -178,7 +174,7 @@ export const handleBookingWrite = functions
     }
     const cycleStartStr = cycleStart.toISOString().split('T')[0];
 
-    // 3. Contar quantos convidados já foram usados no ciclo
+    // Busca todas as reservas do organizador no ciclo atual
     const bookingsInCycleSnapshot = await db.collection('bookings')
         .where('organizerId', '==', organizerId)
         .where('date', '>=', cycleStartStr)
@@ -186,7 +182,7 @@ export const handleBookingWrite = functions
 
     let totalGuestsInCycle = 0;
     bookingsInCycleSnapshot.forEach(doc => {
-        // Ignora a reserva atual na contagem, pois vamos analisá-la separadamente
+        // Ignora a própria reserva que está sendo processada no cálculo do "já utilizado"
         if (doc.id !== bookingId) {
             totalGuestsInCycle += (doc.data().guests || []).length;
         }
@@ -200,8 +196,9 @@ export const handleBookingWrite = functions
         return null;
     }
     
-    // 4. Calcular o número de convidados a serem cobrados
+    // Calcula quantos convidados já foram cobrados em outras reservas deste ciclo
     const previouslyChargedGuests = totalGuestsInCycle > freeInvites ? totalGuestsInCycle - freeInvites : 0;
+    // Calcula quantos novos convidados precisam ser cobrados nesta transação específica
     const guestsToChargeNow = (totalGuestsWithThisBooking - freeInvites) - previouslyChargedGuests;
 
     if (guestsToChargeNow <= 0) {
@@ -209,9 +206,9 @@ export const handleBookingWrite = functions
         return null;
     }
 
-    // 5. Gerar a cobrança
     const chargeAmount = guestsToChargeNow * extraInvitePrice;
-    const transactionId = `charge_${bookingId}`; // ID previsível para evitar duplicatas
+    // Usa um ID previsível para a cobrança, para que possamos atualizá-la se a reserva for editada
+    const transactionId = `charge_${bookingId}`;
 
     const transactionRef = db.collection('transactions').doc(transactionId);
     
@@ -226,7 +223,7 @@ export const handleBookingWrite = functions
             status: "Pendente",
             type: "Avulso",
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true }); // Usa merge para atualizar se já existir
+        }, { merge: true }); // `merge: true` permite atualizar se a cobrança já existir
 
         console.log(`[Charges] Cobrança de R$ ${chargeAmount} gerada/atualizada para o usuário ${organizerId}.`);
 
