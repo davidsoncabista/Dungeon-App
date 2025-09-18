@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.3 - 2025-09-18 15:00:00 - davidson.dev.br
+
+- **feat(ui): Adiciona funcionalidade de tema claro/escuro**
+  - Implementado um sistema completo de alternância de tema (claro e escuro) para melhorar a acessibilidade visual e o conforto do usuário.
+  - Adicionado o pacote `next-themes` para gerenciar o estado do tema.
+  - Integrado um botão de alternância de tema no cabeçalho da aplicação, permitindo ao usuário escolher sua preferência.
+  - Realizada uma revisão geral do CSS (`globals.css`) para unificar as variáveis de cor e garantir consistência visual entre os dois temas.
+
 ## v0.9.2 - 2025-09-18 14:00:00 - davidson.dev.br
 
 - **fix(users): Corrige erro de chave única na lista de usuários**
