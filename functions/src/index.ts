@@ -105,7 +105,7 @@ export const handleBookingWrite = functions
     const { bookingId } = context.params;
 
     // --- CASO 1: RESERVA EXCLUÍDA ---
-    // Se o documento foi excluído, não há mais nada a fazer.
+    // Se o documento foi excluído (`change.after` não existe), não há mais nada a fazer.
     if (!change.after.exists) {
         console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
         return null;
