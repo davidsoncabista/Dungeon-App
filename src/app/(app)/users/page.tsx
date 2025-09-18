@@ -206,7 +206,7 @@ function UserTableRow({ user }: { user: User; }) {
     );
 
     return (
-        <TableRow>
+        <TableRow key={user.uid}>
             <TableCell>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -265,10 +265,10 @@ function UserTableRow({ user }: { user: User; }) {
                     </div>
                 </div>
             </TableCell>
-            <TableCell className="hidden lg:table-cell">
+            <TableCell className="hidden md:table-cell">
                 <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
             </TableCell>
-            <TableCell className="hidden lg:table-cell">
+            <TableCell className="hidden md:table-cell">
                 {user.role && user.role !== 'Membro' ? (
                     <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                 ) : (
@@ -382,8 +382,8 @@ export default function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Membro</TableHead>
-                <TableHead className="hidden lg:table-cell">Categoria</TableHead>
-                <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
+                <TableHead className="hidden md:table-cell">Categoria</TableHead>
+                <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
                 <TableHead className="hidden sm:table-cell text-center">Status</TableHead>
                 <TableHead className="text-right">
                   <span className="sr-only">Ações</span>
