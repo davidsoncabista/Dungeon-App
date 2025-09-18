@@ -174,6 +174,10 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
               <span className="sr-only">Mural de Avisos</span>
             </Link>
         </Button>
+         <Button variant="ghost" size="icon" className="rounded-full">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Notificações</span>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -212,5 +216,3 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
     </header>
   );
 }
-
-    

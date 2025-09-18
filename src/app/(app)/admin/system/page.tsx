@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -18,8 +17,6 @@ import { app, auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import type { AdminRole, User as AppUser } from "@/lib/types/user";
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -174,7 +171,7 @@ export default function AdminPage() {
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
                     <h4 className="font-bold text-destructive">Erro ao carregar planos</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. ({errorPlans.message})</p>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. (${errorPlans.message})</p>
                 </div>
             </div>
           </TableCell>
@@ -356,33 +353,6 @@ export default function AdminPage() {
             </TooltipProvider>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Controle de Acesso ao Sistema
-            </CardTitle>
-            <CardDescription>Gerencie as permissões e o estado geral da plataforma.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="space-y-4 rounded-lg border border-dashed p-4">
-                <h3 className="font-semibold">Modo de Manutenção</h3>
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="maintenance-mode" className="text-muted-foreground max-w-sm">
-                        Quando ativado, apenas administradores podem acessar o sistema. Novos agendamentos e edições são bloqueados para membros.
-                    </Label>
-                    <Switch id="maintenance-mode" aria-label="Ativar modo de manutenção" disabled={!canEdit} />
-                </div>
-            </div>
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                    Alterar essas configurações pode impactar todos os usuários. Tenha certeza do que está fazendo.
-                </AlertDescription>
-            </Alert>
-        </CardContent>
-      </Card>
       
       <Card>
         <CardHeader>
@@ -448,5 +418,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    
