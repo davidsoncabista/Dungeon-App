@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -27,8 +28,8 @@ import { Textarea } from "@/components/ui/textarea"
 // Objeto que serve como documentação viva das regras de acesso do sistema.
 const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
     Administrador: {
-        description: "Acesso total. Pode gerenciar planos, usuários, salas e as configurações do sistema.",
-        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas", "Administração"]
+        description: "Acesso total. Pode gerenciar planos, usuários, salas, finanças e as configurações do sistema.",
+        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas", "Finanças", "Sistema"]
     },
     Editor: {
         description: "Pode gerenciar usuários, salas e estatísticas, mas não as regras do sistema.",
@@ -547,8 +548,5 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    
-    
 
     
