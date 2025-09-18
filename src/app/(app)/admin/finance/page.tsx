@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { getFirestore, collection, query, orderBy, where, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy, where, doc, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { app } from "@/lib/firebase";
@@ -105,8 +105,13 @@ export default function FinanceAdminPage() {
 
     const handleCreateTransaction = async (data: any) => {
         try {
-            await addDoc(collection(firestore, "transactions"), {
+            const newTransactionRef = doc(collection(firestore, "transactions"));
+            const newTransactionId = newTransactionRef.id;
+
+            await setDoc(newTransactionRef, {
                 ...data,
+                id: newTransactionId,
+                uid: newTransactionId,
                 createdAt: serverTimestamp(),
             });
             toast({

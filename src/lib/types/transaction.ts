@@ -6,6 +6,7 @@ export type TransactionType = "Mensalidade" | "Avulso";
 
 export interface Transaction {
   id: string;
+  uid: string;
   userId: string;
   userName: string; // Denormalized for easier display
   description: string;
