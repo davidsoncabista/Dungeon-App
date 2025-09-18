@@ -112,10 +112,11 @@ export const handleBookingWrite = functions
     }
     
     // A partir daqui, temos certeza de que a reserva foi criada ou atualizada.
-    // O `newData` definitivamente existe.
+    // O `newData` definitivamente existe e não é `undefined`.
     const newData = change.after.data();
 
     // --- LÓGICA 1: EXCLUIR RESERVA VAZIA ---
+    // Agora o acesso a `newData.participants` é seguro.
     if (newData.participants && newData.participants.length === 0) {
       console.log(`[Bookings] A reserva ${bookingId} não tem mais participantes. Excluindo...`);
       try {
@@ -130,7 +131,10 @@ export const handleBookingWrite = functions
 
     // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS ---
     // Se não há dados anteriores (é uma criação), usamos um objeto vazio como base.
-    const oldData = change.before.exists ? change.before.data() : { guests: [] };
+    // O método `data()` pode retornar undefined, então garantimos um objeto com `|| {}`
+    const oldData = change.before.data() || {};
+    
+    // Agora o acesso a `newData` e `oldData` é seguro.
     const newGuests = newData.guests || [];
     const oldGuests = oldData.guests || [];
 
