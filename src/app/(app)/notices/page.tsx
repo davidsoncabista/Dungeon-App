@@ -2,27 +2,16 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { Megaphone, Calendar, ShieldAlert, Send } from "lucide-react"
+import { Megaphone, Calendar, ShieldAlert } from "lucide-react"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, orderBy, addDoc, serverTimestamp, where } from "firebase/firestore"
-import { app, auth } from "@/lib/firebase"
+import { getFirestore, collection, query, orderBy } from "firebase/firestore"
+import { app } from "@/lib/firebase"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Notice } from "@/lib/types/notice"
-import { useAuthState } from "react-firebase-hooks/auth"
-import type { User } from "@/lib/types/user"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
-import { useState } from "react"
 
 export default function NoticesPage() {
-  const { toast } = useToast();
-  const [user, loadingAuth] = useAuthState(auth);
-
   // --- Firestore Data ---
   const firestore = getFirestore(app);
   
@@ -30,58 +19,6 @@ export default function NoticesPage() {
   const noticesRef = collection(firestore, 'notices');
   const noticesQuery = query(noticesRef, orderBy("createdAt", "desc"));
   const [notices, loadingNotices, errorNotices] = useCollectionData<Notice>(noticesQuery, { idField: 'id' });
-
-  // Current User Data
-  const usersRef = collection(firestore, 'users');
-  const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
-  const [appUser, loadingUser, errorUser] = useCollectionData<User>(userQuery);
-  const currentUser = appUser?.[0];
-  const isAdmin = currentUser?.role === 'Administrador';
-
-  // --- Form State for new notice ---
-  const [newNoticeTitle, setNewNoticeTitle] = useState('');
-  const [newNoticeDescription, setNewNoticeDescription] = useState('');
-  const [newNoticeLink, setNewNoticeLink] = useState('');
-  const [isPublishing, setIsPublishing] = useState(false);
-
-  const handlePublishNotice = async () => {
-    if (!newNoticeTitle || !newNoticeDescription) {
-        toast({
-            title: "Campos obrigatórios",
-            description: "Por favor, preencha o título e a descrição do aviso.",
-            variant: "destructive",
-        });
-        return;
-    }
-    setIsPublishing(true);
-    try {
-        await addDoc(noticesRef, {
-            title: newNoticeTitle,
-            description: newNoticeDescription,
-            link: newNoticeLink || null,
-            createdAt: serverTimestamp(),
-            readBy: []
-        });
-        toast({
-            title: "Aviso Publicado!",
-            description: "O novo aviso já está visível para todos os membros.",
-        });
-        // Clear form
-        setNewNoticeTitle('');
-        setNewNoticeDescription('');
-        setNewNoticeLink('');
-    } catch (error) {
-        console.error("Erro ao publicar aviso:", error);
-        toast({
-            title: "Erro ao Publicar",
-            description: "Não foi possível salvar o aviso. Tente novamente.",
-            variant: "destructive",
-        });
-    } finally {
-        setIsPublishing(false);
-    }
-  }
-
 
   const renderContent = () => {
     if (loadingNotices) {
@@ -178,60 +115,11 @@ export default function NoticesPage() {
         <p className="text-muted-foreground">Fique por dentro das últimas notícias e comunicados da associação.</p>
       </div>
       
-      {isAdmin && (
-        <Card className="border-primary/50">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Send className="h-5 w-5" />
-                    Enviar Novo Aviso
-                </CardTitle>
-                <CardDescription>
-                    Publique uma nova mensagem que será exibida para todos os membros no mural e no login.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="notice-title">Título</Label>
-                    <Input 
-                        id="notice-title" 
-                        placeholder="Ex: Novo Horário de Funcionamento" 
-                        value={newNoticeTitle}
-                        onChange={(e) => setNewNoticeTitle(e.target.value)}
-                        disabled={isPublishing}
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="notice-description">Descrição</Label>
-                    <Textarea 
-                        id="notice-description" 
-                        placeholder="Detalhe aqui o comunicado para os membros da associação."
-                        value={newNoticeDescription}
-                        onChange={(e) => setNewNoticeDescription(e.target.value)}
-                        disabled={isPublishing}
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="notice-link">Link (Opcional)</Label>
-                    <Input 
-                        id="notice-link" 
-                        placeholder="https://exemplo.com/mais-informacoes"
-                        value={newNoticeLink}
-                        onChange={(e) => setNewNoticeLink(e.target.value)} 
-                        disabled={isPublishing}
-                    />
-                 </div>
-                 <div className="flex justify-end">
-                    <Button onClick={handlePublishNotice} disabled={isPublishing}>
-                        {isPublishing ? "Publicando..." : "Publicar Aviso"}
-                    </Button>
-                 </div>
-            </CardContent>
-        </Card>
-      )}
-
       <div className="space-y-6">
         {renderContent()}
       </div>
     </div>
   )
 }
+
+    
