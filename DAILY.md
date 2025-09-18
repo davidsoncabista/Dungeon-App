@@ -4,6 +4,18 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 
 ## Próximos Passos (Sprint 7)
 
+### Foco: Ferramentas de Gestão Financeira para Admin
+
+- [ ] **Página de Gestão de Finanças**:
+  - [ ] **Interface do Administrador**:
+    - [ ] Criar uma nova página em `/admin/finance` para a gestão financeira.
+    - [ ] Exibir uma tabela com todas as transações (mensalidades, cobranças avulsas) de todos os usuários.
+    - [ ] Implementar filtros por usuário, status de pagamento (Pendente, Pago, Vencido) e intervalo de datas.
+    - [ ] Adicionar a capacidade de o administrador gerar uma cobrança avulsa para um usuário específico (ex: multa, taxa de convidado extra).
+    - [ ] Permitir que o administrador marque manualmente uma cobrança como "Paga".
+
+## Próximos Passos (Sprint 8)
+
 ### Foco: Implementação de Pagamentos e Finalização do MVP
 
 - [ ] **Integração de Pagamentos com PIX via Stripe**:
@@ -31,6 +43,8 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
   - [x] Implementado um modal de boas-vindas no primeiro login após o cadastro, guiando o usuário sobre os próximos passos (completar perfil e se matricular).
 - [x] **Refinamento da Agenda Online**:
   - [x] Reintroduzida a visualização de agenda por dia/semana, permitindo ao usuário alternar entre a visão de calendário mensal e uma timeline detalhada.
+- [x-refactor] **Centralização de Ferramentas Admin**:
+  - [x] Movido o card de 'Enviar Novo Aviso' da página de avisos para a página de administração.
 - [x] **Polimento Geral da UI/UX**:
   - [x] Realizada uma revisão completa da responsividade em todas as telas, especialmente em modais e formulários complexos.
   - [x] Garantido que os feedbacks de sucesso e erro (toasts) sejam consistentes em toda a aplicação.
