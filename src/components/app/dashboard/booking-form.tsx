@@ -98,14 +98,6 @@ const createBookingFormSchema = (
             const d = parse(b.date, 'yyyy-MM-dd', new Date());
             return b.startTime === '23:00' && d >= startOfBookingMonth && d <= endOfBookingMonth;
         }).length;
-
-        const monthlyGuestsCount = organizedBookings.reduce((acc, b) => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            if (d >= startOfBookingMonth && d <= endOfBookingMonth) {
-                return acc + (b.guests?.length || 0);
-            }
-            return acc;
-        }, 0);
         
         // --- VALIDAÇÕES ---
         if (userPlan.weeklyQuota > 0 && weeklyBookings >= userPlan.weeklyQuota) {
@@ -129,15 +121,6 @@ const createBookingFormSchema = (
                 code: z.ZodIssueCode.custom,
                 message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
                 path: ["startTime"],
-            });
-        }
-
-        const currentGuests = data.guests?.length || 0;
-        if (userPlan.invites > 0 && (monthlyGuestsCount + currentGuests) > userPlan.invites) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você excedeu sua cota mensal de ${userPlan.invites} convidado(s). Você já convidou ${monthlyGuestsCount} este mês.`,
-                path: ["guests"],
             });
         }
     }
@@ -573,7 +556,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                 {isLoading ? <Skeleton className="h-40 w-full" /> : (
                   <div className="space-y-2">
                     <FormLabel>Convidados (Visitantes e Não-Ativos)</FormLabel>
-                    <FormDescription>Selecione os convidados para a sessão.</FormDescription>
+                    <FormDescription>Selecione os convidados para a sessão. Uma taxa pode ser aplicada para convidados extras.</FormDescription>
                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Buscar por nome ou apelido..." className="pl-9" value={guestSearchTerm} onChange={(e) => setGuestSearchTerm(e.target.value)} />
