@@ -9,9 +9,6 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // Inicializa o cliente Stripe de forma segura.
-// As chaves devem ser configuradas como variáveis de ambiente no Firebase:
-// firebase functions:config:set stripe.secret="sk_test_..."
-// firebase functions:config:set stripe.webhook_secret="whsec_..."
 let stripe: Stripe;
 const stripeConfig = functions.config().stripe;
 if (stripeConfig && stripeConfig.secret) {
@@ -44,7 +41,6 @@ export const createUserDocument = functions
       status: "Pendente",     // Status inicial que força o preenchimento do perfil
       role: "Membro",         // Nível de acesso padrão
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      // Os campos obrigatórios (cpf, phone, birthdate, address) ficam vazios/nulos
       cpf: null,
       phone: null,
       birthdate: null,
@@ -126,8 +122,7 @@ export const handleBookingWrite = functions
       return null;
     }
 
-    // --- O DOCUMENTO EXISTE (CRIAÇÃO OU ATUALIZAÇÃO) ---
-    // A partir daqui, é seguro assumir que `change.after.data()` não é undefined.
+    // --- A partir daqui, a reserva FOI CRIADA OU ATUALIZADA ---
     const newData = change.after.data();
 
     // --- LÓGICA 1: EXCLUIR RESERVA VAZIA ---
@@ -143,9 +138,10 @@ export const handleBookingWrite = functions
     }
 
     // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS ---
+    // Pega os dados antigos apenas se eles existirem (caso de atualização).
     const oldData = change.before.exists ? change.before.data() : null;
     const newGuests = newData.guests || [];
-    const oldGuests = oldData ? oldData.guests || [] : [];
+    const oldGuests = oldData ? (oldData.guests || []) : [];
 
     // Se for uma atualização e a lista de convidados não mudou, não faz nada
     if (change.before.exists && JSON.stringify(newGuests) === JSON.stringify(oldGuests)) {
@@ -157,20 +153,23 @@ export const handleBookingWrite = functions
     
     const userDoc = await db.collection('users').doc(organizerId).get();
     if (!userDoc.exists) return null;
+
     const userData = userDoc.data();
     if (!userData) return null;
 
     const plansSnapshot = await db.collection('plans').where('name', '==', userData.category).limit(1).get();
     if (plansSnapshot.empty) return null;
+    
     const planData = plansSnapshot.docs[0].data();
-
     const freeInvites = planData.invites || 0;
     const extraInvitePrice = planData.extraInvitePrice || 0;
     
+    // Se o plano não cobra por convidados extras, encerra a função.
     if (extraInvitePrice <= 0) {
       return null;
     }
 
+    // --- Cálculo do ciclo de cobrança ---
     const today = new Date();
     const renewalDay = 15;
     let cycleStart: Date;
@@ -182,6 +181,7 @@ export const handleBookingWrite = functions
     }
     const cycleStartStr = cycleStart.toISOString().split('T')[0];
 
+    // Busca todas as reservas do organizador no ciclo atual para contar os convidados.
     const bookingsInCycleSnapshot = await db.collection('bookings')
         .where('organizerId', '==', organizerId)
         .where('date', '>=', cycleStartStr)
@@ -189,6 +189,7 @@ export const handleBookingWrite = functions
 
     let totalGuestsInCycle = 0;
     bookingsInCycleSnapshot.forEach(doc => {
+        // Não conta a reserva atual na contagem de convidados já existentes
         if (doc.id !== bookingId) {
             totalGuestsInCycle += (doc.data().guests || []).length;
         }
@@ -197,11 +198,14 @@ export const handleBookingWrite = functions
     const guestsInThisBooking = newGuests.length;
     const totalGuestsWithThisBooking = totalGuestsInCycle + guestsInThisBooking;
     
+    // Se o total de convidados não excede a cota gratuita, não há o que cobrar.
     if (totalGuestsWithThisBooking <= freeInvites) {
         return null;
     }
     
+    // Calcula quantos convidados já foram cobrados no ciclo para evitar cobrança dupla.
     const previouslyChargedGuests = totalGuestsInCycle > freeInvites ? totalGuestsInCycle - freeInvites : 0;
+    // Calcula quantos novos convidados precisam ser cobrados nesta operação específica.
     const guestsToChargeNow = (totalGuestsWithThisBooking - freeInvites) - previouslyChargedGuests;
 
     if (guestsToChargeNow <= 0) {
@@ -209,14 +213,14 @@ export const handleBookingWrite = functions
     }
 
     const chargeAmount = guestsToChargeNow * extraInvitePrice;
+    // Usa um ID de transação previsível para evitar criar múltiplas cobranças para a mesma reserva.
     const transactionId = `charge_${bookingId}`;
-
     const transactionRef = db.collection('transactions').doc(transactionId);
     
     try {
         await transactionRef.set({
             id: transactionId,
-            uid: transactionId,
+            uid: transactionId, // Consistência
             userId: organizerId,
             userName: userData.name,
             description: `Taxa de ${guestsToChargeNow} convidado(s) extra(s) na reserva "${newData.title}"`,
@@ -224,7 +228,7 @@ export const handleBookingWrite = functions
             status: "Pendente",
             type: "Avulso",
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+        }, { merge: true }); // `merge: true` atualiza se já existir, ou cria se não.
 
         console.log(`[Charges] Cobrança de R$ ${chargeAmount} gerada/atualizada para o usuário ${organizerId}.`);
 
@@ -408,7 +412,5 @@ export const createPixPayment = functions
         throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
     }
   });
-
-    
 
     
