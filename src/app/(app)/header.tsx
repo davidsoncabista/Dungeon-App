@@ -43,7 +43,7 @@ const adminNavItems = [
     { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
-    { href: "/admin", label: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
+    { href: "/admin/system", label: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
 ]
 
 interface AppHeaderProps {
@@ -212,3 +212,5 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
     </header>
   );
 }
+
+    

@@ -3,7 +3,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from 'next/navigation';
-import { AppHeader } from "@/components/app/header";
+import { AppHeader } from "@/app/(app)/header";
 import { auth, app } from '@/lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,10 +15,11 @@ import { WelcomeModal } from "@/components/app/welcome-modal";
 import { NoticeModal } from "@/components/app/notice-modal";
 
 // Rotas de administração, ordenadas da mais restrita para a menos.
-const adminOnlyRoutes = ["/admin"];
+const adminOnlyRoutes = ["/admin/system", "/admin/finance"];
 const editorRoutes = ["/rooms", "/statistics", "/users"];
-const revisorRoutes = ["/statistics", "/users", "/rooms", "/admin"]; // Revisores podem ver tudo
+const revisorRoutes = ["/statistics", "/users"]; // Revisores não podem editar salas
 const allAdminRoutes = [...new Set([...adminOnlyRoutes, ...editorRoutes, ...revisorRoutes])];
+
 
 // Rotas principais para membros ativos.
 const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile", "/notices"];
@@ -41,8 +42,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   
   // --- Lógica de Avisos ---
   const noticesRef = collection(firestore, 'notices');
-  const noticesQuery = query(noticesRef, orderBy("createdAt", "desc"), where('link', '!=', ''));
-  const [notices] = useCollectionData<Notice>(noticesQuery);
+  const noticesQuery = query(noticesRef, orderBy("createdAt", "desc"));
+  const [notices] = useCollectionData<Notice>(noticesQuery, { idField: 'id' });
   const [showNotice, setShowNotice] = useState(false);
   
   const lastNotice = notices?.[0];
@@ -176,3 +177,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+    
