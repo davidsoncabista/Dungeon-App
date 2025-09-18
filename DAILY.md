@@ -7,9 +7,9 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 ### Foco: Implementação de Pagamentos e Finalização do MVP
 
 - [ ] **Integração de Pagamentos com PIX via Stripe**:
-  - [ ] **Backend (Cloud Functions)**:
-    - [ ] Configurar um endpoint (Cloud Function) para receber webhooks do Stripe.
-    - [ ] Criar uma Cloud Function (`createPixPayment`) que gera uma cobrança PIX no Stripe e armazena o `payment_intent_id` no Firestore, associado ao usuário e à cobrança.
+  - [x] **Backend (Cloud Functions)**:
+    - [x] Configurar um endpoint (Cloud Function) para receber webhooks do Stripe.
+    - [x] Criar uma Cloud Function (`createPixPayment`) que gera uma cobrança PIX no Stripe e armazena o `payment_intent_id` no Firestore, associado ao usuário e à cobrança.
     - [ ] Na função do webhook, ouvir o evento `checkout.session.completed` para atualizar o status da cobrança no Firestore para "Pago".
   - [ ] **Frontend (Aplicação)**:
     - [ ] Na página de "Cobranças", o botão "Pagar com PIX" chamará a função `createPixPayment`.

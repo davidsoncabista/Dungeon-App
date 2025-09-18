@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.5 - 2025-09-19 10:00:00 - davidson.dev.br
+
+- **feat(pagamentos): Adiciona backend para geração de cobranças PIX com Stripe**
+  - Adicionada a dependência do Stripe (`stripe`) ao `package.json` das Cloud Functions.
+  - Implementado o endpoint de webhook (`stripeWebhook`) para receber e processar eventos de pagamento do Stripe, atualizando automaticamente o status da transação no Firestore para "Pago" quando uma `checkout.session` é completada.
+  - Criada a Cloud Function chamável (`createPixPayment`) que se conecta à API do Stripe para gerar uma sessão de pagamento PIX, associando-a a uma transação existente no Firestore e retornando os dados do QR Code para o frontend.
+  - O código foi protegido para permitir o deploy mesmo sem as chaves de API configuradas, facilitando o desenvolvimento e a configuração inicial.
+
 ## v0.9.4 - 2025-09-18 16:00:00 - davidson.dev.br
 
 - **refactor(admin): Reorganiza a página de administração para melhor usabilidade**
@@ -23,7 +31,7 @@
 - **fix(ui): Corrige exibição de colunas na lista de usuários em telas maiores**
   - Ajustadas as classes de responsividade na tabela de usuários para que as colunas de "Categoria" e "Nível de Acesso" sejam exibidas corretamente em telas de tamanho médio (`md`) em diante, melhorando a visualização em desktops.
 
-## v0.9.1 - 2025-09-18 13:00:00 - davidson.dev.br
+## v0.g.1 - 2025-09-18 13:00:00 - davidson.dev.br
 
 - **fix(timeline): Corrige renderização de reservas na timeline**
   - Refatorado o componente `ScheduleView` para garantir que todas as salas e seus respectivos agendamentos sejam corretamente processados e exibidos na grade de horários, resolvendo um bug que ocultava algumas reservas.
