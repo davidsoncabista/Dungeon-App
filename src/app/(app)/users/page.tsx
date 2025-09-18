@@ -265,10 +265,10 @@ function UserTableRow({ user }: { user: User; }) {
                     </div>
                 </div>
             </TableCell>
-            <TableCell className="hidden lg:table-cell">
+            <TableCell className="hidden md:table-cell">
                 <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline' }>{user.category}</Badge>
             </TableCell>
-            <TableCell className="hidden lg:table-cell">
+            <TableCell className="hidden md:table-cell">
                 {user.role && user.role !== 'Membro' ? (
                     <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
                 ) : (
@@ -280,7 +280,7 @@ function UserTableRow({ user }: { user: User; }) {
                   {user.status}
                 </Badge>
             </TableCell>
-            <TableCell className="hidden md:table-cell">
+            <TableCell className="hidden md:table-cell text-right">
                 <div className="flex justify-end">
                     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                         <DropdownMenu>
@@ -338,8 +338,8 @@ export default function UsersPage() {
                         </div>
                     </div>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                 <TableCell className="hidden sm:table-cell text-center"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                 <TableCell className="hidden md:table-cell text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
             </TableRow>
@@ -382,10 +382,10 @@ export default function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Membro</TableHead>
-                <TableHead className="hidden lg:table-cell">Categoria</TableHead>
-                <TableHead className="hidden lg:table-cell">Nível de Acesso</TableHead>
+                <TableHead className="hidden md:table-cell">Categoria</TableHead>
+                <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
                 <TableHead className="hidden sm:table-cell text-center">Status</TableHead>
-                <TableHead>
+                <TableHead className="text-right">
                   <span className="sr-only">Ações</span>
                 </TableHead>
               </TableRow>
