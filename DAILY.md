@@ -2,19 +2,7 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Próximos Passos (Sprint 7)
-
-### Foco: Ferramentas de Gestão Financeira para Admin
-
-- [ ] **Página de Gestão de Finanças**:
-  - [ ] **Interface do Administrador**:
-    - [ ] Criar uma nova página em `/admin/finance` para a gestão financeira.
-    - [ ] Exibir uma tabela com todas as transações (mensalidades, cobranças avulsas) de todos os usuários.
-    - [ ] Implementar filtros por usuário, status de pagamento (Pendente, Pago, Vencido) e intervalo de datas.
-    - [ ] Adicionar a capacidade de o administrador gerar uma cobrança avulsa para um usuário específico (ex: multa, taxa de convidado extra).
-    - [ ] Permitir que o administrador marque manualmente uma cobrança como "Paga".
-
-## Próximos Passos (Sprint 8)
+## Foco Atual (Sprint 8)
 
 ### Foco: Implementação de Pagamentos e Finalização do MVP
 
@@ -32,6 +20,20 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
     - [ ] Proteger a Cloud Function `createPixPayment` para ser chamada apenas por usuários autenticados.
 
 ---
+
+## Concluído: Sprint 7
+
+### Foco: Ferramentas de Gestão Financeira para Admin
+
+- [x] **Página de Gestão de Finanças**:
+  - [x] **Interface do Administrador**:
+    - [x] Criada a nova página em `/admin/finance` para a gestão financeira.
+    - [x] Exibida uma tabela com todas as transações de todos os usuários.
+    - [x] Adicionada a capacidade de o administrador gerar uma cobrança avulsa para um usuário específico.
+    - [x] Permitido que o administrador marque manualmente uma cobrança como "Paga".
+- [x] **Lógica de Negócio de Convidados Extras**:
+    - [x] **Interface Admin**: Adicionado controle de preço por convite extra na página `/admin/system`.
+    - [x] **Backend (Cloud Function)**: Implementada a lógica `handleBookingWrite` que gera automaticamente uma cobrança para convidados que excedem a cota do plano.
 
 ## Concluído: Sprint 6
 
