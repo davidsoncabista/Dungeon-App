@@ -116,14 +116,18 @@ export const handleBookingWrite = functions
     const { bookingId } = context.params;
 
     // --- CASO 1: RESERVA EXCLUÍDA ---
-    // Se o documento `after` não existe, a reserva foi deletada. Nenhuma ação a tomar.
     if (!change.after.exists) {
       console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
       return null;
     }
 
-    // --- A partir daqui, a reserva FOI CRIADA OU ATUALIZADA ---
     const newData = change.after.data();
+    
+    // Adicionamos a verificação explícita para garantir que newData não é undefined.
+    if (!newData) {
+        console.error(`[Bookings] Erro crítico: O documento ${bookingId} existe, mas não foi possível ler os dados.`);
+        return null;
+    }
 
     // --- LÓGICA 1: EXCLUIR RESERVA VAZIA ---
     if (newData.participants && newData.participants.length === 0) {
@@ -138,13 +142,13 @@ export const handleBookingWrite = functions
     }
 
     // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS ---
-    // Pega os dados antigos apenas se eles existirem (caso de atualização).
-    const oldData = change.before.exists ? change.before.data() : null;
+    const oldData = change.before.data() || {};
     const newGuests = newData.guests || [];
-    const oldGuests = oldData ? (oldData.guests || []) : [];
+    const oldGuests = oldData.guests || [];
 
     // Se for uma atualização e a lista de convidados não mudou, não faz nada
     if (change.before.exists && JSON.stringify(newGuests) === JSON.stringify(oldGuests)) {
+        console.log(`[Charges] A lista de convidados da reserva ${bookingId} não mudou.`);
       return null;
     }
 
@@ -412,5 +416,7 @@ export const createPixPayment = functions
         throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
     }
   });
+
+    
 
     
