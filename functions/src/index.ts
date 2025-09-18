@@ -1,3 +1,4 @@
+
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
@@ -7,13 +8,19 @@ import Stripe from "stripe";
 admin.initializeApp();
 const db = admin.firestore();
 
-// Inicializa o cliente Stripe.
+// Inicializa o cliente Stripe de forma segura.
 // As chaves devem ser configuradas como variáveis de ambiente no Firebase:
 // firebase functions:config:set stripe.secret="sk_test_..."
 // firebase functions:config:set stripe.webhook_secret="whsec_..."
-const stripe = new Stripe(functions.config().stripe.secret, {
-  apiVersion: "2024-06-20",
-});
+let stripe: Stripe;
+const stripeConfig = functions.config().stripe;
+if (stripeConfig && stripeConfig.secret) {
+    stripe = new Stripe(stripeConfig.secret, {
+      apiVersion: "2024-06-20",
+    });
+} else {
+    console.warn("Stripe secret key not found. Stripe functionality will be disabled.");
+}
 
 
 /**
@@ -251,8 +258,15 @@ export const handleBookingWrite = functions
 export const stripeWebhook = functions
   .region("southamerica-east1")
   .https.onRequest(async (request, response) => {
+    
+    if (!stripe) {
+      console.error("Stripe não foi inicializado. Verifique a configuração da chave secreta.");
+      response.status(500).send("Erro de configuração do servidor.");
+      return;
+    }
+
     const sig = request.headers["stripe-signature"];
-    const webhookSecret = functions.config().stripe.webhook_secret;
+    const webhookSecret = stripeConfig?.webhook_secret;
 
     if (!sig || !webhookSecret) {
       console.error("Webhook Error: Stripe signature or webhook secret is missing.");
@@ -302,3 +316,5 @@ export const stripeWebhook = functions
     // Retorna uma resposta 200 para o Stripe saber que o evento foi recebido.
     response.status(200).send();
   });
+
+    
