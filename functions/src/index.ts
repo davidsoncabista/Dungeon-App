@@ -379,9 +379,6 @@ export const createPixPayment = functions
                 },
             ],
             mode: "payment",
-            payment_intent_data: {
-              capture_method: 'automatic',
-            },
             // TODO: Substituir por URLs reais do seu app
             success_url: `https://adbelm.web.app/billing?payment_success=true`,
             cancel_url: `https://adbelm.web.app/billing?payment_canceled=true`,
@@ -394,7 +391,13 @@ export const createPixPayment = functions
         });
 
         // Acessa os dados do PIX diretamente da sessão expandida
-        const pixData = session.payment_intent?.next_action?.pix_display_qr_code;
+        const paymentIntent = session.payment_intent;
+
+        if (!paymentIntent || typeof paymentIntent === 'string') {
+             throw new functions.https.HttpsError("internal", "Falha ao obter detalhes do pagamento.");
+        }
+
+        const pixData = paymentIntent.next_action?.pix_display_qr_code;
 
         if (!pixData) {
              throw new functions.https.HttpsError("internal", "Não foi possível gerar os dados do PIX.");
@@ -414,5 +417,7 @@ export const createPixPayment = functions
         throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
     }
   });
+
+    
 
     
