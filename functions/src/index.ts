@@ -1,7 +1,7 @@
 
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
-import { setDate, addMonths, subMonths, isWithinInterval, parse } from "date-fns";
+import { setDate, subMonths } from "date-fns";
 
 // Inicializa o Firebase Admin SDK para que as funções tenham acesso aos serviços.
 admin.initializeApp();
@@ -142,7 +142,8 @@ export const handleBookingWrite = functions
     // 1. Obter dados do organizador e seu plano
     const userDoc = await db.collection('users').doc(organizerId).get();
     if (!userDoc.exists) return null;
-    const userData = userDoc.data()!;
+    const userData = userDoc.data();
+    if (!userData) return null; // Garante que userData não é undefined
 
     const plansSnapshot = await db.collection('plans').where('name', '==', userData.category).limit(1).get();
     if (plansSnapshot.empty) return null;
