@@ -3,12 +3,11 @@ import type { Timestamp } from "firebase/firestore";
 
 export interface Notice {
     id: string;
+    uid: string; // Adicionado para consistência
     title: string;
     description: string;
     link?: string;
-    createdAt: Timestamp; // Alterado para Timestamp do Firestore
+    createdAt: Timestamp;
     targetUserId?: string; 
-    readBy?: string[]; // Array de UIDs que leram/dispensaram
+    readBy?: string[];
 }
-
-    

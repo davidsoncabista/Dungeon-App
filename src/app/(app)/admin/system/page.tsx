@@ -94,13 +94,19 @@ export default function AdminPage() {
     setIsPublishing(true);
     try {
         const noticesRef = collection(firestore, 'notices');
-        await addDoc(noticesRef, {
+        const newNoticeRef = doc(noticesRef); // Cria uma referência com ID único
+        const newNoticeId = newNoticeRef.id;
+
+        await setDoc(newNoticeRef, {
+            id: newNoticeId,
+            uid: newNoticeId, // Adiciona o UID
             title: newNoticeTitle,
             description: newNoticeDescription,
             link: newNoticeLink || null,
             createdAt: serverTimestamp(),
             readBy: []
         });
+
         toast({
             title: "Aviso Publicado!",
             description: "O novo aviso já está visível para todos os membros.",
