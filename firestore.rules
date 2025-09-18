@@ -8,9 +8,11 @@ service cloud.firestore {
       // Qualquer usuário autenticado pode criar seu próprio perfil.
       allow create: if request.auth != null;
       
-      // Um usuário só pode ler e escrever em seu próprio perfil.
-      // Administradores podem ler e escrever em qualquer perfil.
-      allow read, update: if request.auth.uid == userId || request.auth.token.admin == true;
+      // Qualquer usuário autenticado pode ler os dados de outros usuários.
+      allow read: if request.auth != null;
+
+      // Um usuário só pode escrever em seu próprio perfil. Administradores podem escrever em qualquer perfil.
+      allow update: if request.auth.uid == userId || request.auth.token.admin == true;
       
       // Apenas administradores podem deletar usuários.
       allow delete: if request.auth.token.admin == true;
