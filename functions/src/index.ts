@@ -111,6 +111,7 @@ export const handleBookingWrite = functions
         return null;
     }
 
+    // A partir daqui, temos certeza que o documento existe.
     const newData = change.after.data();
 
     if (newData.participants && newData.participants.length === 0) {
