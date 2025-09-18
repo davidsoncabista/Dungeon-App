@@ -112,7 +112,7 @@ export default function ProfilePage() {
       });
 
       if (isFirstUpdate) {
-        router.push('/subscribe');
+        router.push('/billing');
       }
 
     } catch (error) {
