@@ -121,20 +121,15 @@ export const handleBookingWrite = functions
 
     // --- CASO 1: RESERVA EXCLUÍDA ---
     // Se o documento `after` não existe, significa que a reserva foi deletada.
+    // Nada a fazer aqui, mas a lógica de cobrança não será executada.
     if (!change.after.exists) {
         console.log(`[Bookings] A reserva ${bookingId} foi excluída. Nenhuma ação adicional.`);
         return null;
     }
     
-    // A partir daqui, o documento existe (foi criado ou atualizado)
+    // --- O DOCUMENTO EXISTE (CRIAÇÃO OU ATUALIZAÇÃO) ---
     const newData = change.after.data();
     
-    // Verificação de segurança adicional para o TypeScript
-    if (!newData) {
-        console.error(`[Bookings] Erro crítico: O documento ${bookingId} existe, mas não foi possível ler os dados.`);
-        return null;
-    }
-
     // --- LÓGICA 1: EXCLUIR RESERVA VAZIA ---
     if (newData.participants && newData.participants.length === 0) {
       console.log(`[Bookings] A reserva ${bookingId} não tem mais participantes. Excluindo...`);
@@ -147,14 +142,13 @@ export const handleBookingWrite = functions
       return null; // Encerra a execução após a exclusão
     }
 
-    // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS (só executa se a reserva não foi excluída) ---
-    const oldData = change.before.data() || {}; // Se for uma nova reserva, oldData será um objeto vazio
+    // --- LÓGICA 2: COBRANÇA DE CONVIDADOS EXTRAS ---
+    const oldData = change.before.exists ? change.before.data() : {};
     const newGuests = newData.guests || [];
     const oldGuests = oldData.guests || [];
 
-    // Se a lista de convidados não mudou em uma atualização, não faz nada
+    // Se for uma atualização e a lista de convidados não mudou, não faz nada
     if (change.before.exists && JSON.stringify(newGuests) === JSON.stringify(oldGuests)) {
-        console.log(`[Charges] A lista de convidados da reserva ${bookingId} não mudou. Nenhuma ação de cobrança necessária.`);
         return null;
     }
 
@@ -173,13 +167,10 @@ export const handleBookingWrite = functions
     const freeInvites = planData.invites || 0;
     const extraInvitePrice = planData.extraInvitePrice || 0;
     
-    // Se o plano não tem cobrança por convidado extra, não faz nada
     if (extraInvitePrice <= 0) {
-      console.log(`[Charges] Plano "${planData.name}" não possui taxa para convidados extras.`);
       return null;
     }
 
-    // Lógica para determinar o ciclo de faturamento (dia 15 de cada mês)
     const today = new Date();
     const renewalDay = 15;
     let cycleStart: Date;
@@ -191,7 +182,6 @@ export const handleBookingWrite = functions
     }
     const cycleStartStr = cycleStart.toISOString().split('T')[0];
 
-    // Busca todas as reservas do organizador no ciclo atual
     const bookingsInCycleSnapshot = await db.collection('bookings')
         .where('organizerId', '==', organizerId)
         .where('date', '>=', cycleStartStr)
@@ -199,7 +189,6 @@ export const handleBookingWrite = functions
 
     let totalGuestsInCycle = 0;
     bookingsInCycleSnapshot.forEach(doc => {
-        // Ignora a própria reserva que está sendo processada no cálculo do "já utilizado"
         if (doc.id !== bookingId) {
             totalGuestsInCycle += (doc.data().guests || []).length;
         }
@@ -209,22 +198,17 @@ export const handleBookingWrite = functions
     const totalGuestsWithThisBooking = totalGuestsInCycle + guestsInThisBooking;
     
     if (totalGuestsWithThisBooking <= freeInvites) {
-        console.log(`[Charges] O total de convidados (${totalGuestsWithThisBooking}) não excede a cota gratuita (${freeInvites}).`);
         return null;
     }
     
-    // Calcula quantos convidados já foram cobrados em outras reservas deste ciclo
     const previouslyChargedGuests = totalGuestsInCycle > freeInvites ? totalGuestsInCycle - freeInvites : 0;
-    // Calcula quantos novos convidados precisam ser cobrados nesta transação específica
     const guestsToChargeNow = (totalGuestsWithThisBooking - freeInvites) - previouslyChargedGuests;
 
     if (guestsToChargeNow <= 0) {
-        console.log("[Charges] Nenhum novo convidado a ser cobrado nesta atualização.");
         return null;
     }
 
     const chargeAmount = guestsToChargeNow * extraInvitePrice;
-    // Usa um ID previsível para a cobrança, para que possamos atualizá-la se a reserva for editada
     const transactionId = `charge_${bookingId}`;
 
     const transactionRef = db.collection('transactions').doc(transactionId);
@@ -240,7 +224,7 @@ export const handleBookingWrite = functions
             status: "Pendente",
             type: "Avulso",
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true }); // `merge: true` permite atualizar se a cobrança já existir
+        }, { merge: true });
 
         console.log(`[Charges] Cobrança de R$ ${chargeAmount} gerada/atualizada para o usuário ${organizerId}.`);
 
@@ -250,6 +234,7 @@ export const handleBookingWrite = functions
     
     return null;
   });
+
 
 /**
  * Endpoint de Webhook para receber eventos do Stripe e atualizar o status
@@ -304,8 +289,6 @@ export const stripeWebhook = functions
           console.log(`Transaction ${transactionId} successfully marked as paid.`);
         } catch (error) {
           console.error(`Error updating transaction ${transactionId} in Firestore:`, error);
-          // Mesmo que falhe, retornamos 200 para o Stripe não reenviar.
-          // O erro será logado para investigação.
         }
         break;
 
@@ -313,8 +296,117 @@ export const stripeWebhook = functions
         console.log(`Unhandled event type ${event.type}`);
     }
 
-    // Retorna uma resposta 200 para o Stripe saber que o evento foi recebido.
     response.status(200).send();
+  });
+
+
+/**
+ * Função Chamável (onCall) para criar uma sessão de pagamento PIX no Stripe.
+ */
+export const createPixPayment = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    // Verifica se o Stripe está configurado
+    if (!stripe) {
+        throw new functions.https.HttpsError(
+            "failed-precondition",
+            "A funcionalidade de pagamento não está configurada no servidor."
+        );
+    }
+    // Verifica se o usuário está autenticado
+    if (!context.auth) {
+        throw new functions.https.HttpsError(
+            "unauthenticated",
+            "O usuário precisa estar autenticado para realizar pagamentos."
+        );
+    }
+
+    const { transactionId } = data;
+    if (!transactionId) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "O ID da transação é obrigatório."
+        );
+    }
+
+    try {
+        // Busca a transação no Firestore
+        const transactionRef = db.collection("transactions").doc(transactionId);
+        const transactionDoc = await transactionRef.get();
+
+        if (!transactionDoc.exists) {
+            throw new functions.https.HttpsError("not-found", "A transação não foi encontrada.");
+        }
+
+        const transactionData = transactionDoc.data()!;
+        
+        // Verifica se o usuário que chama é o dono da transação
+        if (transactionData.userId !== context.auth.uid) {
+             throw new functions.https.HttpsError(
+                "permission-denied",
+                "Você não tem permissão para pagar esta transação."
+            );
+        }
+        
+        if (transactionData.status === 'Pago') {
+             throw new functions.https.HttpsError(
+                "failed-precondition",
+                "Esta cobrança já foi paga."
+            );
+        }
+
+        // Cria a sessão de checkout no Stripe
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ["pix"],
+            line_items: [
+                {
+                    price_data: {
+                        currency: "brl",
+                        product_data: {
+                            name: transactionData.description,
+                        },
+                        unit_amount: Math.round(transactionData.amount * 100), // O valor deve ser em centavos
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: "payment",
+            // TODO: Substituir por URLs reais do seu app
+            success_url: `https://adbelm.web.app/billing?payment_success=true`,
+            cancel_url: `https://adbelm.web.app/billing?payment_canceled=true`,
+            // Associa o ID da transação do Firestore à sessão do Stripe
+            metadata: {
+                transaction_id: transactionId,
+            },
+        });
+
+        const paymentIntent = session.payment_intent;
+        
+        if (typeof paymentIntent !== 'string') {
+             throw new functions.https.HttpsError("internal", "Falha ao obter detalhes do pagamento.");
+        }
+
+        // Recupera o PaymentIntent para obter os dados do PIX
+        const intent = await stripe.paymentIntents.retrieve(paymentIntent);
+        const pixData = intent.next_action?.pix_display_qr_code;
+
+        if (!pixData) {
+             throw new functions.https.HttpsError("internal", "Não foi possível gerar os dados do PIX.");
+        }
+
+        // Retorna os dados do PIX para o frontend
+        return {
+            qrCodeUrl: pixData.image_url_png,
+            qrCodeText: pixData.data,
+        };
+
+    } catch (error: any) {
+        console.error("Erro ao criar pagamento PIX:", error);
+        if (error instanceof functions.https.HttpsError) {
+            throw error;
+        }
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
+    }
   });
 
     
