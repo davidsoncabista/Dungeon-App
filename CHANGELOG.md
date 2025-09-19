@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.0-alpha - 2025-09-20 10:00:00 - davidson.dev.br
+
+- **docs: Atualizada documentação para a versão alfa 1.0.0**
+  - Atualiza a documentação do projeto para a versão alfa 1.0.0, refletindo o progresso e o estado atual do desenvolvimento.
+
 ## v0.9.5 - 2025-09-19 10:00:00 - davidson.dev.br
 
 - **feat(pagamentos): Adiciona backend para geração de cobranças PIX com Stripe**
