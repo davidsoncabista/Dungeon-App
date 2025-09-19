@@ -148,12 +148,14 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
 
     // --- Feedback de Pagamento ---
      useEffect(() => {
+        const router = useRouter();
         if (searchParams.get('payment_success') === 'true') {
             toast({
                 title: "Pagamento Confirmado!",
                 description: "Recebemos a confirmação do seu pagamento. Obrigado!",
                 variant: 'default',
             });
+            router.replace('/billing');
         }
         if (searchParams.get('payment_canceled') === 'true') {
              toast({
@@ -161,6 +163,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 description: "O processo de pagamento foi cancelado.",
                 variant: 'destructive',
             });
+            router.replace('/billing');
         }
     }, [searchParams, toast]);
 
