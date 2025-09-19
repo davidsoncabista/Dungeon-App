@@ -1,14 +1,14 @@
 
 "use client"
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, QrCode, Calendar, Award, Loader2 } from "lucide-react";
+import { Check, Dices, ShieldAlert, FileText, QrCode, Calendar, Award, Loader2, Copy, PartyPopper } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
-import { getFirestore, doc, updateDoc, collection, query, orderBy, where } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, collection, query, orderBy, where, onSnapshot } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useRouter } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
@@ -22,6 +22,9 @@ import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import Image from "next/image";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -138,11 +141,40 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
     const [isPixModalOpen, setIsPixModalOpen] = useState(false);
     const [pixData, setPixData] = useState<{ qrCodeUrl: string; qrCodeText: string } | null>(null);
     const [isGeneratingPix, setIsGeneratingPix] = useState(false);
+    const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
     
     // --- Buscando transações do Firestore ---
     const transactionsRef = collection(firestore, 'transactions');
     const transactionsQuery = query(transactionsRef, where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
+
+    // --- Listener de pagamento ---
+    useEffect(() => {
+        if (!currentTransactionId) return;
+
+        const transactionRef = doc(firestore, 'transactions', currentTransactionId);
+        const unsubscribe = onSnapshot(transactionRef, (doc) => {
+            const data = doc.data();
+            if (data && data.status === 'Pago') {
+                toast({
+                    title: "Pagamento Confirmado!",
+                    description: "Sua cobrança foi marcada como paga. Obrigado!",
+                });
+                setPaymentSuccess(true);
+                // Aguarda um momento antes de fechar para o usuário ver a mensagem.
+                setTimeout(() => {
+                    setIsPixModalOpen(false);
+                    setCurrentTransactionId(null);
+                    setPaymentSuccess(false);
+                }, 2000);
+            }
+        });
+
+        // Limpa o listener quando o modal for fechado ou o componente desmontado
+        return () => unsubscribe();
+
+    }, [currentTransactionId, firestore, toast]);
 
     const nextBillingDate = useMemo(() => {
         const today = new Date();
@@ -156,6 +188,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
 
     const handleGeneratePix = async (transactionId: string) => {
         setIsGeneratingPix(true);
+        setCurrentTransactionId(transactionId);
         try {
             const createPixPayment = httpsCallable(functions, 'createPixPayment');
             const result = await createPixPayment({ transactionId });
@@ -169,6 +202,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 description: error.message || "Não foi possível gerar o código de pagamento.",
                 variant: "destructive",
             });
+            setCurrentTransactionId(null);
         } finally {
             setIsGeneratingPix(false);
         }
@@ -278,30 +312,50 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 </div>
             </div>
 
-            <Dialog open={isPixModalOpen} onOpenChange={setIsPixModalOpen}>
+            <Dialog open={isPixModalOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsPixModalOpen(false);
+                    setCurrentTransactionId(null);
+                    setPaymentSuccess(false);
+                }
+            }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="text-center">Pague com PIX</DialogTitle>
-                        <DialogDescription className="text-center">
-                            Escaneie o QR Code abaixo com o app do seu banco ou use o "Copia e Cola".
+                        <DialogTitle className="text-center">{paymentSuccess ? "Pagamento Confirmado!" : "Pague com PIX"}</DialogTitle>
+                         <DialogDescription className="text-center">
+                            {paymentSuccess
+                                ? "Obrigado! Esta janela será fechada em instantes."
+                                : "Escaneie o QR Code abaixo com o app do seu banco ou use o \"Copia e Cola\"."
+                            }
                         </DialogDescription>
                     </DialogHeader>
-                    {pixData?.qrCodeUrl && (
-                        <div className="flex justify-center p-4">
-                            <Image src={pixData.qrCodeUrl} alt="PIX QR Code" width={256} height={256} />
+
+                     {paymentSuccess ? (
+                        <div className="flex flex-col items-center justify-center p-8 gap-4 text-green-500">
+                           <PartyPopper className="h-16 w-16" />
                         </div>
-                    )}
-                    {pixData?.qrCodeText && (
-                        <div className="space-y-2">
-                            <Label htmlFor="pix-code">PIX Copia e Cola</Label>
-                            <div className="flex items-center gap-2">
-                                <Input id="pix-code" value={pixData.qrCodeText} readOnly className="text-xs" />
-                                <Button onClick={() => {
-                                    navigator.clipboard.writeText(pixData.qrCodeText);
-                                    toast({ title: "Copiado!", description: "O código PIX foi copiado." });
-                                }}>Copiar</Button>
-                            </div>
-                        </div>
+                    ) : (
+                        <>
+                            {pixData?.qrCodeUrl && (
+                                <div className="flex justify-center p-4">
+                                    <Image src={pixData.qrCodeUrl} alt="PIX QR Code" width={256} height={256} />
+                                </div>
+                            )}
+                            {pixData?.qrCodeText && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="pix-code">PIX Copia e Cola</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input id="pix-code" value={pixData.qrCodeText} readOnly className="text-xs" />
+                                        <Button size="icon" onClick={() => {
+                                            navigator.clipboard.writeText(pixData.qrCodeText);
+                                            toast({ title: "Copiado!", description: "O código PIX foi copiado." });
+                                        }}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </DialogContent>
             </Dialog>
@@ -341,3 +395,5 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
+
+    
