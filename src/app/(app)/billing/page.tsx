@@ -138,6 +138,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
     const firestore = getFirestore(app);
     const functions = getFunctions(app, 'southamerica-east1');
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
     
@@ -148,7 +149,6 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
 
     // --- Feedback de Pagamento ---
      useEffect(() => {
-        const router = useRouter();
         if (searchParams.get('payment_success') === 'true') {
             toast({
                 title: "Pagamento Confirmado!",
@@ -165,7 +165,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
             });
             router.replace('/billing');
         }
-    }, [searchParams, toast]);
+    }, [searchParams, toast, router]);
 
     const nextBillingDate = useMemo(() => {
         const today = new Date();
