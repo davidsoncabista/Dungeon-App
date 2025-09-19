@@ -309,9 +309,9 @@ export const stripeWebhook = functions
 
 
 /**
- * Função Chamável (onCall) para criar uma sessão de pagamento PIX no Stripe.
+ * Função Chamável (onCall) para criar uma sessão de pagamento no Stripe.
  */
-export const createPixPayment = functions
+export const createPaymentSession = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
     // Verifica se o Stripe está configurado
@@ -365,7 +365,8 @@ export const createPixPayment = functions
 
         // Cria a sessão de checkout no Stripe
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ["pix"],
+            ui_mode: 'hosted',
+            payment_method_configuration: 'pmc_1S86MLQtslkeKzystj2xJcjE',
             line_items: [
                 {
                     price_data: {
@@ -379,38 +380,20 @@ export const createPixPayment = functions
                 },
             ],
             mode: "payment",
-            // TODO: Substituir por URLs reais do seu app
             success_url: `https://adbelm.web.app/billing?payment_success=true`,
             cancel_url: `https://adbelm.web.app/billing?payment_canceled=true`,
-            // Associa o ID da transação do Firestore à sessão do Stripe
             metadata: {
                 transaction_id: transactionId,
             },
-            // Expande o payment_intent para obter os dados do PIX na mesma resposta
-            expand: ['payment_intent'],
         });
 
-        // Acessa os dados do PIX diretamente da sessão expandida
-        const paymentIntent = session.payment_intent;
-
-        if (!paymentIntent || typeof paymentIntent === 'string') {
-             throw new functions.https.HttpsError("internal", "Falha ao obter detalhes do pagamento.");
-        }
-
-        const pixData = paymentIntent.next_action?.pix_display_qr_code;
-
-        if (!pixData) {
-             throw new functions.https.HttpsError("internal", "Não foi possível gerar os dados do PIX.");
-        }
-
-        // Retorna os dados do PIX para o frontend
+        // Para sessões de checkout hospedadas, retornamos a URL para redirecionamento
         return {
-            qrCodeUrl: pixData.image_url_png,
-            qrCodeText: pixData.data,
+            url: session.url,
         };
 
     } catch (error: any) {
-        console.error("Erro ao criar pagamento PIX:", error);
+        console.error("Erro ao criar sessão de pagamento:", error);
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }

@@ -186,20 +186,30 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    const handleGeneratePix = async (transactionId: string) => {
+    const handleGeneratePayment = async (transaction: Transaction) => {
         setIsGeneratingPix(true);
-        setCurrentTransactionId(transactionId);
+        setCurrentTransactionId(transaction.id);
         try {
-            const createPixPayment = httpsCallable(functions, 'createPixPayment');
-            const result = await createPixPayment({ transactionId });
-            const data = result.data as { qrCodeUrl: string; qrCodeText: string };
-            setPixData(data);
-            setIsPixModalOpen(true);
+            const createPaymentSession = httpsCallable(functions, 'createPaymentSession');
+            const result: any = await createPaymentSession({ transactionId: transaction.id });
+            
+            // Se for PIX, mostra o modal
+            if (result.data.qrCodeUrl) {
+                setPixData(result.data as { qrCodeUrl: string; qrCodeText: string });
+                setIsPixModalOpen(true);
+            } 
+            // Se for outra coisa (como Cartão), redireciona para a URL do Stripe
+            else if (result.data.url) {
+                window.location.href = result.data.url;
+            } else {
+                 throw new Error("Resposta inesperada do servidor de pagamentos.");
+            }
+            
         } catch (error: any) {
-            console.error("Erro ao gerar PIX:", error);
+            console.error("Erro ao gerar pagamento:", error);
             toast({
-                title: "Erro ao Gerar PIX",
-                description: error.message || "Não foi possível gerar o código de pagamento.",
+                title: "Erro ao Iniciar Pagamento",
+                description: error.message || "Não foi possível iniciar o processo de pagamento.",
                 variant: "destructive",
             });
             setCurrentTransactionId(null);
@@ -246,10 +256,10 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                     {t.status === "Pendente" ? (
                         <Button 
                             size="sm" 
-                            onClick={() => handleGeneratePix(t.id)}
-                            disabled={isGeneratingPix}
+                            onClick={() => handleGeneratePayment(t)}
+                            disabled={isGeneratingPix && currentTransactionId === t.id}
                         >
-                            {isGeneratingPix ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com PIX"}
+                            {(isGeneratingPix && currentTransactionId === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar Agora"}
                         </Button>
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
@@ -395,5 +405,3 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
-
-    
