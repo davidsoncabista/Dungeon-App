@@ -10,7 +10,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
 import { getFirestore, doc, updateDoc, collection, query, orderBy, where, onSnapshot } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import type { Plan } from "@/lib/types/plan";
@@ -137,44 +137,32 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
     const { toast } = useToast();
     const firestore = getFirestore(app);
     const functions = getFunctions(app, 'southamerica-east1');
+    const searchParams = useSearchParams();
 
-    const [isPixModalOpen, setIsPixModalOpen] = useState(false);
-    const [pixData, setPixData] = useState<{ qrCodeUrl: string; qrCodeText: string } | null>(null);
-    const [isGeneratingPix, setIsGeneratingPix] = useState(false);
-    const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
-    const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
     
     // --- Buscando transações do Firestore ---
     const transactionsRef = collection(firestore, 'transactions');
     const transactionsQuery = query(transactionsRef, where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
-    // --- Listener de pagamento ---
-    useEffect(() => {
-        if (!currentTransactionId) return;
-
-        const transactionRef = doc(firestore, 'transactions', currentTransactionId);
-        const unsubscribe = onSnapshot(transactionRef, (doc) => {
-            const data = doc.data();
-            if (data && data.status === 'Pago') {
-                toast({
-                    title: "Pagamento Confirmado!",
-                    description: "Sua cobrança foi marcada como paga. Obrigado!",
-                });
-                setPaymentSuccess(true);
-                // Aguarda um momento antes de fechar para o usuário ver a mensagem.
-                setTimeout(() => {
-                    setIsPixModalOpen(false);
-                    setCurrentTransactionId(null);
-                    setPaymentSuccess(false);
-                }, 2000);
-            }
-        });
-
-        // Limpa o listener quando o modal for fechado ou o componente desmontado
-        return () => unsubscribe();
-
-    }, [currentTransactionId, firestore, toast]);
+    // --- Feedback de Pagamento ---
+     useEffect(() => {
+        if (searchParams.get('payment_success') === 'true') {
+            toast({
+                title: "Pagamento Confirmado!",
+                description: "Recebemos a confirmação do seu pagamento. Obrigado!",
+                variant: 'default',
+            });
+        }
+        if (searchParams.get('payment_canceled') === 'true') {
+             toast({
+                title: "Pagamento Cancelado",
+                description: "O processo de pagamento foi cancelado.",
+                variant: 'destructive',
+            });
+        }
+    }, [searchParams, toast]);
 
     const nextBillingDate = useMemo(() => {
         const today = new Date();
@@ -187,34 +175,27 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
     }, []);
 
     const handleGeneratePayment = async (transaction: Transaction) => {
-        setIsGeneratingPix(true);
-        setCurrentTransactionId(transaction.id);
+        setIsGeneratingPayment(transaction.id);
         try {
             const createPaymentSession = httpsCallable(functions, 'createPaymentSession');
             const result: any = await createPaymentSession({ transactionId: transaction.id });
             
-            // Se for PIX, mostra o modal
-            if (result.data.qrCodeUrl) {
-                setPixData(result.data as { qrCodeUrl: string; qrCodeText: string });
-                setIsPixModalOpen(true);
-            } 
-            // Se for outra coisa (como Cartão), redireciona para a URL do Stripe
-            else if (result.data.url) {
+            if (result.data && result.data.url) {
+                // Redireciona o usuário para a página de checkout do Stripe
                 window.location.href = result.data.url;
             } else {
                  throw new Error("Resposta inesperada do servidor de pagamentos.");
             }
             
         } catch (error: any) {
-            console.error("Erro ao gerar pagamento:", error);
+            console.error("Erro ao iniciar pagamento:", error);
             toast({
                 title: "Erro ao Iniciar Pagamento",
                 description: error.message || "Não foi possível iniciar o processo de pagamento.",
                 variant: "destructive",
             });
-            setCurrentTransactionId(null);
         } finally {
-            setIsGeneratingPix(false);
+            setIsGeneratingPayment(null);
         }
     };
     
@@ -257,9 +238,9 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                         <Button 
                             size="sm" 
                             onClick={() => handleGeneratePayment(t)}
-                            disabled={isGeneratingPix && currentTransactionId === t.id}
+                            disabled={isGeneratingPayment === t.id}
                         >
-                            {(isGeneratingPix && currentTransactionId === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar Agora"}
+                            {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar Agora"}
                         </Button>
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
@@ -321,54 +302,6 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                     </Card>
                 </div>
             </div>
-
-            <Dialog open={isPixModalOpen} onOpenChange={(open) => {
-                if (!open) {
-                    setIsPixModalOpen(false);
-                    setCurrentTransactionId(null);
-                    setPaymentSuccess(false);
-                }
-            }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="text-center">{paymentSuccess ? "Pagamento Confirmado!" : "Pague com PIX"}</DialogTitle>
-                         <DialogDescription className="text-center">
-                            {paymentSuccess
-                                ? "Obrigado! Esta janela será fechada em instantes."
-                                : "Escaneie o QR Code abaixo com o app do seu banco ou use o \"Copia e Cola\"."
-                            }
-                        </DialogDescription>
-                    </DialogHeader>
-
-                     {paymentSuccess ? (
-                        <div className="flex flex-col items-center justify-center p-8 gap-4 text-green-500">
-                           <PartyPopper className="h-16 w-16" />
-                        </div>
-                    ) : (
-                        <>
-                            {pixData?.qrCodeUrl && (
-                                <div className="flex justify-center p-4">
-                                    <Image src={pixData.qrCodeUrl} alt="PIX QR Code" width={256} height={256} />
-                                </div>
-                            )}
-                            {pixData?.qrCodeText && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="pix-code">PIX Copia e Cola</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input id="pix-code" value={pixData.qrCodeText} readOnly className="text-xs" />
-                                        <Button size="icon" onClick={() => {
-                                            navigator.clipboard.writeText(pixData.qrCodeText);
-                                            toast({ title: "Copiado!", description: "O código PIX foi copiado." });
-                                        }}>
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
         </div>
     )
 }
