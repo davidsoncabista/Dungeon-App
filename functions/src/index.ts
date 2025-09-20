@@ -1,25 +1,11 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
-import Stripe from "stripe";
 import { MercadoPagoConfig, Preference } from "mercadopago";
-import fetch from "node-fetch";
 
 // Inicializa o Firebase Admin SDK para que as funções tenham acesso aos serviços.
 admin.initializeApp();
 const db = admin.firestore();
-
-// --- INICIALIZAÇÃO SEGURA DO STRIPE (se ainda for usar) ---
-let stripe: Stripe | undefined;
-const stripeConfig = functions.config().stripe; // Mantido para o webhook
-if (stripeConfig && stripeConfig.secret) {
-    stripe = new Stripe(stripeConfig.secret, {
-      apiVersion: "2024-06-20",
-    });
-} else {
-    console.warn("Stripe secret key not found. Stripe functionality will be disabled.");
-}
-
 
 /**
  * Gatilho do Authentication que cria um documento de usuário no Firestore
@@ -236,11 +222,9 @@ export const createMercadoPagoPayment = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
     
-    // --- CORREÇÃO APLICADA AQUI ---
-    // A configuração e o cliente são inicializados DENTRO da função.
     const mercadopagoConfig = functions.config().mercadopago;
     if (!mercadopagoConfig || !mercadopagoConfig.access_token) {
-        console.error("Mercado Pago access token not found in function configuration.");
+        console.error("Mercado Pago access token not found in Firebase function configuration.");
         throw new functions.https.HttpsError(
             "failed-precondition",
             "A funcionalidade de pagamento com Mercado Pago não está configurada."
@@ -250,17 +234,16 @@ export const createMercadoPagoPayment = functions
         accessToken: mercadopagoConfig.access_token,
         options: { timeout: 5000, idempotencyKey: 'abc' }
     });
-    // --- FIM DA CORREÇÃO ---
 
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
     }
 
-    const { transactionId } = data; // Removido 'payer' pois ele não está sendo enviado do frontend
+    const { transactionId } = data;
     if (!transactionId) {
         throw new functions.https.HttpsError("invalid-argument", "O ID da transação é obrigatório.");
     }
-
+    
     try {
         const transactionRef = db.collection("transactions").doc(transactionId);
         const transactionDoc = await transactionRef.get();
@@ -289,7 +272,6 @@ export const createMercadoPagoPayment = functions
                         currency_id: 'BRL',
                     }
                 ],
-                // O pagador pode ser obtido do documento do usuário para mais segurança
                 payer: {
                     email: context.auth.token.email,
                 },
@@ -325,13 +307,15 @@ export const mercadoPagoWebhook = functions
     const { body } = request;
     console.log("[Mercado Pago Webhook] Received notification:", JSON.stringify(body));
 
-    if (body.type === "payment" && body.action === "payment.updated" && body.data?.id) {
-        const paymentId = body.data.id;
+    const paymentId = body.data?.id;
+
+    if (body.type === "payment" && body.action === "payment.updated" && paymentId) {
         console.log(`[Mercado Pago Webhook] Processing payment ID: ${paymentId}`);
 
         try {
             const mercadopagoConfig = functions.config().mercadopago;
             const accessToken = mercadopagoConfig ? mercadopagoConfig.access_token : undefined;
+
             if (!accessToken) {
                 console.error("Mercado Pago Access Token is not configured on server.");
                 response.status(500).send("Server configuration error.");
@@ -378,25 +362,4 @@ export const mercadoPagoWebhook = functions
     }
     
     response.status(200).send("OK");
-  });
-
-
-// --- FUNÇÕES DO STRIPE (MANTIDAS CASO PRECISE NO FUTURO, MAS SEM INICIALIZAÇÃO GLOBAL) ---
-
-/**
- * Endpoint de Webhook para receber eventos do Stripe.
- */
-export const stripeWebhook = functions
-  .region("southamerica-east1")
-  .https.onRequest(async (request, response) => {
-    // ... seu código do webhook do Stripe aqui ...
-  });
-
-/**
- * Função Chamável (onCall) para criar uma sessão de pagamento no Stripe.
- */
-export const createStripePayment = functions
-  .region("southamerica-east1")
-  .https.onCall(async (data, context) => {
-    // ... seu código da função de pagamento do Stripe aqui ...
   });

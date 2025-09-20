@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
-    // ... Nenhuma mudança necessária aqui, o código está correto ...
     const { toast } = useToast();
     const [user] = useAuthState(auth);
     const router = useRouter();
@@ -127,29 +126,36 @@ const SubscribeView = () => {
     );
 };
 
-
 // --- COMPONENTE PARA USUÁRIOS JÁ MATRICULADOS ---
-const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: any }) => {
+const BillingView = ({ currentUser }: { currentUser: User }) => {
     const { toast } = useToast();
     const firestore = getFirestore(app);
     const functions = getFunctions(app, 'southamerica-east1');
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
+    const [user] = useAuthState(auth);
 
-    // --- CORREÇÃO APLICADA AQUI ---
-    // A consulta agora usa `authUser.uid`, que é a fonte confiável do ID do usuário logado.
+    const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
+    
     const transactionsRef = collection(firestore, 'transactions');
-    const transactionsQuery = authUser ? query(transactionsRef, where("userId", "==", authUser.uid), orderBy("createdAt", "desc")) : null;
+    const transactionsQuery = user ? query(transactionsRef, where("userId", "==", user.uid), orderBy("createdAt", "desc")) : null;
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
-    useEffect(() => {
+     useEffect(() => {
         if (searchParams.get('payment_success') === 'true') {
-            toast({ title: "Pagamento Confirmado!", description: "Recebemos a confirmação do seu pagamento. Obrigado!" });
+            toast({
+                title: "Pagamento Confirmado!",
+                description: "Recebemos a confirmação do seu pagamento. Obrigado!",
+                variant: 'default',
+            });
             router.replace('/billing');
         }
         if (searchParams.get('payment_canceled') === 'true') {
-             toast({ title: "Pagamento Cancelado", description: "O processo de pagamento foi cancelado.", variant: 'destructive' });
+             toast({
+                title: "Pagamento Cancelado",
+                description: "O processo de pagamento foi cancelado.",
+                variant: 'destructive',
+            });
             router.replace('/billing');
         }
     }, [searchParams, toast, router]);
@@ -172,7 +178,6 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
             const result: any = await createMercadoPagoPayment({ transactionId: transaction.id });
             
             if (result.data && result.data.url) {
-                // Redireciona o usuário para a página de checkout do Mercado Pago
                 window.location.href = result.data.url;
             } else {
                  throw new Error("Resposta inesperada do servidor do Mercado Pago.");
@@ -231,7 +236,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                             onClick={() => handleGeneratePayment(t)}
                             disabled={isGeneratingPayment === t.id}
                         >
-                            {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar Agora"}
+                            {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com Mercado Pago"}
                         </Button>
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
@@ -299,14 +304,12 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
 
 // --- PÁGINA PRINCIPAL ---
 export default function BillingPage() {
-    const [user, loadingAuth] = useAuthState(auth); // 'user' é o objeto de autenticação (authUser)
+    const [user, loadingAuth] = useAuthState(auth);
     const firestore = getFirestore(app);
     const usersRef = collection(firestore, 'users');
-    
-    // Busca os dados do perfil do usuário da coleção 'users'
     const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
     const [appUser, loadingUser] = useCollectionData<User>(userQuery);
-    const currentUser = appUser?.[0]; // Este é o objeto do perfil
+    const currentUser = appUser?.[0];
 
     const isLoading = loadingAuth || loadingUser;
 
@@ -325,10 +328,8 @@ export default function BillingPage() {
         )
     }
     
-    // --- CORREÇÃO ESTÁ AQUI ---
-    // Passamos o `user` de `useAuthState` como `authUser` para o componente filho.
-    if (currentUser && user && currentUser.category !== 'Visitante') {
-        return <BillingView currentUser={currentUser} authUser={user} />;
+    if (currentUser && currentUser.category !== 'Visitante') {
+        return <BillingView currentUser={currentUser} />;
     } else {
         return <SubscribeView />;
     }
