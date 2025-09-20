@@ -151,7 +151,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
      useEffect(() => {
         if (searchParams.get('payment_success') === 'true') {
             toast({
-                title: "Pagamento Confirmado!",
+                title: "Pagamento Aprovado!",
                 description: "Recebemos a confirmação do seu pagamento. Obrigado!",
                 variant: 'default',
             });
@@ -177,21 +177,19 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    const handleGeneratePayment = async (transaction: Transaction) => {
+    const handleStripePayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
         try {
-            const createPaymentSession = httpsCallable(functions, 'createPaymentSession');
-            const result: any = await createPaymentSession({ transactionId: transaction.id });
+            const createStripePayment = httpsCallable(functions, 'createStripePayment');
+            const result: any = await createStripePayment({ transactionId: transaction.id });
             
             if (result.data && result.data.url) {
-                // Redireciona o usuário para a página de checkout do Stripe
                 window.location.href = result.data.url;
             } else {
-                 throw new Error("Resposta inesperada do servidor de pagamentos.");
+                 throw new Error("Resposta inesperada do servidor de pagamentos (Stripe).");
             }
-            
         } catch (error: any) {
-            console.error("Erro ao iniciar pagamento:", error);
+            console.error("Erro ao iniciar pagamento com Stripe:", error);
             toast({
                 title: "Erro ao Iniciar Pagamento",
                 description: error.message || "Não foi possível iniciar o processo de pagamento.",
@@ -201,6 +199,35 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
             setIsGeneratingPayment(null);
         }
     };
+
+    const handleMercadoPagoPayment = async (transaction: Transaction) => {
+        setIsGeneratingPayment(transaction.id);
+        try {
+            const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
+            const result: any = await createMercadoPagoPayment({
+                transactionId: transaction.id,
+                payer: {
+                    email: currentUser.email,
+                    name: currentUser.name,
+                }
+            });
+
+            if (result.data && result.data.init_point) {
+                window.location.href = result.data.init_point;
+            } else {
+                throw new Error("Resposta inesperada do servidor de pagamentos (Mercado Pago).");
+            }
+        } catch (error: any) {
+            console.error("Erro ao iniciar pagamento com Mercado Pago:", error);
+            toast({
+                title: "Erro ao Iniciar Pagamento",
+                description: error.message || "Não foi possível iniciar o processo de pagamento.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsGeneratingPayment(null);
+        }
+    }
     
     const getStatusBadge = (status: TransactionStatus) => {
         switch (status) {
@@ -238,13 +265,27 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 <TableCell>R$ {t.amount.toFixed(2).replace('.', ',')}</TableCell>
                 <TableCell className="text-right">
                     {t.status === "Pendente" ? (
-                        <Button 
-                            size="sm" 
-                            onClick={() => handleGeneratePayment(t)}
-                            disabled={isGeneratingPayment === t.id}
-                        >
-                            {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar Agora"}
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                            {process.env.NEXT_PUBLIC_MERCADOPAGO_ACCESS_TOKEN && (
+                                <Button
+                                    size="sm" 
+                                    onClick={() => handleMercadoPagoPayment(t)}
+                                    disabled={isGeneratingPayment === t.id}
+                                    variant="outline"
+                                >
+                                    {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com Mercado Pago"}
+                                </Button>
+                            )}
+                             {process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY && (
+                                <Button
+                                    size="sm" 
+                                    onClick={() => handleStripePayment(t)}
+                                    disabled={isGeneratingPayment === t.id}
+                                >
+                                    {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com Stripe"}
+                                </Button>
+                            )}
+                        </div>
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
                     )}
@@ -341,3 +382,5 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
+
+    

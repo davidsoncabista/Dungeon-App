@@ -3,20 +3,34 @@ import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
 import Stripe from "stripe";
+import { MercadoPagoConfig, Preference } from "mercadopago";
+import fetch from "node-fetch";
 
 // Inicializa o Firebase Admin SDK para que as funções tenham acesso aos serviços.
 admin.initializeApp();
 const db = admin.firestore();
 
-// Inicializa o cliente Stripe de forma segura.
-let stripe: Stripe;
-const stripeConfig = functions.config().stripe;
-if (stripeConfig && stripeConfig.secret) {
-    stripe = new Stripe(stripeConfig.secret, {
+// --- INICIALIZAÇÃO SEGURA DOS CLIENTES ---
+
+// Stripe
+let stripe: Stripe | undefined;
+if (process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2024-06-20",
     });
 } else {
     console.warn("Stripe secret key not found. Stripe functionality will be disabled.");
+}
+
+// Mercado Pago
+let mpClient: MercadoPagoConfig | undefined;
+if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    mpClient = new MercadoPagoConfig({ 
+        accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+        options: { timeout: 5000, idempotencyKey: 'abc' }
+    });
+} else {
+    console.warn("Mercado Pago access token not found. Mercado Pago functionality will be disabled.");
 }
 
 
@@ -252,18 +266,18 @@ export const stripeWebhook = functions
   .region("southamerica-east1")
   .https.onRequest(async (request, response) => {
     
-    if (!stripe) {
-      console.error("Stripe não foi inicializado. Verifique a configuração da chave secreta.");
+    if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error("Stripe não foi inicializado ou o webhook secret não foi configurado.");
       response.status(500).send("Erro de configuração do servidor.");
       return;
     }
 
     const sig = request.headers["stripe-signature"];
-    const webhookSecret = stripeConfig?.webhook_secret;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    if (!sig || !webhookSecret) {
-      console.error("Webhook Error: Stripe signature or webhook secret is missing.");
-      response.status(400).send("Webhook Error: Missing signature or secret.");
+    if (!sig) {
+      console.error("Webhook Error: Stripe signature is missing.");
+      response.status(400).send("Webhook Error: Missing signature.");
       return;
     }
 
@@ -278,29 +292,29 @@ export const stripeWebhook = functions
     }
 
     // Lida com o evento
-    switch (event.type) {
-      case "checkout.session.completed":
-        const session = event.data.object as Stripe.Checkout.Session;
-        const transactionId = session.metadata?.transaction_id;
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const transactionId = session.metadata?.transaction_id;
 
-        if (!transactionId) {
-          console.error("Webhook Error: transaction_id not found in session metadata.", session.id);
-          break;
-        }
+      if (!transactionId) {
+        console.error("Webhook Error: transaction_id not found in session metadata.", session.id);
+        response.status(400).send("Webhook Error: Missing transaction_id in metadata.");
+        return;
+      }
 
-        try {
-          const transactionRef = db.collection("transactions").doc(transactionId);
-          await transactionRef.update({
-            status: "Pago",
-            paidAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          console.log(`Transaction ${transactionId} successfully marked as paid.`);
-        } catch (error) {
-          console.error(`Error updating transaction ${transactionId} in Firestore:`, error);
-        }
-        break;
-
-      default:
+      try {
+        const transactionRef = db.collection("transactions").doc(transactionId);
+        await transactionRef.update({
+          status: "Pago",
+          paidAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`Transaction ${transactionId} successfully marked as paid.`);
+      } catch (error) {
+        console.error(`Error updating transaction ${transactionId} in Firestore:`, error);
+        response.status(500).send(`Error updating transaction.`);
+        return;
+      }
+    } else {
         console.log(`Unhandled event type ${event.type}`);
     }
 
@@ -311,96 +325,204 @@ export const stripeWebhook = functions
 /**
  * Função Chamável (onCall) para criar uma sessão de pagamento no Stripe.
  */
-export const createPaymentSession = functions
+export const createStripePayment = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
-    // Verifica se o Stripe está configurado
     if (!stripe) {
         throw new functions.https.HttpsError(
-            "failed-precondition",
-            "A funcionalidade de pagamento não está configurada no servidor."
+            "failed-precondition", "A funcionalidade de pagamento com Stripe não está configurada."
         );
     }
-    // Verifica se o usuário está autenticado
     if (!context.auth) {
         throw new functions.https.HttpsError(
-            "unauthenticated",
-            "O usuário precisa estar autenticado para realizar pagamentos."
+            "unauthenticated", "O usuário precisa estar autenticado."
         );
     }
 
     const { transactionId } = data;
     if (!transactionId) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "O ID da transação é obrigatório."
-        );
+        throw new functions.https.HttpsError("invalid-argument", "O ID da transação é obrigatório.");
     }
 
     try {
-        // Busca a transação no Firestore
         const transactionRef = db.collection("transactions").doc(transactionId);
         const transactionDoc = await transactionRef.get();
 
         if (!transactionDoc.exists) {
             throw new functions.https.HttpsError("not-found", "A transação não foi encontrada.");
         }
-
         const transactionData = transactionDoc.data()!;
         
-        // Verifica se o usuário que chama é o dono da transação
         if (transactionData.userId !== context.auth.uid) {
-             throw new functions.https.HttpsError(
-                "permission-denied",
-                "Você não tem permissão para pagar esta transação."
-            );
+             throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para pagar esta transação.");
         }
-        
         if (transactionData.status === 'Pago') {
-             throw new functions.https.HttpsError(
-                "failed-precondition",
-                "Esta cobrança já foi paga."
-            );
+             throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
         }
 
-        // Cria a sessão de checkout no Stripe
         const session = await stripe.checkout.sessions.create({
-            ui_mode: 'hosted',
-            payment_method_configuration: 'pmc_1S86MLQtslkeKzystj2xJcjE',
-            line_items: [
-                {
-                    price_data: {
-                        currency: "brl",
-                        product_data: {
-                            name: transactionData.description,
-                        },
-                        unit_amount: Math.round(transactionData.amount * 100), // O valor deve ser em centavos
-                    },
-                    quantity: 1,
+            payment_method_types: ['card', 'boleto'],
+            line_items: [{
+                price_data: {
+                    currency: "brl",
+                    product_data: { name: transactionData.description },
+                    unit_amount: Math.round(transactionData.amount * 100),
                 },
-            ],
+                quantity: 1,
+            }],
             mode: "payment",
             success_url: `https://adbelm.web.app/billing?payment_success=true`,
             cancel_url: `https://adbelm.web.app/billing?payment_canceled=true`,
-            metadata: {
-                transaction_id: transactionId,
-            },
+            metadata: { transaction_id: transactionId },
         });
 
-        // Para sessões de checkout hospedadas, retornamos a URL para redirecionamento
-        return {
-            url: session.url,
-        };
+        return { url: session.url };
 
     } catch (error: any) {
-        console.error("Erro ao criar sessão de pagamento:", error);
-        if (error instanceof functions.https.HttpsError) {
-            throw error;
-        }
-        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento.");
+        console.error("Erro ao criar sessão de pagamento no Stripe:", error);
+        if (error instanceof functions.https.HttpsError) throw error;
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento com Stripe.");
     }
   });
 
+
+/**
+ * Função Chamável (onCall) para criar uma preferência de pagamento no Mercado Pago.
+ */
+export const createMercadoPagoPayment = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    if (!mpClient) {
+        throw new functions.https.HttpsError("failed-precondition", "A funcionalidade de pagamento com Mercado Pago não está configurada.");
+    }
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+
+    const { transactionId, payer } = data;
+    if (!transactionId) {
+        throw new functions.https.HttpsError("invalid-argument", "O ID da transação é obrigatório.");
+    }
+     if (!payer || !payer.email || !payer.name) {
+        throw new functions.https.HttpsError("invalid-argument", "As informações do pagador (email, nome) são obrigatórias.");
+    }
+
+    try {
+        const transactionRef = db.collection("transactions").doc(transactionId);
+        const transactionDoc = await transactionRef.get();
+
+        if (!transactionDoc.exists) {
+            throw new functions.https.HttpsError("not-found", "A transação não foi encontrada.");
+        }
+        const transactionData = transactionDoc.data()!;
+        
+        if (transactionData.userId !== context.auth.uid) {
+             throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para pagar esta transação.");
+        }
+        if (transactionData.status === 'Pago') {
+             throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
+        }
+        
+        const preference = new Preference(mpClient);
+        const preferenceResponse = await preference.create({
+            body: {
+                items: [
+                    {
+                        id: transactionId,
+                        title: transactionData.description,
+                        quantity: 1,
+                        unit_price: transactionData.amount,
+                        currency_id: 'BRL',
+                    }
+                ],
+                payer: {
+                    name: payer.name,
+                    email: payer.email,
+                },
+                back_urls: {
+                    success: `https://adbelm.web.app/billing?payment_success=true`,
+                    failure: `https://adbelm.web.app/billing?payment_canceled=true`,
+                    pending: `https://adbelm.web.app/billing?payment_pending=true`,
+                },
+                auto_return: "approved",
+                external_reference: transactionId,
+                notification_url: `https://southamerica-east1-adbelm.cloudfunctions.net/mercadoPagoWebhook`,
+            }
+        });
+
+        return { init_point: preferenceResponse.init_point };
+
+    } catch (error: any) {
+        console.error("Erro ao criar preferência de pagamento no Mercado Pago:", error);
+        if (error.cause) console.error("Detalhes do erro:", error.cause);
+        if (error instanceof functions.https.HttpsError) throw error;
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento com Mercado Pago.");
+    }
+  });
+
+
+/**
+ * Endpoint de Webhook para receber notificações do Mercado Pago.
+ */
+export const mercadoPagoWebhook = functions
+  .region("southamerica-east1")
+  .https.onRequest(async (request, response) => {
     
+    const { body } = request;
+    console.log("[Mercado Pago Webhook] Received notification:", JSON.stringify(body));
+
+    if (body.type === "payment" && body.action === "payment.updated" && body.data?.id) {
+        const paymentId = body.data.id;
+        console.log(`[Mercado Pago Webhook] Processing payment ID: ${paymentId}`);
+
+        try {
+            const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+            if (!accessToken) {
+                console.error("Mercado Pago Access Token is not configured on server.");
+                response.status(500).send("Server configuration error.");
+                return;
+            }
+
+            const paymentResponse = await fetch(
+                `https://api.mercadopago.com/v1/payments/${paymentId}`,
+                {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                }
+            );
+
+            if (!paymentResponse.ok) {
+                const errorText = await paymentResponse.text();
+                throw new Error(`Failed to fetch payment details: ${paymentResponse.status} ${errorText}`);
+            }
+
+            const paymentDetails = await paymentResponse.json() as any;
+            const transactionId = paymentDetails.external_reference;
+
+            if (!transactionId) {
+                console.error("Webhook Error: external_reference (transaction_id) not found in payment details.", paymentId);
+                response.status(400).send("Webhook Error: Missing external_reference.");
+                return;
+            }
+
+            if (paymentDetails.status === "approved") {
+                const transactionRef = db.collection("transactions").doc(transactionId);
+                await transactionRef.update({
+                    status: "Pago",
+                    paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[Mercado Pago Webhook] Transaction ${transactionId} successfully marked as paid.`);
+            } else {
+                console.log(`[Mercado Pago Webhook] Payment ${paymentId} status is '${paymentDetails.status}'. No update needed.`);
+            }
+
+        } catch (error) {
+            console.error(`[Mercado Pago Webhook] Error processing payment ${paymentId}:`, error);
+            response.status(500).send("Internal server error while processing webhook.");
+            return;
+        }
+    }
+
+    response.status(200).send("OK");
+  });
 
     
