@@ -72,7 +72,7 @@ const SubscribeView = () => {
         else features.push("Reservas mensais ilimitadas");
         if (plan.weeklyQuota > 0) features.push(`Limite de ${plan.weeklyQuota} por semana`);
         if (plan.corujaoQuota > 0) features.push(`Inclui ${plan.corujaoQuota} cota(s) para o Corujão`);
-        if (plan.invites > 0) features.push(`Direito a ${plan.invites} convidado(s) por sessão`);
+        if (plan.invites > 0) features.push(`Direito a ${plan.invites} convidado(s) por mês`);
         return features;
     }
 
