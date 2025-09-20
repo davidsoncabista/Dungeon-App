@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo, useState, useEffect } from "react";
@@ -23,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
+    // ... Nenhuma mudança necessária aqui, o código está correto ...
     const { toast } = useToast();
     const [user] = useAuthState(auth);
     const router = useRouter();
@@ -127,37 +127,29 @@ const SubscribeView = () => {
     );
 };
 
+
 // --- COMPONENTE PARA USUÁRIOS JÁ MATRICULADOS ---
-const BillingView = ({ currentUser }: { currentUser: User }) => {
+const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: any }) => {
     const { toast } = useToast();
     const firestore = getFirestore(app);
     const functions = getFunctions(app, 'southamerica-east1');
     const searchParams = useSearchParams();
     const router = useRouter();
-
     const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
-    
-    // --- Buscando transações do Firestore ---
+
+    // --- CORREÇÃO APLICADA AQUI ---
+    // A consulta agora usa `authUser.uid`, que é a fonte confiável do ID do usuário logado.
     const transactionsRef = collection(firestore, 'transactions');
-    const transactionsQuery = query(transactionsRef, where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"));
+    const transactionsQuery = authUser ? query(transactionsRef, where("userId", "==", authUser.uid), orderBy("createdAt", "desc")) : null;
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
-    // --- Feedback de Pagamento ---
-     useEffect(() => {
+    useEffect(() => {
         if (searchParams.get('payment_success') === 'true') {
-            toast({
-                title: "Pagamento Aprovado!",
-                description: "Recebemos a confirmação do seu pagamento. Obrigado!",
-                variant: 'default',
-            });
+            toast({ title: "Pagamento Confirmado!", description: "Recebemos a confirmação do seu pagamento. Obrigado!" });
             router.replace('/billing');
         }
         if (searchParams.get('payment_canceled') === 'true') {
-             toast({
-                title: "Pagamento Cancelado",
-                description: "O processo de pagamento foi cancelado.",
-                variant: 'destructive',
-            });
+             toast({ title: "Pagamento Cancelado", description: "O processo de pagamento foi cancelado.", variant: 'destructive' });
             router.replace('/billing');
         }
     }, [searchParams, toast, router]);
@@ -172,55 +164,24 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    const handleStripePayment = async (transaction: Transaction) => {
+    const handleGeneratePayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
         try {
-            const createStripePayment = httpsCallable(functions, 'createStripePayment');
-            const result: any = await createStripePayment({ transactionId: transaction.id });
+            const createPaymentSession = httpsCallable(functions, 'createPaymentSession');
+            const result: any = await createPaymentSession({ transactionId: transaction.id });
             
             if (result.data && result.data.url) {
                 window.location.href = result.data.url;
             } else {
-                 throw new Error("Resposta inesperada do servidor de pagamentos (Stripe).");
+                 throw new Error("Resposta inesperada do servidor de pagamentos.");
             }
         } catch (error: any) {
-            console.error("Erro ao iniciar pagamento com Stripe:", error);
-            toast({
-                title: "Erro ao Iniciar Pagamento",
-                description: error.message || "Não foi possível iniciar o processo de pagamento.",
-                variant: "destructive",
-            });
+            console.error("Erro ao iniciar pagamento:", error);
+            toast({ title: "Erro ao Iniciar Pagamento", description: error.message || "Não foi possível iniciar o processo de pagamento.", variant: "destructive" });
+        } finally {
             setIsGeneratingPayment(null);
         }
     };
-
-    const handleMercadoPagoPayment = async (transaction: Transaction) => {
-        setIsGeneratingPayment(transaction.id);
-        try {
-            const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
-            const result: any = await createMercadoPagoPayment({
-                transactionId: transaction.id,
-                payer: {
-                    email: currentUser.email,
-                    name: currentUser.name,
-                }
-            });
-
-            if (result.data && result.data.init_point) {
-                window.location.href = result.data.init_point;
-            } else {
-                throw new Error("Resposta inesperada do servidor de pagamentos (Mercado Pago).");
-            }
-        } catch (error: any) {
-            console.error("Erro ao iniciar pagamento com Mercado Pago:", error);
-            toast({
-                title: "Erro ao Iniciar Pagamento",
-                description: error.message || "Não foi possível iniciar o processo de pagamento.",
-                variant: "destructive",
-            });
-            setIsGeneratingPayment(null);
-        }
-    }
     
     const getStatusBadge = (status: TransactionStatus) => {
         switch (status) {
@@ -258,27 +219,13 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 <TableCell>R$ {t.amount.toFixed(2).replace('.', ',')}</TableCell>
                 <TableCell className="text-right">
                     {t.status === "Pendente" ? (
-                        <div className="flex gap-2 justify-end">
-                            {process.env.NEXT_PUBLIC_MERCADOPAGO_ACCESS_TOKEN && (
-                                <Button
-                                    size="sm" 
-                                    onClick={() => handleMercadoPagoPayment(t)}
-                                    disabled={isGeneratingPayment !== null}
-                                    variant="outline"
-                                >
-                                    {isGeneratingPayment === t.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Mercado Pago"}
-                                </Button>
-                            )}
-                             {process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY && (
-                                <Button
-                                    size="sm" 
-                                    onClick={() => handleStripePayment(t)}
-                                    disabled={isGeneratingPayment !== null}
-                                >
-                                    {isGeneratingPayment === t.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Stripe"}
-                                </Button>
-                            )}
-                        </div>
+                        <Button 
+                            size="sm" 
+                            onClick={() => handleGeneratePayment(t)}
+                            disabled={isGeneratingPayment === t.id}
+                        >
+                            {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar Agora"}
+                        </Button>
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
                     )}
@@ -345,12 +292,14 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
 
 // --- PÁGINA PRINCIPAL ---
 export default function BillingPage() {
-    const [user, loadingAuth] = useAuthState(auth);
+    const [user, loadingAuth] = useAuthState(auth); // 'user' é o objeto de autenticação (authUser)
     const firestore = getFirestore(app);
     const usersRef = collection(firestore, 'users');
+    
+    // Busca os dados do perfil do usuário da coleção 'users'
     const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
     const [appUser, loadingUser] = useCollectionData<User>(userQuery);
-    const currentUser = appUser?.[0];
+    const currentUser = appUser?.[0]; // Este é o objeto do perfil
 
     const isLoading = loadingAuth || loadingUser;
 
@@ -369,11 +318,11 @@ export default function BillingPage() {
         )
     }
     
-    if (currentUser && currentUser.category !== 'Visitante') {
-        return <BillingView currentUser={currentUser} />;
+    // --- CORREÇÃO ESTÁ AQUI ---
+    // Passamos o `user` de `useAuthState` como `authUser` para o componente filho.
+    if (currentUser && user && currentUser.category !== 'Visitante') {
+        return <BillingView currentUser={currentUser} authUser={user} />;
     } else {
         return <SubscribeView />;
     }
 }
-
-    
