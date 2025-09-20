@@ -84,7 +84,7 @@ service cloud.firestore {
     }
 
     // --- NOVA REGRA: REGRAS PARA CONFIGURAÇÕES DO SISTEMA ---
-    match /settings/{settingId} {
+    match /systemSettings/{settingId} {
         // Apenas administradores podem ler e escrever nas configurações gerais do sistema.
         allow read, write: if request.auth.token.admin == true;
     }
