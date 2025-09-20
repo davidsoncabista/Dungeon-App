@@ -4,11 +4,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, QrCode, Calendar, Award, Loader2, Copy, PartyPopper } from "lucide-react";
+import { Check, Dices, ShieldAlert, FileText, Award, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
-import { getFirestore, doc, updateDoc, collection, query, orderBy, where, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, collection, query, orderBy, where } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
@@ -20,11 +20,6 @@ import { format, setDate, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import Image from "next/image";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -271,7 +266,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                                     disabled={isGeneratingPayment !== null}
                                     variant="outline"
                                 >
-                                    {(isGeneratingPayment === t.id) ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Mercado Pago"}
+                                    {isGeneratingPayment === t.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Mercado Pago"}
                                 </Button>
                             )}
                              {process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY && (
@@ -280,7 +275,7 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                                     onClick={() => handleStripePayment(t)}
                                     disabled={isGeneratingPayment !== null}
                                 >
-                                    {(isGeneratingPayment === t.id) ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Stripe"}
+                                    {isGeneratingPayment === t.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Stripe"}
                                 </Button>
                             )}
                         </div>
@@ -380,3 +375,5 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
+
+    
