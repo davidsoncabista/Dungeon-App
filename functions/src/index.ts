@@ -233,7 +233,10 @@ export const onUserPlanChange = functions
       }
       const plan = planSnapshot.docs[0].data();
       const planPrice = plan.price || 0;
-      const registrationFee = plan.registrationFee || 0; // Taxa de adesão (joia)
+      
+      const settingsDoc = await db.collection('systemSettings').doc('config').get();
+      const registrationFee = settingsDoc.data()?.registrationFee || 0;
+
 
       const today = new Date();
       const dayOfMonth = today.getDate();
@@ -244,18 +247,20 @@ export const onUserPlanChange = functions
 
       let description = "";
       let nextBillingMonthSkipped = false;
+      let totalAmount = registrationFee;
 
       // Se o usuário se inscreve após o dia 15
       if (dayOfMonth > 15) {
         const nextMonth = format(addMonths(today, 1), "MMMM/yyyy", { locale: ptBR });
         description = `Joia + Mensalidade (${format(today, "MMMM", { locale: ptBR })} e ${nextMonth})`;
+        totalAmount += planPrice; // Soma a mensalidade
         nextBillingMonthSkipped = true; // Marca para pular a próxima cobrança automática
       } else {
       // Se o usuário se inscreve até o dia 15
         description = `Joia + Mensalidade (${format(today, "MMMM/yyyy", { locale: ptBR })})`;
+        totalAmount += planPrice; // Soma a mensalidade aqui também
       }
 
-      const totalAmount = planPrice + registrationFee;
       const transactionRef = db.collection("transactions").doc();
 
       const batch = db.batch();
@@ -569,3 +574,5 @@ export const mercadoPagoWebhook = functions
    
    response.status(200).send("OK");
  });
+
+    
