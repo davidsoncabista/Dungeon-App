@@ -41,15 +41,15 @@ service cloud.firestore {
         // 2. Administradores e Editores podem editar qualquer reserva.
         // 3. Um participante pode se remover da lista (mas não pode adicionar outros).
         allow update: if (request.auth.token.admin == true || request.auth.token.role == 'Editor') ||
-                         (resource.data.organizerId == request.auth.uid) ||
-                         (
-                           // Permite que um usuário se remova da lista de participantes
-                           request.auth.uid in resource.data.participants &&
-                           !(request.auth.uid in request.resource.data.participants) &&
-                           // Garante que nenhuma outra alteração foi feita
-                           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
-                         );
-                         
+                          (resource.data.organizerId == request.auth.uid) ||
+                          (
+                            // Permite que um usuário se remova da lista de participantes
+                            request.auth.uid in resource.data.participants &&
+                            !(request.auth.uid in request.resource.data.participants) &&
+                            // Garante que nenhuma outra alteração foi feita
+                            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
+                          );
+                          
         // Apenas o organizador, um admin ou um editor podem excluir a reserva.
         allow delete: if request.auth.token.admin == true || request.auth.token.role == 'Editor' || resource.data.organizerId == request.auth.uid;
     }
@@ -62,9 +62,9 @@ service cloud.firestore {
         allow create, delete: if request.auth.token.admin == true;
         // Admins podem atualizar tudo, usuários podem apenas adicionar seu UID em 'readBy'
         allow update: if request.auth.token.admin == true || 
-                       (request.auth != null && 
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
-                        request.resource.data.readBy.hasAny([request.auth.uid]));
+                          (request.auth != null && 
+                           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+                           request.resource.data.readBy.hasAny([request.auth.uid]));
     }
     
     // --- REGRAS PARA PLANOS ---
@@ -81,6 +81,12 @@ service cloud.firestore {
       allow read: if request.auth.token.admin == true || resource.data.userId == request.auth.uid;
       // Apenas admins podem criar, editar ou deletar transações.
       allow write: if request.auth.token.admin == true;
+    }
+
+    // --- NOVA REGRA: REGRAS PARA CONFIGURAÇÕES DO SISTEMA ---
+    match /settings/{settingId} {
+        // Apenas administradores podem ler e escrever nas configurações gerais do sistema.
+        allow read, write: if request.auth.token.admin == true;
     }
     
   }
