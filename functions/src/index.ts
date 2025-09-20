@@ -276,9 +276,9 @@ export const createMercadoPagoPayment = functions
                     email: context.auth.token.email,
                 },
                 back_urls: {
-                    success: `https://adbelm.web.app/billing?payment_success=true`,
-                    failure: `https://adbelm.web.app/billing?payment_canceled=true`,
-                    pending: `https://adbelm.web.app/billing?payment_pending=true`,
+                    success: `https://studio--adbelm.us-central1.hosted.app/billing/billing?payment_success=true`,
+                    failure: `https://studio--adbelm.us-central1.hosted.app/billing/billing?payment_canceled=true`,
+                    pending: `https://studio--adbelm.us-central1.hosted.app/billing/billing?payment_pending=true`,
                 },
                 auto_return: "approved",
                 external_reference: transactionId,
