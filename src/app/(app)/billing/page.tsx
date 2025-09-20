@@ -164,7 +164,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    cconst handleGeneratePayment = async (transaction: Transaction) => {
+    const handleGeneratePayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
         try {
             // CORREÇÃO: Chamando a função correta do Mercado Pago
