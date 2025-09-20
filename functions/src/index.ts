@@ -1,16 +1,14 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
+import * as crypto from "crypto";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
-// Inicializa o Firebase Admin SDK para que as funções tenham acesso aos serviços.
+// Inicializa o Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 
-/**
- * Gatilho do Authentication que cria um documento de usuário no Firestore
- * sempre que um novo usuário se registra.
- */
+// --- As suas outras funções (createUserDocument, setAdminClaim, handleBookingWrite, etc.) ---
 export const createUserDocument = functions
   .region("southamerica-east1")
   .auth.user()
@@ -42,11 +40,6 @@ export const createUserDocument = functions
     }
   });
 
-
-/**
- * Gatilho do Firestore que define/remove um "custom claim" de administrador
- * sempre que o campo `role` de um usuário é alterado.
- */
 export const setAdminClaim = functions
   .region("southamerica-east1")
   .firestore.document("users/{userId}")
@@ -89,10 +82,6 @@ export const setAdminClaim = functions
     }
   });
 
-
-/**
- * Gatilho do Firestore que executa lógicas de negócio em reservas.
- */
 export const handleBookingWrite = functions
   .region("southamerica-east1")
   .firestore.document("bookings/{bookingId}")
@@ -213,30 +202,27 @@ export const handleBookingWrite = functions
     
     return null;
   });
-
-
+  
 /**
  * Função Chamável (onCall) para criar uma preferência de pagamento no Mercado Pago.
  */
 export const createMercadoPagoPayment = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
-    
     const mercadopagoConfig = functions.config().mercadopago;
     if (!mercadopagoConfig || !mercadopagoConfig.access_token) {
-        console.error("Mercado Pago access token not found in Firebase function configuration.");
+        console.error("Token de acesso do Mercado Pago não encontrado na configuração.");
         throw new functions.https.HttpsError(
             "failed-precondition",
             "A funcionalidade de pagamento com Mercado Pago não está configurada."
         );
     }
     const mpClient = new MercadoPagoConfig({ 
-        accessToken: mercadopagoConfig.access_token,
-        options: { timeout: 5000, idempotencyKey: 'abc' }
+        accessToken: mercadopagoConfig.access_token
     });
 
     if (!context.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+        throw new functions.https.HttpsError("unauthenticated", "O utilizador precisa de estar autenticado.");
     }
 
     const { transactionId } = data;
@@ -260,6 +246,9 @@ export const createMercadoPagoPayment = functions
              throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
         }
         
+        const successUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_success=true`;
+        const failureUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_canceled=true`;
+        
         const preference = new Preference(mpClient);
         const preferenceResponse = await preference.create({
             body: {
@@ -276,9 +265,8 @@ export const createMercadoPagoPayment = functions
                     email: context.auth.token.email,
                 },
                 back_urls: {
-                    success: `https://studio--adbelm.us-central1.hosted.app/billing/billing?payment_success=true`,
-                    failure: `https://studio--adbelm.us-central1.hosted.app/billing/billing?payment_canceled=true`,
-                    pending: `https://studio--adbelm.us-central1.hosted.app/billing/billing?payment_pending=true`,
+                    success: successUrl,
+                    failure: failureUrl,
                 },
                 auto_return: "approved",
                 external_reference: transactionId,
@@ -291,8 +279,7 @@ export const createMercadoPagoPayment = functions
     } catch (error: any) {
         console.error("Erro ao criar preferência de pagamento no Mercado Pago:", error);
         if (error.cause) console.error("Detalhes do erro:", error.cause);
-        if (error instanceof functions.https.HttpsError) throw error;
-        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar seu pagamento com Mercado Pago.");
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar o seu pagamento.");
     }
   });
 
@@ -304,21 +291,65 @@ export const mercadoPagoWebhook = functions
   .region("southamerica-east1")
   .https.onRequest(async (request, response) => {
     
-    const { body } = request;
-    console.log("[Mercado Pago Webhook] Received notification:", JSON.stringify(body));
+    console.log("[Mercado Pago Webhook] Notificação recebida:", JSON.stringify(request.body));
+    console.log("[Mercado Pago Webhook] Cabeçalhos recebidos:", JSON.stringify(request.headers));
 
+    const mercadopagoConfig = functions.config().mercadopago;
+    const webhookSecret = mercadopagoConfig ? mercadopagoConfig.webhook_secret : undefined;
+
+    if (webhookSecret) {
+        try {
+            const signature = request.headers["x-signature"];
+            const requestId = request.headers["x-request-id"];
+
+            if (typeof signature === 'string' && typeof requestId === 'string') {
+                const timestampHeaderPart = requestId.toString().split(',').find(part => part.trim().startsWith('ts='));
+                const timestamp = timestampHeaderPart ? timestampHeaderPart.split('=')[1] : null;
+
+                if (timestamp && request.body.data?.id) {
+                    const signatureParts = signature.split(',');
+                    if (signatureParts.length < 2 || !signatureParts[1]) {
+                        throw new Error("Formato de assinatura inválido. Hash em falta.");
+                    }
+                    const hash = signatureParts[1];
+                    const providedHash = hash.replace('v1=', '');
+                    const signedTemplate = `id:${request.body.data.id};request-id:${requestId};ts:${timestamp};`;
+
+                    const hmac = crypto.createHmac('sha256', webhookSecret);
+                    hmac.update(signedTemplate);
+                    const calculatedHash = hmac.digest('hex');
+
+                    if (calculatedHash !== providedHash) {
+                        console.warn("Falha na verificação da assinatura do Webhook. Assinatura inválida.");
+                        response.status(400).send("Falha na verificação da assinatura.");
+                        return;
+                    }
+                    console.log("Assinatura do Webhook verificada com sucesso.");
+                } else {
+                    console.log("A simulação do Webhook não contém todos os cabeçalhos para validação, a prosseguir sem validação.");
+                }
+            } else {
+                 console.log("Cabeçalhos de assinatura ausentes, provavelmente é uma simulação. A prosseguir sem validação.");
+            }
+        } catch (error: any) {
+            console.error("Erro durante a validação da assinatura:", error.message);
+            response.status(400).send("Erro de validação da assinatura.");
+            return;
+        }
+    } else {
+        console.warn("Segredo do Webhook não configurado. A notificação não foi validada.");
+    }
+
+    const { body } = request;
     const paymentId = body.data?.id;
 
-    if (body.type === "payment" && body.action === "payment.updated" && paymentId) {
-        console.log(`[Mercado Pago Webhook] Processing payment ID: ${paymentId}`);
-
+    if (body.type === "payment" && paymentId) {
+        console.log(`[Mercado Pago Webhook] A processar o ID do pagamento: ${paymentId}`);
         try {
-            const mercadopagoConfig = functions.config().mercadopago;
-            const accessToken = mercadopagoConfig ? mercadopagoConfig.access_token : undefined;
-
+            const accessToken = mercadopagoConfig.access_token;
             if (!accessToken) {
-                console.error("Mercado Pago Access Token is not configured on server.");
-                response.status(500).send("Server configuration error.");
+                console.error("Token de Acesso do Mercado Pago não configurado no servidor.");
+                response.status(500).send("Erro de configuração do servidor.");
                 return;
             }
 
@@ -331,15 +362,15 @@ export const mercadoPagoWebhook = functions
 
             if (!paymentResponse.ok) {
                 const errorText = await paymentResponse.text();
-                throw new Error(`Failed to fetch payment details: ${paymentResponse.status} ${errorText}`);
+                throw new Error(`Falha ao buscar detalhes do pagamento: ${paymentResponse.status} ${errorText}`);
             }
 
             const paymentDetails = await paymentResponse.json() as any;
             const transactionId = paymentDetails.external_reference;
 
             if (!transactionId) {
-                console.error("Webhook Error: external_reference (transaction_id) not found in payment details.", paymentId);
-                response.status(400).send("Webhook Error: Missing external_reference.");
+                console.error("Erro no Webhook: external_reference não encontrada nos detalhes do pagamento.", paymentId);
+                response.status(400).send("Erro no Webhook: external_reference em falta.");
                 return;
             }
 
@@ -349,16 +380,18 @@ export const mercadoPagoWebhook = functions
                     status: "Pago",
                     paidAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
-                console.log(`[Mercado Pago Webhook] Transaction ${transactionId} successfully marked as paid.`);
+                console.log(`[Mercado Pago Webhook] A transação ${transactionId} foi marcada como paga com sucesso.`);
             } else {
-                console.log(`[Mercado Pago Webhook] Payment ${paymentId} status is '${paymentDetails.status}'. No update needed.`);
+                console.log(`[Mercado Pago Webhook] O status do pagamento ${paymentId} é '${paymentDetails.status}'. Nenhuma atualização necessária.`);
             }
 
-        } catch (error) {
-            console.error(`[Mercado Pago Webhook] Error processing payment ID: ${paymentId}:`, error);
-            response.status(500).send("Internal server error while processing webhook.");
+        } catch (error: any) {
+            console.error(`[Mercado Pago Webhook] Erro ao processar o pagamento ${paymentId}:`, error);
+            response.status(500).send("Erro interno do servidor ao processar o webhook.");
             return;
         }
+    } else {
+        console.log("Tipo de evento não processado ou ID de dados em falta:", body.type);
     }
     
     response.status(200).send("OK");
