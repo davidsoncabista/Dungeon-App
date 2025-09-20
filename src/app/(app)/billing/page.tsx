@@ -164,20 +164,27 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    const handleGeneratePayment = async (transaction: Transaction) => {
+    cconst handleGeneratePayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
         try {
-            const createPaymentSession = httpsCallable(functions, 'createPaymentSession');
-            const result: any = await createPaymentSession({ transactionId: transaction.id });
+            // CORREÇÃO: Chamando a função correta do Mercado Pago
+            const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
+            const result: any = await createMercadoPagoPayment({ transactionId: transaction.id });
             
             if (result.data && result.data.url) {
+                // Redireciona o usuário para a página de checkout do Mercado Pago
                 window.location.href = result.data.url;
             } else {
-                 throw new Error("Resposta inesperada do servidor de pagamentos.");
+                 throw new Error("Resposta inesperada do servidor do Mercado Pago.");
             }
+            
         } catch (error: any) {
-            console.error("Erro ao iniciar pagamento:", error);
-            toast({ title: "Erro ao Iniciar Pagamento", description: error.message || "Não foi possível iniciar o processo de pagamento.", variant: "destructive" });
+            console.error("Erro ao iniciar pagamento com Mercado Pago:", error);
+            toast({
+                title: "Erro ao Iniciar Pagamento",
+                description: error.message || "Não foi possível iniciar o processo de pagamento.",
+                variant: "destructive",
+            });
         } finally {
             setIsGeneratingPayment(null);
         }
