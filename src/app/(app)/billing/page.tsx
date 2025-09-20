@@ -19,6 +19,8 @@ import { format, setDate, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
+// --- CORREÇÃO: Importando o SDK do Mercado Pago ---
+import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -136,12 +138,16 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
     const [user] = useAuthState(auth);
 
     const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
+    const [preferenceId, setPreferenceId] = useState<string | null>(null);
     
     const transactionsRef = collection(firestore, 'transactions');
     const transactionsQuery = user ? query(transactionsRef, where("userId", "==", user.uid), orderBy("createdAt", "desc")) : null;
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
-     useEffect(() => {
+    useEffect(() => {
+        // --- CHAVE PÚBLICA INSERIDA AQUI ---
+        initMercadoPago('APP_USR-6ffd57cb-6699-4285-b1f0-32bbab87d072', { locale: 'pt-BR' });
+
         if (searchParams.get('payment_success') === 'true') {
             toast({
                 title: "Pagamento Confirmado!",
@@ -172,15 +178,15 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
 
     const handleGeneratePayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
+        setPreferenceId(null); 
         try {
-            // CORREÇÃO: Chamando a função correta do Mercado Pago
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
             const result: any = await createMercadoPagoPayment({ transactionId: transaction.id });
             
-            if (result.data && result.data.url) {
-                window.location.href = result.data.url;
+            if (result.data && result.data.preferenceId) {
+                setPreferenceId(result.data.preferenceId);
             } else {
-                 throw new Error("Resposta inesperada do servidor do Mercado Pago.");
+                 throw new Error("Resposta inesperada do servidor ao criar a preferência de pagamento.");
             }
             
         } catch (error: any) {
@@ -273,6 +279,11 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                                     {renderTransactionRows()}
                                 </TableBody>
                             </Table>
+                            {preferenceId && (
+                                <div className="mt-6">
+                                    <Wallet initialization={{ preferenceId }} />
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
