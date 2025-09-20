@@ -6,18 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock, MessageSquareText } from "lucide-react"
-import { useState } from "react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock, MessageSquareText, FileDigit } from "lucide-react"
+import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { PlanForm } from "@/components/app/admin/plan-form"
-import { useCollectionData } from "react-firebase-hooks/firestore"
+import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore"
 import { app, auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { AdminRole, User as AppUser } from "@/lib/types/user";
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -62,6 +61,9 @@ export default function AdminPage() {
   const currentUserQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
   const [appUser, loadingUser] = useCollectionData<AppUser>(currentUserQuery);
   const currentUser = appUser?.[0];
+
+  const settingsRef = doc(firestore, 'systemSettings', 'config');
+  const [settings, loadingSettings, errorSettings] = useDocumentData(settingsRef);
   
   const canEdit = currentUser?.role === 'Administrador';
 
@@ -70,6 +72,13 @@ export default function AdminPage() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [registrationFee, setRegistrationFee] = useState(0);
+
+  useEffect(() => {
+    if (settings) {
+      setRegistrationFee(settings.registrationFee || 0);
+    }
+  }, [settings]);
 
   const handleCreatePlan = async (data: { name: string }) => {
     if (!canEdit) return;
@@ -144,6 +153,19 @@ export default function AdminPage() {
             description: `Não foi possível atualizar o campo.`,
             variant: "destructive",
         });
+    }
+  };
+
+  const handleRegistrationFeeChange = async (value: string) => {
+    if (!canEdit) return;
+    const newFee = Number(value);
+    setRegistrationFee(newFee); // Optimistic update
+    try {
+        await setDoc(settingsRef, { registrationFee: newFee }, { merge: true });
+        toast({ title: "Taxa de Inscrição Salva", description: "O novo valor foi salvo com sucesso." });
+    } catch (error) {
+        console.error("Erro ao salvar taxa de inscrição:", error);
+        toast({ title: "Erro ao Salvar", description: "Não foi possível salvar o novo valor.", variant: "destructive" });
     }
   };
   
@@ -290,115 +312,139 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold tracking-tight font-headline">Administração do Sistema</h1>
         <p className="text-muted-foreground">Gerencie os planos de associação e as regras de negócio da plataforma.</p>
       </div>
-
-      <Card>
-        <CardHeader>
-            <div className="flex items-center justify-between">
-                <div>
-                    <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
-                    <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
-                </div>
-                 <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                    <DialogTrigger asChild>
-                        <Button disabled={isSaving || !canEdit}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Novo Plano
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Criar Novo Plano</DialogTitle>
-                            <DialogDescription>
-                                Defina o nome do novo plano. Os outros valores podem ser editados na tabela.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <PlanForm 
-                            onSave={handleCreatePlan} 
-                            onCancel={() => setIsCreateModalOpen(false)} 
-                        />
-                    </DialogContent>
-                </Dialog>
-            </div>
-        </CardHeader>
-        <CardContent>
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <div className={!canEdit ? 'cursor-not-allowed' : ''}>
-                           <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Plano</TableHead>
-                                        <TableHead className="text-center">Preço (R$)</TableHead>
-                                        <TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead>
-                                        <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
-                                        <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
-                                        <TableHead className="text-center">Cota Convites</TableHead>
-                                        <TableHead className="text-center hidden lg:table-cell">Convite Extra (R$)</TableHead>
-                                        <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
-                                        <TableHead className="text-right">Ações</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                {renderContent()}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </TooltipTrigger>
-                     {!canEdit && (
-                        <TooltipContent>
-                            <p>Você não tem permissão para editar os planos.</p>
-                        </TooltipContent>
-                     )}
-                </Tooltip>
-            </TooltipProvider>
-        </CardContent>
-      </Card>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Visualização das Regras de Acesso
-                </CardTitle>
-                <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-            {Object.entries(accessRules).map(([role, rule]) => (
-                <div key={role} className="p-4 rounded-lg border bg-muted/50">
-                <h4 className="font-bold flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-muted-foreground" />
-                    {role}
-                </h4>
-                <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
-                <div className="flex flex-wrap gap-2">
-                    {rule.pages.map(page => (
-                        <span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>
-                    ))}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
+                        <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
+                    </div>
+                     <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                        <DialogTrigger asChild>
+                            <Button disabled={isSaving || !canEdit}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Novo Plano
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Criar Novo Plano</DialogTitle>
+                                <DialogDescription>
+                                    Defina o nome do novo plano. Os outros valores podem ser editados na tabela.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <PlanForm 
+                                onSave={handleCreatePlan} 
+                                onCancel={() => setIsCreateModalOpen(false)} 
+                            />
+                        </DialogContent>
+                    </Dialog>
                 </div>
-                </div>
-            ))}
-            </CardContent>
-        </Card>
-         <Card className="bg-muted/30 border-dashed">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-muted-foreground">
-                    <MessageSquareText className="h-5 w-5" />
-                    Mensagens Diretas (Em Breve)
-                </CardTitle>
-                <CardDescription>
-                    Envie notificações e mensagens diretamente para usuários específicos.
-                </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center justify-center h-full text-center text-sm text-muted-foreground">
-                    <p>Esta área permitirá a comunicação direta com os membros da associação para avisos importantes, confirmações ou feedbacks.</p>
-                </div>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className={!canEdit ? 'cursor-not-allowed' : ''}>
+                               <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Plano</TableHead>
+                                            <TableHead className="text-center">Preço (R$)</TableHead>
+                                            <TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead>
+                                            <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
+                                            <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
+                                            <TableHead className="text-center">Cota Convites</TableHead>
+                                            <TableHead className="text-center hidden lg:table-cell">Convite Extra (R$)</TableHead>
+                                            <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
+                                            <TableHead className="text-right">Ações</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                    {renderContent()}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </TooltipTrigger>
+                         {!canEdit && (
+                            <TooltipContent>
+                                <p>Você não tem permissão para editar os planos.</p>
+                            </TooltipContent>
+                         )}
+                    </Tooltip>
+                </TooltipProvider>
             </CardContent>
         </Card>
+        <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><FileDigit className="h-5 w-5" /> Configurações Gerais</CardTitle>
+                    <CardDescription>Defina regras globais do sistema.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loadingSettings ? <Skeleton className="h-10 w-full"/> : (
+                        <div className="space-y-2">
+                            <label htmlFor="registration-fee" className="text-sm font-medium">Valor da Joia (Taxa de Inscrição)</label>
+                            <Input
+                                id="registration-fee"
+                                type="number"
+                                defaultValue={registrationFee}
+                                onBlur={(e) => handleRegistrationFeeChange(e.target.value)}
+                                className="text-center"
+                                disabled={!canEdit}
+                                placeholder="0.00"
+                            />
+                            <p className="text-xs text-muted-foreground">Valor único cobrado na primeira associação.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+            <Card className="bg-muted/30 border-dashed">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                        <MessageSquareText className="h-5 w-5" />
+                        Mensagens Diretas (Em Breve)
+                    </CardTitle>
+                    <CardDescription>
+                        Envie notificações e mensagens diretamente para usuários específicos.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-center h-full text-center text-sm text-muted-foreground">
+                        <p>Esta área permitirá a comunicação direta com os membros da associação para avisos importantes, confirmações ou feedbacks.</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
       </div>
-
+      
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Visualização das Regras de Acesso
+            </CardTitle>
+            <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+        {Object.entries(accessRules).map(([role, rule]) => (
+            <div key={role} className="p-4 rounded-lg border bg-muted/50">
+            <h4 className="font-bold flex items-center gap-2">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                {role}
+            </h4>
+            <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
+            <div className="flex flex-wrap gap-2">
+                {rule.pages.map(page => (
+                    <span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>
+                ))}
+            </div>
+            </div>
+        ))}
+        </CardContent>
+    </Card>
 
       {/* Edit Modal */}
       <Dialog open={!!editingPlan} onOpenChange={(isOpen) => !isOpen && setEditingPlan(null)}>

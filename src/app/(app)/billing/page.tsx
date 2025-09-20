@@ -1,17 +1,18 @@
+
 "use client"
 
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, Award, Loader2 } from "lucide-react";
+import { Check, Dices, ShieldAlert, FileText, Award, Loader2, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
-import { getFirestore, doc, updateDoc, collection, query, orderBy, where } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, collection, query, orderBy, where, setDoc } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
-import { useCollectionData } from "react-firebase-hooks/firestore";
+import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore";
 import type { Plan } from "@/lib/types/plan";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from "@/components/ui/table";
@@ -19,8 +20,7 @@ import { format, setDate, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
-// --- CORREÇÃO: Importando o SDK do Mercado Pago ---
-import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -32,6 +32,10 @@ const SubscribeView = () => {
     const plansRef = collection(firestore, 'plans');
     const plansQuery = query(plansRef, orderBy("price"));
     const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
+
+    const settingsRef = doc(firestore, 'systemSettings', 'config');
+    const [settings, loadingSettings] = useDocumentData(settingsRef);
+    const registrationFee = settings?.registrationFee || 0;
 
     const handleSelectPlan = async (planName: UserCategory) => {
         if (!user) {
@@ -72,7 +76,7 @@ const SubscribeView = () => {
         else features.push("Reservas mensais ilimitadas");
         if (plan.weeklyQuota > 0) features.push(`Limite de ${plan.weeklyQuota} por semana`);
         if (plan.corujaoQuota > 0) features.push(`Inclui ${plan.corujaoQuota} cota(s) para o Corujão`);
-        if (plan.invites > 0) features.push(`Direito a ${plan.invites} convidado(s) por mês`);
+        if (plan.invites > 0) features.push(`Direito a ${plan.invites} convidado(s) por sessão`);
         return features;
     }
 
@@ -122,46 +126,47 @@ const SubscribeView = () => {
             <Dices className="h-16 w-16 text-primary mb-4" />
             <h1 className="text-4xl font-bold tracking-tight font-headline">Seja bem-vindo, novo aventureiro!</h1>
             <p className="text-muted-foreground mt-2 max-w-2xl">Para começar a reservar salas e participar de eventos, você precisa se tornar um membro associado. Escolha um dos nossos planos abaixo.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl w-full">{renderContent()}</div>
+            
+            {loadingSettings ? <Skeleton className="h-10 w-80 mt-6" /> : (
+                 registrationFee > 0 && (
+                    <Alert className="mt-8 max-w-2xl bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+                        <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <AlertDescription className="text-amber-800 dark:text-amber-300">
+                            Além da mensalidade, há uma taxa de inscrição única (joia) no valor de <strong>R$ {registrationFee.toFixed(2).replace('.', ',')}</strong>, que será cobrada no primeiro pagamento.
+                        </AlertDescription>
+                    </Alert>
+                )
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 max-w-5xl w-full">{renderContent()}</div>
             <p className="text-xs text-muted-foreground mt-8">O pagamento é processado de forma segura. Em caso de dúvidas, contate a administração.</p>
         </div>
     );
 };
 
+
 // --- COMPONENTE PARA USUÁRIOS JÁ MATRICULADOS ---
-const BillingView = ({ currentUser }: { currentUser: User }) => {
+const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: any }) => {
     const { toast } = useToast();
     const firestore = getFirestore(app);
     const functions = getFunctions(app, 'southamerica-east1');
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [user] = useAuthState(auth);
-
+    
     const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
-    const [preferenceId, setPreferenceId] = useState<string | null>(null);
+    const [isRedirecting, setIsRedirecting] = useState(false);
     
     const transactionsRef = collection(firestore, 'transactions');
-    const transactionsQuery = user ? query(transactionsRef, where("userId", "==", user.uid), orderBy("createdAt", "desc")) : null;
+    const transactionsQuery = authUser ? query(transactionsRef, where("userId", "==", authUser.uid), orderBy("createdAt", "desc")) : null;
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
     useEffect(() => {
-        // --- CHAVE PÚBLICA INSERIDA AQUI ---
-        initMercadoPago('APP_USR-6ffd57cb-6699-4285-b1f0-32bbab87d072', { locale: 'pt-BR' });
-
         if (searchParams.get('payment_success') === 'true') {
-            toast({
-                title: "Pagamento Confirmado!",
-                description: "Recebemos a confirmação do seu pagamento. Obrigado!",
-                variant: 'default',
-            });
+            toast({ title: "Pagamento Confirmado!", description: "Recebemos a confirmação do seu pagamento. Obrigado!" });
             router.replace('/billing');
         }
         if (searchParams.get('payment_canceled') === 'true') {
-             toast({
-                title: "Pagamento Cancelado",
-                description: "O processo de pagamento foi cancelado.",
-                variant: 'destructive',
-            });
+             toast({ title: "Pagamento Cancelado", description: "O processo de pagamento foi cancelado.", variant: 'destructive' });
             router.replace('/billing');
         }
     }, [searchParams, toast, router]);
@@ -176,26 +181,34 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
-    const handleGeneratePayment = async (transaction: Transaction) => {
+    const handleMercadoPagoPayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
-        setPreferenceId(null); 
+        setIsRedirecting(true);
+
         try {
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
-            const result: any = await createMercadoPagoPayment({ transactionId: transaction.id });
-            
-            if (result.data && result.data.preferenceId) {
-                setPreferenceId(result.data.preferenceId);
-            } else {
-                 throw new Error("Resposta inesperada do servidor ao criar a preferência de pagamento.");
-            }
-            
-        } catch (error: any) {
-            console.error("Erro ao iniciar pagamento com Mercado Pago:", error);
-            toast({
-                title: "Erro ao Iniciar Pagamento",
-                description: error.message || "Não foi possível iniciar o processo de pagamento.",
-                variant: "destructive",
+            const result = await createMercadoPagoPayment({ 
+                transactionId: transaction.id,
+                payer: {
+                    email: authUser.email,
+                    name: currentUser.name
+                }
             });
+            
+            const data = result.data as { url: string };
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error("URL de pagamento não recebida.");
+            }
+        } catch (error: any) {
+            console.error("Erro ao criar pagamento com Mercado Pago:", error);
+            toast({
+                title: "Erro ao Gerar Cobrança",
+                description: error.message || 'Ocorreu um erro desconhecido.',
+                variant: 'destructive'
+            });
+            setIsRedirecting(false); // Desativa em caso de erro
         } finally {
             setIsGeneratingPayment(null);
         }
@@ -239,10 +252,12 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                     {t.status === "Pendente" ? (
                         <Button 
                             size="sm" 
-                            onClick={() => handleGeneratePayment(t)}
-                            disabled={isGeneratingPayment === t.id}
+                            onClick={() => handleMercadoPagoPayment(t)}
+                            disabled={isGeneratingPayment === t.id || isRedirecting}
                         >
-                            {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com Mercado Pago"}
+                            {isGeneratingPayment === t.id ? (
+                                isRedirecting ? 'Redirecionando...' : <Loader2 className="h-4 w-4 animate-spin"/>
+                            ) : "Pagar com Mercado Pago"}
                         </Button>
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
@@ -279,11 +294,6 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                                     {renderTransactionRows()}
                                 </TableBody>
                             </Table>
-                            {preferenceId && (
-                                <div className="mt-6">
-                                    <Wallet initialization={{ preferenceId }} />
-                                </div>
-                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -315,9 +325,10 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
 
 // --- PÁGINA PRINCIPAL ---
 export default function BillingPage() {
-    const [user, loadingAuth] = useAuthState(auth);
+    const [user, loadingAuth] = useAuthState(auth); 
     const firestore = getFirestore(app);
     const usersRef = collection(firestore, 'users');
+    
     const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
     const [appUser, loadingUser] = useCollectionData<User>(userQuery);
     const currentUser = appUser?.[0];
@@ -339,8 +350,8 @@ export default function BillingPage() {
         )
     }
     
-    if (currentUser && currentUser.category !== 'Visitante') {
-        return <BillingView currentUser={currentUser} />;
+    if (currentUser && user && currentUser.category !== 'Visitante') {
+        return <BillingView currentUser={currentUser} authUser={user} />;
     } else {
         return <SubscribeView />;
     }
