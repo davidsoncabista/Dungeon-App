@@ -8,7 +8,8 @@ import { MercadoPagoConfig, Preference } from "mercadopago";
 admin.initializeApp();
 const db = admin.firestore();
 
-// --- As suas outras funções (createUserDocument, setAdminClaim, handleBookingWrite, etc.) ---
+// --- As suas outras funções (createUserDocument, setAdminClaim, etc.) ---
+// ... O seu código para as outras funções permanece aqui ...
 export const createUserDocument = functions
   .region("southamerica-east1")
   .auth.user()
@@ -202,13 +203,14 @@ export const handleBookingWrite = functions
     
     return null;
   });
-  
+
 /**
  * Função Chamável (onCall) para criar uma preferência de pagamento no Mercado Pago.
  */
 export const createMercadoPagoPayment = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
+    
     const mercadopagoConfig = functions.config().mercadopago;
     if (!mercadopagoConfig || !mercadopagoConfig.access_token) {
         console.error("Token de acesso do Mercado Pago não encontrado na configuração.");
@@ -274,7 +276,8 @@ export const createMercadoPagoPayment = functions
             }
         });
 
-        return { url: preferenceResponse.init_point };
+        // Retorna o ID da preferência para o SDK do frontend
+        return { preferenceId: preferenceResponse.id };
 
     } catch (error: any) {
         console.error("Erro ao criar preferência de pagamento no Mercado Pago:", error);
@@ -396,3 +399,4 @@ export const mercadoPagoWebhook = functions
     
     response.status(200).send("OK");
   });
+
