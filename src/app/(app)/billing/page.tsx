@@ -195,7 +195,6 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 description: error.message || "Não foi possível iniciar o processo de pagamento.",
                 variant: "destructive",
             });
-        } finally {
             setIsGeneratingPayment(null);
         }
     };
@@ -224,7 +223,6 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                 description: error.message || "Não foi possível iniciar o processo de pagamento.",
                 variant: "destructive",
             });
-        } finally {
             setIsGeneratingPayment(null);
         }
     }
@@ -270,19 +268,19 @@ const BillingView = ({ currentUser }: { currentUser: User }) => {
                                 <Button
                                     size="sm" 
                                     onClick={() => handleMercadoPagoPayment(t)}
-                                    disabled={isGeneratingPayment === t.id}
+                                    disabled={isGeneratingPayment !== null}
                                     variant="outline"
                                 >
-                                    {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com Mercado Pago"}
+                                    {(isGeneratingPayment === t.id) ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Mercado Pago"}
                                 </Button>
                             )}
                              {process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY && (
                                 <Button
                                     size="sm" 
                                     onClick={() => handleStripePayment(t)}
-                                    disabled={isGeneratingPayment === t.id}
+                                    disabled={isGeneratingPayment !== null}
                                 >
-                                    {(isGeneratingPayment === t.id) ? <Loader2 className="h-4 w-4 animate-spin"/> : "Pagar com Stripe"}
+                                    {(isGeneratingPayment === t.id) ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Redirecionando...</> : "Pagar com Stripe"}
                                 </Button>
                             )}
                         </div>
@@ -382,5 +380,3 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
-
-    
