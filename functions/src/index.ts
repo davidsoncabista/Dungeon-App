@@ -1,7 +1,6 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths } from "date-fns";
-import * as crypto from "crypto";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
 // Inicializa o Firebase Admin SDK
@@ -248,7 +247,6 @@ export const createMercadoPagoPayment = functions
              throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
         }
         
-        // CORREÇÃO DEFINITIVA: Usando o endereço correto do seu App Hosting
         const successUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_success=true`;
         const failureUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_canceled=true`;
         
@@ -273,7 +271,6 @@ export const createMercadoPagoPayment = functions
                 },
                 auto_return: "approved",
                 external_reference: transactionId,
-                // CORREÇÃO DEFINITIVA: Usando a URL correta do seu webhook
                 notification_url: `https://southamerica-east1-adbelm.cloudfunctions.net/mercadoPagoWebhook`,
             }
         });
