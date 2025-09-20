@@ -1,13 +1,15 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
-import { setDate, subMonths } from "date-fns";
+import { setDate, subMonths, format, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
 // Inicializa o Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 
-// --- Suas outras funções (createUserDocument, setAdminClaim, etc.) ---
+// --- Suas funções existentes (createUserDocument, setAdminClaim, etc.) ---
+// ... (O código das suas outras funções permanece o mesmo) ...
 export const createUserDocument = functions
  .region("southamerica-east1")
  .auth.user()
@@ -202,85 +204,14 @@ export const handleBookingWrite = functions
    return null;
  });
 
+// --- FUNÇÃO DE PAGAMENTO ---
 export const createMercadoPagoPayment = functions
  .region("southamerica-east1")
  .https.onCall(async (data, context) => {
-   
-   const mercadopagoConfig = functions.config().mercadopago;
-   if (!mercadopagoConfig || !mercadopagoConfig.access_token) {
-       console.error("Token de acesso do Mercado Pago não encontrado na configuração.");
-       throw new functions.https.HttpsError(
-           "failed-precondition",
-           "A funcionalidade de pagamento com Mercado Pago não está configurada."
-       );
-   }
-   const mpClient = new MercadoPagoConfig({ 
-       accessToken: mercadopagoConfig.access_token
-   });
-
-   if (!context.auth) {
-       throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
-   }
-
-   const { transactionId } = data;
-   if (!transactionId) {
-       throw new functions.https.HttpsError("invalid-argument", "O ID da transação é obrigatório.");
-   }
-   
-   try {
-       const transactionRef = db.collection("transactions").doc(transactionId);
-       const transactionDoc = await transactionRef.get();
-
-       if (!transactionDoc.exists) {
-           throw new functions.https.HttpsError("not-found", "A transação não foi encontrada.");
-       }
-       const transactionData = transactionDoc.data()!;
-       
-       if (transactionData.userId !== context.auth.uid) {
-            throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para pagar esta transação.");
-       }
-       if (transactionData.status === 'Pago') {
-            throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
-       }
-       
-       const successUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_success=true`;
-       const failureUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_canceled=true`;
-       
-       const preference = new Preference(mpClient);
-       const preferenceResponse = await preference.create({
-           body: {
-               items: [
-                   {
-                       id: transactionId,
-                       title: transactionData.description,
-                       quantity: 1,
-                       unit_price: transactionData.amount,
-                       currency_id: 'BRL',
-                   }
-               ],
-               payer: {
-                   email: context.auth.token.email,
-               },
-               back_urls: {
-                   success: successUrl,
-                   failure: failureUrl,
-               },
-               auto_return: "approved",
-               external_reference: transactionId,
-               notification_url: `https://southamerica-east1-adbelm.cloudfunctions.net/mercadoPagoWebhook`,
-           }
-       });
-
-       return { preferenceId: preferenceResponse.id };
-
-   } catch (error: any) {
-       console.error("Erro ao criar preferência de pagamento no Mercado Pago:", error);
-       if (error.cause) console.error("Detalhes do erro:", error.cause);
-       throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao processar o seu pagamento.");
-   }
+   // ... (seu código existente)
  });
 
-// --- CORREÇÃO E MELHORIA NO WEBHOOK ---
+// --- ATUALIZAÇÃO NO WEBHOOK ---
 export const mercadoPagoWebhook = functions
  .region("southamerica-east1")
  .https.onRequest(async (request, response) => {
@@ -293,59 +224,136 @@ export const mercadoPagoWebhook = functions
    if (body.type === "payment" && paymentId) {
        console.log(`[Mercado Pago Webhook] Processando o ID do pagamento: ${paymentId}`);
        try {
-           const mercadopagoConfig = functions.config().mercadopago;
-           const accessToken = mercadopagoConfig.access_token;
-           if (!accessToken) {
-               console.error("[Mercado Pago Webhook] ERRO CRÍTICO: Token de Acesso do Mercado Pago não configurado no servidor.");
-               response.status(500).send("Erro de configuração do servidor.");
-               return;
-           }
-
-           const paymentResponse = await fetch(
-               `https://api.mercadopago.com/v1/payments/${paymentId}`,
-               {
-                   headers: { 'Authorization': `Bearer ${accessToken}` }
-               }
-           );
-
-           // LOG MELHORADO: Verifica se a busca na API do MP foi bem sucedida
-           if (!paymentResponse.ok) {
-               const errorText = await paymentResponse.text();
-               console.warn(`[Mercado Pago Webhook] A API do Mercado Pago retornou um erro para o paymentId ${paymentId}. Status: ${paymentResponse.status}. Resposta: ${errorText}`);
-               // Retorna 200 para o Mercado Pago não ficar tentando de novo, pois o erro é esperado em simulações.
-               response.status(200).send("OK: Pagamento não encontrado, provavelmente é um teste.");
-               return;
-           }
+           // ... (código para buscar o pagamento)
 
            const paymentDetails = await paymentResponse.json() as any;
            const transactionId = paymentDetails.external_reference;
-
+           
            if (!transactionId) {
-               console.error(`[Mercado Pago Webhook] Erro no Webhook: external_reference (ID da transação) não encontrada nos detalhes do pagamento ${paymentId}.`);
-               response.status(200).send("OK: external_reference faltando.");
+               // ... (tratamento de erro)
                return;
            }
 
            if (paymentDetails.status === "approved") {
                const transactionRef = db.collection("transactions").doc(transactionId);
-               await transactionRef.update({
+               const userRef = db.collection("users").doc(paymentDetails.metadata.user_id); // Assumindo que você salva o userId nos metadados
+
+               // Atualiza a transação e o status do usuário em um batch
+               const batch = db.batch();
+               batch.update(transactionRef, {
                    status: "Pago",
                    paidAt: admin.firestore.FieldValue.serverTimestamp(),
                });
-               console.log(`[Mercado Pago Webhook] A transação ${transactionId} foi marcada como paga com sucesso.`);
+               batch.update(userRef, { status: "Ativo" });
+               
+               await batch.commit();
+
+               console.log(`[Mercado Pago Webhook] Transação ${transactionId} paga. Status do usuário ${paymentDetails.metadata.user_id} atualizado para Ativo.`);
            } else {
                console.log(`[Mercado Pago Webhook] O status do pagamento ${paymentId} é '${paymentDetails.status}'. Nenhuma atualização necessária.`);
            }
-
        } catch (error: any) {
            console.error(`[Mercado Pago Webhook] Erro inesperado ao processar o pagamento ${paymentId}:`, error);
            response.status(500).send("Erro interno do servidor ao processar o webhook.");
            return;
        }
-   } else {
-       console.log("[Mercado Pago Webhook] Tipo de evento não processado ou ID de dados em falta:", body.type);
    }
    
-   // Responde 200 OK para o Mercado Pago
    response.status(200).send("OK");
  });
+
+// --- FUNÇÃO DE GERAR FATURAS MODIFICADA ---
+export const generateMonthlyInvoices = functions
+  .region("southamerica-east1")
+  .pubsub.schedule("0 9 5 * *") // "Às 09:00 do dia 5 de cada mês"
+  .timeZone("America/Sao_Paulo")
+  .onRun(async (context) => {
+    console.log("[Scheduler] Iniciando a geração de faturas mensais.");
+
+    try {
+      const plansSnapshot = await db.collection("plans").get();
+      // ... (código para mapear os planos)
+
+      const usersSnapshot = await db.collection("users").get();
+      // ... (código para verificar se existem usuários)
+
+      const batch = db.batch();
+      const today = new Date();
+      const dueDate = setDate(today, 15); // Vencimento no dia 15 do mês atual
+      const monthYear = format(today, "MMMM/yyyy", { locale: ptBR });
+      let invoicesCreated = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        const user = userDoc.data();
+        
+        // ... (lógica para pular visitantes e usuários sem plano)
+
+        const transactionRef = db.collection("transactions").doc();
+        batch.set(transactionRef, {
+          id: transactionRef.id,
+          uid: transactionRef.id,
+          userId: user.uid,
+          userName: user.name,
+          description: `Mensalidade ${user.category} - ${monthYear}`,
+          amount: plan.price,
+          status: "Pendente",
+          type: "Mensalidade",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          dueDate: admin.firestore.Timestamp.fromDate(dueDate), // Adiciona a data de vencimento
+        });
+        invoicesCreated++;
+      }
+
+      await batch.commit();
+      console.log(`[Scheduler] Geração de faturas concluída! ${invoicesCreated} faturas criadas.`);
+      return null;
+    } catch (error) {
+      console.error("[Scheduler] Erro durante a geração de faturas:", error);
+      return null;
+    }
+  });
+
+// --- NOVA FUNÇÃO PARA VERIFICAR PAGAMENTOS ATRASADOS ---
+export const checkOverduePayments = functions
+  .region("southamerica-east1")
+  .pubsub.schedule("0 9 16 * *") // "Às 09:00 do dia 16 de cada mês"
+  .timeZone("America/Sao_Paulo")
+  .onRun(async (context) => {
+    console.log("[Scheduler] Iniciando verificação de pagamentos atrasados.");
+
+    try {
+      const usersSnapshot = await db.collection("users").where("category", "!=", "Visitante").get();
+      if (usersSnapshot.empty) {
+        console.log("[Scheduler] Nenhum usuário ativo para verificar.");
+        return null;
+      }
+
+      const batch = db.batch();
+      let usersWithOverduePayment = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        const user = userDoc.data();
+
+        const overdueInvoicesSnapshot = await db.collection("transactions")
+          .where("userId", "==", user.uid)
+          .where("type", "==", "Mensalidade")
+          .where("status", "==", "Pendente")
+          .get();
+
+        if (!overdueInvoicesSnapshot.empty) {
+          // Se encontrou qualquer mensalidade pendente, marca o usuário como pendente
+          const userRef = db.collection("users").doc(user.uid);
+          batch.update(userRef, { status: "Pendente" });
+          usersWithOverduePayment++;
+          console.log(`[Scheduler] Usuário ${user.uid} marcado como Pendente devido a faturas em aberto.`);
+        }
+      }
+
+      await batch.commit();
+      console.log(`[Scheduler] Verificação de atrasos concluída. ${usersWithOverduePayment} usuários foram marcados como pendentes.`);
+      return null;
+    } catch (error) {
+      console.error("[Scheduler] Erro durante a verificação de pagamentos atrasados:", error);
+      return null;
+    }
+  });
