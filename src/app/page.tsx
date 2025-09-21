@@ -15,7 +15,7 @@ export default function RootPage() {
       if (user) {
         router.replace('/online-schedule');
       } else {
-        router.replace('/login');
+        router.replace('/landing');
       }
     }
   }, [user, loading, router]);
