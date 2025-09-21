@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock, MessageSquareText, FileDigit } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { PlanForm } from "@/components/app/admin/plan-form"
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
@@ -156,12 +156,10 @@ export default function AdminPage() {
     }
   };
 
-  const handleRegistrationFeeChange = async (value: string) => {
+  const handleSaveRegistrationFee = async () => {
     if (!canEdit) return;
-    const newFee = Number(value);
-    setRegistrationFee(newFee); // Optimistic update
     try {
-        await setDoc(settingsRef, { registrationFee: newFee }, { merge: true });
+        await setDoc(settingsRef, { registrationFee: registrationFee }, { merge: true });
         toast({ title: "Taxa de Inscrição Salva", description: "O novo valor foi salvo com sucesso." });
     } catch (error) {
         console.error("Erro ao salvar taxa de inscrição:", error);
@@ -390,8 +388,9 @@ export default function AdminPage() {
                             <Input
                                 id="registration-fee"
                                 type="number"
-                                defaultValue={registrationFee}
-                                onBlur={(e) => handleRegistrationFeeChange(e.target.value)}
+                                value={registrationFee}
+                                onChange={(e) => setRegistrationFee(Number(e.target.value))}
+                                onBlur={handleSaveRegistrationFee}
                                 className="text-center"
                                 disabled={!canEdit}
                                 placeholder="0.00"
@@ -484,3 +483,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
+    
