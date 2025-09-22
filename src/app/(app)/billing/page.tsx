@@ -21,7 +21,7 @@ import { ptBR } from "date-fns/locale";
 import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Wallet } from "@mercadopago/sdk-react";
+import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -163,6 +163,15 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
 
     useEffect(() => {
+        const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+        if (publicKey) {
+            initMercadoPago(publicKey);
+        } else {
+            console.error("Chave pública do Mercado Pago não encontrada. Os pagamentos não funcionarão.");
+        }
+    }, []);
+
+    useEffect(() => {
         if (searchParams.get('payment_success') === 'true') {
             toast({ title: "Pagamento Confirmado!", description: "Recebemos a confirmação do seu pagamento. Obrigado!" });
             router.replace('/billing');
@@ -251,7 +260,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                             <Button size="sm" disabled>
                                 <Loader2 className="h-4 w-4 animate-spin"/>
                             </Button>
-                        ) : preferenceId ? (
+                        ) : preferenceId && isGeneratingPayment !== t.id ? (
                            <div id={`wallet-${t.id}`}>
                                 <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                            </div>
@@ -360,5 +369,3 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
-
-    
