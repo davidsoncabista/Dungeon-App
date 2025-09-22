@@ -1,7 +1,7 @@
 
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
-import { setDate, subMonths, format, addMonths } from "date-fns";
+import { setDate, subMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
@@ -238,32 +238,16 @@ export const onUserPlanChange = functions
       const settingsDoc = await db.collection('systemSettings').doc('config').get();
       const registrationFee = settingsDoc.data()?.registrationFee || 0;
 
-
       const today = new Date();
-      const dayOfMonth = today.getDate();
       
       // A primeira fatura sempre vence 10 dias após a criação para dar tempo de pagar.
       const dueDate = new Date(today);
       dueDate.setDate(today.getDate() + 10);
 
-      let description = "";
-      let nextBillingMonthSkipped = false;
-      let totalAmount = registrationFee;
-
-      // Se o usuário se inscreve após o dia 15
-      if (dayOfMonth > 15) {
-        const nextMonth = format(addMonths(today, 1), "MMMM/yyyy", { locale: ptBR });
-        description = `Joia + Mensalidade (${format(today, "MMMM", { locale: ptBR })} e ${nextMonth})`;
-        totalAmount += planPrice * 2; // Soma duas mensalidades
-        nextBillingMonthSkipped = true; // Marca para pular a próxima cobrança automática
-      } else {
-      // Se o usuário se inscreve até o dia 15
-        description = `Joia + Mensalidade (${format(today, "MMMM/yyyy", { locale: ptBR })})`;
-        totalAmount += planPrice; // Soma a mensalidade aqui também
-      }
+      const description = `Taxa de Inscrição + 1ª Mensalidade (${format(today, "MMMM/yyyy", { locale: ptBR })})`;
+      const totalAmount = registrationFee + planPrice;
 
       const transactionRef = db.collection("transactions").doc();
-
       const batch = db.batch();
       
       // Cria a transação inicial
@@ -280,8 +264,8 @@ export const onUserPlanChange = functions
         dueDate: admin.firestore.Timestamp.fromDate(dueDate),
       });
 
-      // Atualiza o usuário para marcar que a próxima fatura deve ser pulada, se for o caso
-      if (nextBillingMonthSkipped) {
+      const dayOfMonth = today.getDate();
+      if (dayOfMonth > 15) {
         const userRef = db.collection("users").doc(context.params.userId);
         batch.update(userRef, { skipNextBilling: true });
       }
@@ -454,8 +438,8 @@ export const createMercadoPagoPayment = functions
             throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
        }
        
-       const successUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_success=true`;
-       const failureUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_canceled=true`;
+       const successUrl = `https://adbelm.web.app/billing?payment_success=true`;
+       const failureUrl = `https://adbelm.web.app/billing?payment_canceled=true`;
        
        const preference = new Preference(mpClient);
        const preferenceResponse = await preference.create({

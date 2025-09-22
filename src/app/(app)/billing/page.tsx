@@ -21,7 +21,7 @@ import { ptBR } from "date-fns/locale";
 import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Init, initWith, useMercadoPago } from "@mercadopago/sdk-react";
+import { Wallet } from "@mercadopago/sdk-react";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -155,9 +155,9 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     const searchParams = useSearchParams();
     const router = useRouter();
     
+    const [preferenceId, setPreferenceId] = useState<string | null>(null);
     const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
-    const [isRedirecting, setIsRedirecting] = useState(false);
-    
+
     const transactionsRef = collection(firestore, 'transactions');
     const transactionsQuery = authUser ? query(transactionsRef, where("userId", "==", authUser.uid), orderBy("createdAt", "desc")) : null;
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(transactionsQuery, { idField: 'id' });
@@ -169,6 +169,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         }
         if (searchParams.get('payment_canceled') === 'true') {
              toast({ title: "Pagamento Cancelado", description: "O processo de pagamento foi cancelado.", variant: 'destructive' });
+             setPreferenceId(null);
             router.replace('/billing');
         }
     }, [searchParams, toast, router]);
@@ -185,8 +186,6 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
 
     const handleMercadoPagoPayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
-        setIsRedirecting(true);
-
         try {
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
             const result = await createMercadoPagoPayment({ 
@@ -196,13 +195,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
             const data = result.data as { preferenceId: string };
 
             if (data.preferenceId) {
-                // Aqui você pode usar o SDK do Mercado Pago para renderizar o botão de pagamento
-                // ou redirecionar o usuário para o init_point (se a função retornar).
-                // Por simplicidade, vamos redirecionar:
-                const mp = useMercadoPago();
-                if (mp) {
-                   mp.checkout({ preference: { id: data.preferenceId } });
-                }
+                setPreferenceId(data.preferenceId);
             } else {
                 throw new Error("ID de preferência não recebido.");
             }
@@ -213,9 +206,8 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 description: error.message || 'Ocorreu um erro desconhecido.',
                 variant: 'destructive'
             });
-            setIsRedirecting(false); // Desativa em caso de erro
         } finally {
-            // Não zerar o estado aqui se o redirecionamento ocorrer
+            setIsGeneratingPayment(null);
         }
     };
     
@@ -255,15 +247,22 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 <TableCell>R$ {t.amount.toFixed(2).replace('.', ',')}</TableCell>
                 <TableCell className="text-right">
                     {t.status === "Pendente" ? (
-                        <Button 
-                            size="sm" 
-                            onClick={() => handleMercadoPagoPayment(t)}
-                            disabled={isGeneratingPayment === t.id || isRedirecting}
-                        >
-                            {isGeneratingPayment === t.id ? (
-                                isRedirecting ? 'Redirecionando...' : <Loader2 className="h-4 w-4 animate-spin"/>
-                            ) : "Pagar com Mercado Pago"}
-                        </Button>
+                        (isGeneratingPayment === t.id) ? (
+                            <Button size="sm" disabled>
+                                <Loader2 className="h-4 w-4 animate-spin"/>
+                            </Button>
+                        ) : preferenceId ? (
+                           <div id={`wallet-${t.id}`}>
+                                <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                           </div>
+                        ) : (
+                             <Button 
+                                size="sm" 
+                                onClick={() => handleMercadoPagoPayment(t)}
+                            >
+                                Pagar com Mercado Pago
+                            </Button>
+                        )
                     ) : (
                         <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
                     )}
@@ -361,3 +360,5 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
+
+    
