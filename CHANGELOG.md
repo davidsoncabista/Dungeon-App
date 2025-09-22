@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.1 - 2025-09-20 12:00:00 - davidson.dev.br
+
+- **fix(admin): Corrigir visualização do valor da joia na página de sistema**
+  - Corrige um problema que impedia o campo de edição do valor da joia de exibir corretamente o dado salvo no banco de dados.
+
 ## v1.0.0-alpha - 2025-09-20 10:00:00 - davidson.dev.br
 
 - **docs: Atualizada documentação para a versão alfa 1.0.0**
