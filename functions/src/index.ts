@@ -205,82 +205,6 @@ export const handleBookingWrite = functions
     return null;
   });
 
-// --- NOVA FUNÇÃO: Gatilho para gerar a primeira fatura ---
-/**
- * Acionado quando um usuário muda de plano, especialmente de 'Visitante' para um plano pago.
- * Gera a primeira fatura (joia + mensalidade) com base na data de inscrição.
- */
-export const onUserPlanChange = functions
-  .region("southamerica-east1")
-  .firestore.document("users/{userId}")
-  .onUpdate(async (change, context) => {
-    const before = change.before.data();
-    const after = change.after.data();
-
-    // A função só executa se o plano mudou DE 'Visitante' PARA outro plano
-    if (before.category !== "Visitante" || after.category === "Visitante") {
-      console.log(`[PlanChange] Mudança de plano para o usuário ${context.params.userId} não requer fatura inicial.`);
-      return null;
-    }
-
-    console.log(`[PlanChange] Usuário ${context.params.userId} assinou o plano ${after.category}. Gerando fatura inicial.`);
-
-    try {
-      // Busca os dados do plano selecionado
-      const planSnapshot = await db.collection("plans").where("name", "==", after.category).limit(1).get();
-      if (planSnapshot.empty) {
-        console.error(`[PlanChange] Plano "${after.category}" não encontrado.`);
-        return null;
-      }
-      const plan = planSnapshot.docs[0].data();
-      const planPrice = plan.price || 0;
-      
-      const settingsDoc = await db.collection('systemSettings').doc('config').get();
-      const registrationFee = settingsDoc.data()?.registrationFee || 0;
-
-      const today = new Date();
-      
-      // A primeira fatura sempre vence 10 dias após a criação para dar tempo de pagar.
-      const dueDate = new Date(today);
-      dueDate.setDate(today.getDate() + 10);
-
-      const description = `Taxa de Inscrição + 1ª Mensalidade (${format(today, "MMMM/yyyy", { locale: ptBR })})`;
-      const totalAmount = registrationFee + planPrice;
-
-      const transactionRef = db.collection("transactions").doc();
-      const batch = db.batch();
-      
-      // Cria a transação inicial
-      batch.set(transactionRef, {
-        id: transactionRef.id,
-        uid: transactionRef.id,
-        userId: context.params.userId,
-        userName: after.name,
-        description: description,
-        amount: totalAmount,
-        status: "Pendente",
-        type: "Inicial",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        dueDate: admin.firestore.Timestamp.fromDate(dueDate),
-      });
-
-      const dayOfMonth = today.getDate();
-      if (dayOfMonth > 15) {
-        const userRef = db.collection("users").doc(context.params.userId);
-        batch.update(userRef, { skipNextBilling: true });
-      }
-
-      await batch.commit();
-      console.log(`[PlanChange] Fatura inicial de R$${totalAmount} gerada para ${after.name}.`);
-      return null;
-
-    } catch (error) {
-      console.error(`[PlanChange] Erro ao gerar fatura inicial para o usuário ${context.params.userId}:`, error);
-      return null;
-    }
-  });
-
-
 // --- FUNÇÃO DE GERAR FATURAS MENSAIS MODIFICADA ---
 export const generateMonthlyInvoices = functions
   .region("southamerica-east1")
@@ -417,25 +341,50 @@ export const createMercadoPagoPayment = functions
        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
    }
 
-   const { transactionId } = data;
-   if (!transactionId) {
-       throw new functions.https.HttpsError("invalid-argument", "O ID da transação é obrigatório.");
+   const { transactionId, planId } = data;
+   if (!transactionId && !planId) {
+       throw new functions.https.HttpsError("invalid-argument", "O ID da transação ou do plano é obrigatório.");
    }
    
    try {
-       const transactionRef = db.collection("transactions").doc(transactionId);
-       const transactionDoc = await transactionRef.get();
+       let description: string;
+       let amount: number;
+       const tempTransactionId = `temp_${context.auth.uid}_${Date.now()}`;
+       const finalTransactionId = transactionId || tempTransactionId;
+       const metadata: any = {
+           user_id: context.auth.uid,
+           transaction_id: finalTransactionId,
+       };
 
-       if (!transactionDoc.exists) {
-           throw new functions.https.HttpsError("not-found", "A transação não foi encontrada.");
-       }
-       const transactionData = transactionDoc.data()!;
-       
-       if (transactionData.userId !== context.auth.uid) {
-            throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para pagar esta transação.");
-       }
-       if (transactionData.status === 'Pago') {
-            throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
+       if (planId) {
+            const planDoc = await db.collection('plans').doc(planId).get();
+            if (!planDoc.exists) throw new functions.https.HttpsError("not-found", "Plano não encontrado.");
+            const planData = planDoc.data()!;
+
+            const settingsDoc = await db.collection('systemSettings').doc('config').get();
+            const registrationFee = settingsDoc.data()?.registrationFee || 0;
+
+            description = `Taxa de Inscrição + 1ª Mensalidade (${planData.name})`;
+            amount = registrationFee + planData.price;
+            metadata.plan_id = planId;
+            metadata.is_subscription = true;
+       } else {
+            const transactionRef = db.collection("transactions").doc(transactionId);
+            const transactionDoc = await transactionRef.get();
+
+            if (!transactionDoc.exists) {
+                throw new functions.https.HttpsError("not-found", "A transação não foi encontrada.");
+            }
+            const transactionData = transactionDoc.data()!;
+            
+            if (transactionData.userId !== context.auth.uid) {
+                throw new functions.https.HttpsError("permission-denied", "Você não tem permissão para pagar esta transação.");
+            }
+            if (transactionData.status === 'Pago') {
+                throw new functions.https.HttpsError("failed-precondition", "Esta cobrança já foi paga.");
+            }
+            description = transactionData.description;
+            amount = transactionData.amount;
        }
        
        const successUrl = `https://adbelm.web.app/billing?payment_success=true`;
@@ -446,10 +395,10 @@ export const createMercadoPagoPayment = functions
            body: {
                items: [
                    {
-                       id: transactionId,
-                       title: transactionData.description,
+                       id: finalTransactionId,
+                       title: description,
                        quantity: 1,
-                       unit_price: transactionData.amount,
+                       unit_price: amount,
                        currency_id: 'BRL',
                    }
                ],
@@ -461,13 +410,9 @@ export const createMercadoPagoPayment = functions
                    failure: failureUrl,
                },
                auto_return: "approved",
-               external_reference: transactionId,
+               external_reference: finalTransactionId,
                notification_url: `https://southamerica-east1-adbelm.cloudfunctions.net/mercadoPagoWebhook`,
-               // Adicionando metadados para reativar o usuário
-               metadata: {
-                 user_id: context.auth.uid,
-                 transaction_id: transactionId,
-               },
+               metadata: metadata,
            }
        });
 
@@ -516,34 +461,75 @@ export const mercadoPagoWebhook = functions
 
            const paymentDetails = await paymentResponse.json() as any;
            const transactionId = paymentDetails.external_reference;
-           const userId = paymentDetails.metadata?.user_id;
+           const metadata = paymentDetails.metadata;
+           const userId = metadata?.user_id;
 
-           if (!transactionId) {
-               console.error(`[Mercado Pago Webhook] Erro no Webhook: external_reference (ID da transação) não encontrada nos detalhes do pagamento ${paymentId}.`);
-               response.status(200).send("OK: external_reference faltando.");
+           if (!transactionId || !userId) {
+               console.error(`[Mercado Pago Webhook] Erro: external_reference ou user_id não encontrados nos detalhes do pagamento ${paymentId}.`);
+               response.status(200).send("OK: Dados essenciais faltando.");
                return;
            }
 
            if (paymentDetails.status === "approved") {
-               const transactionRef = db.collection("transactions").doc(transactionId);
-               
                const batch = db.batch();
-               
-               batch.update(transactionRef, {
-                   status: "Pago",
-                   paidAt: admin.firestore.FieldValue.serverTimestamp(),
-               });
+               const userRef = db.collection("users").doc(userId);
 
-               // Se o ID do usuário veio nos metadados, reativa o status dele
-               if (userId) {
-                 const userRef = db.collection("users").doc(userId);
-                 batch.update(userRef, { status: "Ativo" });
-                 console.log(`[Mercado Pago Webhook] Status do usuário ${userId} atualizado para Ativo.`);
+               // Se for uma nova assinatura (matrícula)
+               if (metadata.is_subscription && metadata.plan_id) {
+                    const planDoc = await db.collection('plans').doc(metadata.plan_id).get();
+                    if (!planDoc.exists) {
+                         console.error(`[Mercado Pago Webhook] Plano com ID ${metadata.plan_id} não encontrado para o usuário ${userId}.`);
+                         response.status(200).send("OK: Plano não encontrado.");
+                         return;
+                    }
+                    const planData = planDoc.data()!;
+                    const userDoc = await userRef.get();
+                    const userData = userDoc.data()!;
+
+                    // Cria a transação permanente no banco
+                    const newTransactionRef = db.collection("transactions").doc(transactionId.replace('temp_', 'txn_'));
+                    batch.set(newTransactionRef, {
+                        id: newTransactionRef.id,
+                        uid: newTransactionRef.id,
+                        userId: userId,
+                        userName: userData.name,
+                        description: `Taxa de Inscrição + 1ª Mensalidade (${planData.name})`,
+                        amount: paymentDetails.transaction_amount,
+                        status: "Pago",
+                        type: "Inicial",
+                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                        paymentGatewayId: paymentId,
+                    });
+                    
+                    // Atualiza o usuário para o novo plano e status Ativo
+                    const userUpdateData: any = {
+                        category: planData.name,
+                        status: "Ativo",
+                    };
+
+                    const today = new Date();
+                    if (today.getDate() > 15) {
+                        userUpdateData.skipNextBilling = true;
+                    }
+
+                    batch.update(userRef, userUpdateData);
+                    console.log(`[Mercado Pago Webhook] Usuário ${userId} atualizado para o plano ${planData.name} e status Ativo.`);
+
+               } else { // Se for um pagamento de uma fatura existente
+                   const transactionRef = db.collection("transactions").doc(transactionId);
+                   batch.update(transactionRef, {
+                       status: "Pago",
+                       paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                       paymentGatewayId: paymentId,
+                   });
+                   // Garante que o usuário seja reativado ao pagar qualquer fatura
+                   batch.update(userRef, { status: "Ativo" });
+                   console.log(`[Mercado Pago Webhook] Transação ${transactionId} marcada como paga e usuário ${userId} reativado.`);
                }
                
                await batch.commit();
-
-               console.log(`[Mercado Pago Webhook] Transação ${transactionId} marcada como paga com sucesso.`);
+               console.log(`[Mercado Pago Webhook] Processamento para o pagamento ${paymentId} concluído com sucesso.`);
            } else {
                console.log(`[Mercado Pago Webhook] O status do pagamento ${paymentId} é '${paymentDetails.status}'. Nenhuma atualização necessária.`);
            }

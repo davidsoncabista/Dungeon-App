@@ -22,14 +22,19 @@ import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
     const { toast } = useToast();
     const [user] = useAuthState(auth);
-    const router = useRouter();
     const firestore = getFirestore(app);
+    const functions = getFunctions(app, 'southamerica-east1');
 
+    const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+    const [preferenceId, setPreferenceId] = useState<string | null>(null);
+    const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+    
     const plansRef = collection(firestore, 'plans');
     const plansQuery = query(plansRef, orderBy("price"));
     const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
@@ -38,39 +43,44 @@ const SubscribeView = () => {
     const [settings, loadingSettings] = useDocumentData(settingsRef);
     const registrationFee = settings?.registrationFee || 0;
 
-    const handleSelectPlan = async (planName: UserCategory) => {
-        if (!user) {
-            toast({
-                title: "Erro de Autenticação",
-                description: "Você precisa estar logado para selecionar um plano.",
-                variant: "destructive"
-            });
-            return;
+    useEffect(() => {
+        const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+        if (publicKey) {
+            initMercadoPago(publicKey, { locale: 'pt-BR' });
+        } else {
+            console.error("Chave pública do Mercado Pago não encontrada.");
         }
+    }, []);
 
+    const handleMercadoPagoSubscription = async () => {
+        if (!selectedPlan) return;
+        setIsGeneratingPayment(true);
+        setPreferenceId(null);
         try {
-            const userDocRef = doc(firestore, "users", user.uid);
-            // Apenas atualiza a categoria. A Cloud Function onUserPlanChange cuidará do resto.
-            await updateDoc(userDocRef, {
-                category: planName,
+            const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
+            const result = await createMercadoPagoPayment({ 
+                planId: selectedPlan.id 
             });
+            
+            const data = result.data as { preferenceId: string };
 
+            if (data.preferenceId) {
+                setPreferenceId(data.preferenceId);
+            } else {
+                throw new Error("ID de preferência não recebido.");
+            }
+        } catch (error: any) {
+            console.error("Erro ao criar pagamento de matrícula:", error);
             toast({
-                title: "Plano Selecionado!",
-                description: `Sua fatura inicial para o plano ${planName} está sendo gerada. Por favor, aguarde...`
+                title: "Erro ao Gerar Cobrança",
+                description: error.message || 'Ocorreu um erro desconhecido.',
+                variant: 'destructive'
             });
-            
-            // Não redireciona mais. A página irá re-renderizar para a BillingView quando a categoria do usuário mudar.
-            
-        } catch (error) {
-            console.error("Erro ao atualizar o plano do usuário:", error);
-            toast({
-                title: "Erro ao Salvar",
-                description: "Não foi possível selecionar o plano. Por favor, tente novamente.",
-                variant: "destructive"
-            });
+        } finally {
+            setIsGeneratingPayment(false);
         }
     };
+
 
     const getPlanFeatures = (plan: Plan) => {
         const features = [];
@@ -117,13 +127,14 @@ const SubscribeView = () => {
                             <li key={feature} className="flex items-start gap-2"><Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" /><span className="text-sm">{feature}</span></li>
                         ))}
                     </ul>
-                    <Button className="w-full" onClick={() => handleSelectPlan(plan.name as UserCategory)}>Selecionar Plano</Button>
+                    <Button className="w-full" onClick={() => setSelectedPlan(plan)}>Selecionar Plano</Button>
                 </CardContent>
             </Card>
         ));
     }
 
     return (
+        <>
         <div className="flex flex-col items-center justify-center min-h-full text-center p-4">
             <Dices className="h-16 w-16 text-primary mb-4" />
             <h1 className="text-4xl font-bold tracking-tight font-headline">Seja bem-vindo, novo aventureiro!</h1>
@@ -143,6 +154,47 @@ const SubscribeView = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 max-w-5xl w-full">{renderContent()}</div>
             <p className="text-xs text-muted-foreground mt-8">O pagamento é processado de forma segura. Em caso de dúvidas, contate a administração.</p>
         </div>
+
+        <Dialog open={!!selectedPlan} onOpenChange={(isOpen) => { if (!isOpen) { setSelectedPlan(null); setPreferenceId(null); } }}>
+             <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Confirmar Matrícula - Plano {selectedPlan?.name}</DialogTitle>
+                    <DialogDescription>
+                        Você está prestes a se matricular. Revise os valores e confirme o pagamento para ativar sua conta.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Plano {selectedPlan?.name}</span>
+                        <span>R$ {selectedPlan?.price.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    {registrationFee > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">Taxa de Inscrição (Joia)</span>
+                            <span>R$ {registrationFee.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                    )}
+                     <div className="flex justify-between items-center font-bold text-base border-t pt-2 mt-2">
+                        <span>Total</span>
+                        <span>R$ {((selectedPlan?.price || 0) + registrationFee).toFixed(2).replace('.', ',')}</span>
+                    </div>
+                </div>
+                 <DialogFooter className="flex flex-col gap-2">
+                    {preferenceId ? (
+                        <div id="wallet-container">
+                            <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                        </div>
+                    ) : (
+                        <Button onClick={handleMercadoPagoSubscription} disabled={isGeneratingPayment}>
+                            {isGeneratingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Pagar com Mercado Pago
+                        </Button>
+                    )}
+                     <Button variant="ghost" onClick={() => { setSelectedPlan(null); setPreferenceId(null); }}>Cancelar</Button>
+                </DialogFooter>
+             </DialogContent>
+        </Dialog>
+        </>
     );
 };
 
@@ -195,6 +247,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
 
     const handleMercadoPagoPayment = async (transaction: Transaction) => {
         setIsGeneratingPayment(transaction.id);
+        setPreferenceId(null);
         try {
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
             const result = await createMercadoPagoPayment({ 
@@ -256,9 +309,9 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 <TableCell>R$ {t.amount.toFixed(2).replace('.', ',')}</TableCell>
                 <TableCell className="text-right">
                     {t.status === "Pendente" ? (
-                        (isGeneratingPayment === t.id) ? (
+                         isGeneratingPayment === t.id ? (
                             <Button size="sm" disabled>
-                                <Loader2 className="h-4 w-4 animate-spin"/>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2"/> Gerando...
                             </Button>
                         ) : preferenceId && isGeneratingPayment !== t.id ? (
                            <div id={`wallet-${t.id}`}>
