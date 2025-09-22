@@ -21,6 +21,7 @@ import { ptBR } from "date-fns/locale";
 import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Init, initWith, useMercadoPago } from "@mercadopago/sdk-react";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -49,17 +50,18 @@ const SubscribeView = () => {
 
         try {
             const userDocRef = doc(firestore, "users", user.uid);
+            // Apenas atualiza a categoria. A Cloud Function onUserPlanChange cuidará do resto.
             await updateDoc(userDocRef, {
                 category: planName,
-                status: "Ativo"
             });
 
             toast({
                 title: "Plano Selecionado!",
-                description: `Bem-vindo à categoria ${planName}! Você foi redirecionado para a agenda.`
+                description: `Sua fatura inicial para o plano ${planName} está sendo gerada. Por favor, aguarde...`
             });
             
-            router.push("/online-schedule");
+            // Não redireciona mais. A página irá re-renderizar para a BillingView quando a categoria do usuário mudar.
+            
         } catch (error) {
             console.error("Erro ao atualizar o plano do usuário:", error);
             toast({
@@ -188,18 +190,21 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         try {
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
             const result = await createMercadoPagoPayment({ 
-                transactionId: transaction.id,
-                payer: {
-                    email: authUser.email,
-                    name: currentUser.name
-                }
+                transactionId: transaction.id
             });
             
-            const data = result.data as { url: string };
-            if (data.url) {
-                window.location.href = data.url;
+            const data = result.data as { preferenceId: string };
+
+            if (data.preferenceId) {
+                // Aqui você pode usar o SDK do Mercado Pago para renderizar o botão de pagamento
+                // ou redirecionar o usuário para o init_point (se a função retornar).
+                // Por simplicidade, vamos redirecionar:
+                const mp = useMercadoPago();
+                if (mp) {
+                   mp.checkout({ preference: { id: data.preferenceId } });
+                }
             } else {
-                throw new Error("URL de pagamento não recebida.");
+                throw new Error("ID de preferência não recebido.");
             }
         } catch (error: any) {
             console.error("Erro ao criar pagamento com Mercado Pago:", error);
@@ -210,7 +215,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
             });
             setIsRedirecting(false); // Desativa em caso de erro
         } finally {
-            setIsGeneratingPayment(null);
+            // Não zerar o estado aqui se o redirecionamento ocorrer
         }
     };
     
@@ -240,7 +245,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         }
 
         if (!transactions || transactions.length === 0) {
-            return <TableRow><TableCell colSpan={4} className="text-center h-24">Nenhuma cobrança encontrada em seu histórico.</TableCell></TableRow>;
+            return <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhuma cobrança encontrada em seu histórico.</TableCell></TableRow>;
         }
 
         return transactions.map((t: Transaction) => (

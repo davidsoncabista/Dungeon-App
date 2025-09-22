@@ -1,3 +1,4 @@
+
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { setDate, subMonths, format, addMonths } from "date-fns";
@@ -253,7 +254,7 @@ export const onUserPlanChange = functions
       if (dayOfMonth > 15) {
         const nextMonth = format(addMonths(today, 1), "MMMM/yyyy", { locale: ptBR });
         description = `Joia + Mensalidade (${format(today, "MMMM", { locale: ptBR })} e ${nextMonth})`;
-        totalAmount += planPrice; // Soma a mensalidade
+        totalAmount += planPrice * 2; // Soma duas mensalidades
         nextBillingMonthSkipped = true; // Marca para pular a próxima cobrança automática
       } else {
       // Se o usuário se inscreve até o dia 15
@@ -574,5 +575,3 @@ export const mercadoPagoWebhook = functions
    
    response.status(200).send("OK");
  });
-
-    

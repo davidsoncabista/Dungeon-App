@@ -10,4 +10,3 @@ export interface Plan {
     votingWeight: number;
     extraInvitePrice: number;
 }
-
