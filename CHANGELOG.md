@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.0-beta.1 - 2025-09-20 14:00:00 - davidson.dev.br
+
+- **feat(release): Lançamento da primeira versão Beta (v1.0.0-beta.1)**
+  - Esta versão marca a transição do projeto para a fase beta, consolidando funcionalidades críticas para testes em um ambiente mais amplo antes do lançamento oficial.
+  - **Destaques da Versão:**
+    - **Sistema de Pagamentos Completo**: Integração com o gateway de pagamento (Mercado Pago) para matrículas e cobranças avulsas, com confirmação automática via webhook.
+    - **Comunicação Direta**: Implementado o sistema de mensagens privadas que permite à administração enviar comunicados (avisos, advertências, etc.) diretamente aos usuários, com notificações em tempo real.
+    - **Fluxo de Usuário Aprimorado**: Refinamento do onboarding, da verificação de maioridade, do preenchimento de endereço via CEP e do controle de acesso baseado no status de pagamento.
+    - **Ferramentas de Administração Robustas**: Centralização das ferramentas de gestão de sistema, finanças e comunicação para uma melhor usabilidade.
+
 ## v1.0.1 - 2025-09-20 12:00:00 - davidson.dev.br
 
 - **fix(admin): Corrigir visualização do valor da joia na página de sistema**
