@@ -387,8 +387,8 @@ export const createMercadoPagoPayment = functions
             amount = transactionData.amount;
        }
        
-       const successUrl = `https://adbelm.web.app/billing?payment_success=true`;
-       const failureUrl = `https://adbelm.web.app/billing?payment_canceled=true`;
+       const successUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_success=true`;
+       const failureUrl = `https://studio--adbelm.us-central1.hosted.app/billing?payment_canceled=true`;
        
        const preference = new Preference(mpClient);
        const preferenceResponse = await preference.create({
