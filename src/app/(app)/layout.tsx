@@ -27,6 +27,9 @@ const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile"
 // Rotas permitidas para usuários que ainda não se matricularam (Visitantes).
 const visitorRoutes = ["/billing", "/profile", "/my-bookings"];
 
+// Rotas permitidas para qualquer usuário logado, independente do status
+const publicLoggedInRoutes = ["/profile", "/billing"];
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
   const router = useRouter();
@@ -100,17 +103,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }
 
         // REGRA 3: MATRÍCULA PENDENTE (Categoria 'Visitante')
-        // Se o cadastro está completo mas ele ainda é 'Visitante',
-        // ele só pode acessar as rotas de visitante.
-        if (currentUser.category === 'Visitante' && !visitorRoutes.includes(pathname)) {
-            // Permite o acesso se o modal de boas-vindas estiver aberto para evitar redirecionamento durante o tutorial
-            if (!isWelcomeModalOpen) {
+        // Se o cadastro está completo mas ele ainda é 'Visitante', ele é direcionado para a página de matrícula.
+        if (currentUser.category === 'Visitante' && !publicLoggedInRoutes.includes(pathname)) {
+             if (!isWelcomeModalOpen) {
                 router.push('/billing');
             }
             return;
         }
         
-        // REGRA 4: CONTROLE DE ACESSO DE MEMBRO COMUM
+        // REGRA 4: USUÁRIO NÃO-ATIVO (Pendente ou Bloqueado)
+        // Se o usuário não está ativo e não está tentando acessar uma página pública de logado, redireciona para cobranças.
+        if (currentUser.status !== 'Ativo' && currentUser.status !== 'Pendente' && !publicLoggedInRoutes.includes(pathname)) {
+            router.push('/billing');
+            return;
+        }
+
+        // REGRA 5: CONTROLE DE ACESSO DE MEMBRO COMUM
         // Bloqueia o acesso a qualquer rota de administração.
         if (currentUser.role === 'Membro' && allAdminRoutes.some(p => pathname.startsWith(p))) {
             router.push('/online-schedule');
