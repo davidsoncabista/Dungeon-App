@@ -1,7 +1,7 @@
 
 "use client"
 
-import { MoreHorizontal, ShieldCheck, UserCog, Ban, Trash2 } from "lucide-react"
+import { MoreHorizontal, ShieldCheck, UserCog, Ban, Trash2, ArrowUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,9 +24,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { UserForm } from "@/components/app/user-form"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
-import type { AdminRole, User } from "@/lib/types/user"
+import type { AdminRole, User, UserCategory } from "@/lib/types/user"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
@@ -42,6 +42,8 @@ const roleBadgeClass: Record<AdminRole, string> = {
     Revisor: "bg-role-revisor text-role-revisor-foreground",
     Membro: "hidden", // Não mostra badge para 'Membro'
 }
+
+type SortKey = 'name' | 'category';
 
 // --- Componentes de Modal ---
 
@@ -322,8 +324,37 @@ function UserTableRow({ user }: { user: User; }) {
 export default function UsersPage() {
   const firestore = getFirestore(app);
   const usersRef = collection(firestore, 'users');
-  const usersQuery = query(usersRef, orderBy("name"));
-  const [users, loading, error] = useCollectionData<User>(usersQuery, { idField: 'id' });
+  const [users, loading, error] = useCollectionData<User>(usersRef, { idField: 'id' });
+
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+        setSortKey(key);
+        setSortOrder('asc');
+    }
+  }
+
+  const sortedUsers = useMemo(() => {
+    if (!users) return [];
+    
+    const categoryOrder: Record<UserCategory, number> = { "Master": 1, "Gamer": 2, "Player": 3, "Visitante": 4 };
+
+    return [...users].sort((a, b) => {
+        let comparison = 0;
+        if (sortKey === 'name') {
+            comparison = a.name.localeCompare(b.name);
+        } else { // sort by category
+            comparison = (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99);
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  }, [users, sortKey, sortOrder]);
+
 
   const renderContent = () => {
     if (loading) {
@@ -350,11 +381,11 @@ export default function UsersPage() {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar usuários: {error.message}. Verifique as regras de segurança do Firestore.</TableCell></TableRow>;
     }
 
-    if (!users || users.length === 0) {
+    if (!sortedUsers || sortedUsers.length === 0) {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>;
     }
     
-    return users.map(user => (
+    return sortedUsers.map(user => (
         <UserTableRow
             key={user.uid}
             user={user}
@@ -381,8 +412,16 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Membro</TableHead>
-                <TableHead className="hidden md:table-cell">Categoria</TableHead>
+                <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort('name')} className="px-0">
+                       Membro <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                    <Button variant="ghost" onClick={() => handleSort('category')} className="px-0">
+                       Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
                 <TableHead className="hidden sm:table-cell text-center">Status</TableHead>
                 <TableHead className="text-right">
@@ -399,5 +438,3 @@ export default function UsersPage() {
     </div>
   )
 }
-
-    

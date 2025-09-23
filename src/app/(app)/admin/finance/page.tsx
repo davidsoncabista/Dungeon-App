@@ -1,20 +1,20 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy, where, doc, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { app } from "@/lib/firebase";
-import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
+import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types/transaction";
 import type { User } from "@/lib/types/user";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, CheckCircle2, ShieldAlert, DollarSign, Eye } from "lucide-react";
+import { MoreHorizontal, PlusCircle, CheckCircle2, ShieldAlert, DollarSign, Eye, ArrowUpDown, Filter, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { AddTransactionDialog } from "@/components/app/admin/finance/add-transaction-dialog";
 import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
+
+type SortKey = 'createdAt' | 'amount';
+type StatusFilter = TransactionStatus | 'all';
+type TypeFilter = TransactionType | 'all';
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const { toast } = useToast();
@@ -65,11 +69,11 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
         <TableRow>
             <TableCell>
                 <div className="font-medium">{transaction.userName}</div>
-                <div className="text-sm text-muted-foreground">{transaction.userId}</div>
+                <div className="text-sm text-muted-foreground md:hidden">{transaction.description}</div>
             </TableCell>
-            <TableCell>{transaction.description}</TableCell>
+            <TableCell className="hidden md:table-cell">{transaction.description}</TableCell>
             <TableCell>R$ {transaction.amount.toFixed(2).replace('.', ',')}</TableCell>
-            <TableCell>{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
+            <TableCell className="hidden sm:table-cell">{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
             <TableCell>
                 <Badge className={getStatusBadge(transaction.status)}>{transaction.status}</Badge>
             </TableCell>
@@ -105,6 +109,13 @@ export default function FinanceAdminPage() {
     const { toast } = useToast();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+    // --- State for Sorting and Filtering ---
+    const [sortKey, setSortKey] = useState<SortKey>('createdAt');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+    const [searchTerm, setSearchTerm] = useState('');
+
     // --- Data Fetching ---
     const transactionsRef = collection(firestore, 'transactions');
     const [transactions, loadingTransactions, errorTransactions] = useCollectionData<Transaction>(
@@ -113,6 +124,51 @@ export default function FinanceAdminPage() {
     );
     const usersRef = collection(firestore, 'users');
     const [users, loadingUsers] = useCollectionData<User>(usersRef, { idField: 'id' });
+
+    // --- Memoized Sorting and Filtering ---
+    const filteredAndSortedTransactions = useMemo(() => {
+        if (!transactions) return [];
+
+        let filtered = [...transactions];
+
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(t => t.status === statusFilter);
+        }
+
+        if (typeFilter !== 'all') {
+            filtered = filtered.filter(t => t.type === typeFilter);
+        }
+
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filtered = filtered.filter(t => 
+                t.userName.toLowerCase().includes(lowercasedTerm) || 
+                t.description.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+
+        return filtered.sort((a, b) => {
+            let comparison = 0;
+            if (sortKey === 'createdAt') {
+                comparison = (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+            } else { // amount
+                comparison = a.amount - b.amount;
+            }
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+
+    }, [transactions, statusFilter, typeFilter, searchTerm, sortKey, sortOrder]);
+
+
+    const handleSort = (key: SortKey) => {
+        if (key === sortKey) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
+            setSortOrder('desc'); // Default to descending for new sort key
+        }
+    }
+
 
     const handleCreateTransaction = async (data: any) => {
         try {
@@ -145,9 +201,9 @@ export default function FinanceAdminPage() {
             return Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                     <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-full" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                 </TableRow>
@@ -170,15 +226,15 @@ export default function FinanceAdminPage() {
             );
         }
         
-        if (!transactions || transactions.length === 0) {
+        if (!filteredAndSortedTransactions || filteredAndSortedTransactions.length === 0) {
             return (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
+                    <TableCell colSpan={6} className="h-24 text-center">Nenhuma transação encontrada com os filtros atuais.</TableCell>
                 </TableRow>
             );
         }
 
-        return transactions.map(t => <TransactionRow key={t.id} transaction={t} />);
+        return filteredAndSortedTransactions.map(t => <TransactionRow key={t.id} transaction={t} />);
     };
 
     return (
@@ -206,14 +262,58 @@ export default function FinanceAdminPage() {
                     <CardDescription>Todas as mensalidades, multas e taxas avulsas.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     {/* TODO: Add filters here */}
+                     <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 p-4 border rounded-lg bg-muted/50">
+                        <div className="flex-1 w-full">
+                            <Input 
+                                placeholder="Buscar por nome ou descrição..." 
+                                value={searchTerm} 
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                             <Select value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
+                                <SelectTrigger className="w-full sm:w-[150px]">
+                                    <SelectValue placeholder="Filtrar por status..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os Status</SelectItem>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Pago">Pago</SelectItem>
+                                    <SelectItem value="Vencido">Vencido</SelectItem>
+                                </SelectContent>
+                            </Select>
+                              <Select value={typeFilter} onValueChange={v => setTypeFilter(v as TypeFilter)}>
+                                <SelectTrigger className="w-full sm:w-[150px]">
+                                    <SelectValue placeholder="Filtrar por tipo..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os Tipos</SelectItem>
+                                    <SelectItem value="Mensalidade">Mensalidade</SelectItem>
+                                    <SelectItem value="Avulso">Avulso</SelectItem>
+                                    <SelectItem value="Inicial">Inicial</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button variant="ghost" size="icon" onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setSearchTerm(''); }}>
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Limpar filtros</span>
+                            </Button>
+                        </div>
+                     </div>
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Usuário</TableHead>
-                                <TableHead>Descrição</TableHead>
-                                <TableHead>Valor</TableHead>
-                                <TableHead>Data Criação</TableHead>
+                                <TableHead className="hidden md:table-cell">Descrição</TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => handleSort('amount')} className="px-0">
+                                        Valor <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="hidden sm:table-cell">
+                                     <Button variant="ghost" onClick={() => handleSort('createdAt')} className="px-0">
+                                        Data <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
