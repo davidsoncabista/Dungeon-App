@@ -13,10 +13,11 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Gerenciamento de Participação**: Flexibilidade para o organizador editar os participantes e para os convidados saírem de uma reserva futura.
 - **Extrato de Reservas com Ordenação**: Visualize e filtre seus agendamentos passados e futuros. Ordene a lista por data ou número de participantes para melhor organização.
 - **Controle de Cotas Transparente**: Um painel em "Minhas Reservas" exibe em tempo real o saldo de cotas de reserva mensal, corujão e de convidados, com a data de renovação do ciclo.
-- **Perfil de Usuário Completo**: Edite suas informações pessoais, apelido, telefone, documentos (CPF/RG), data de nascimento, redes sociais e até mesmo suas preferências de jogo (RPG, Board Games, Card Games).
+- **Perfil de Usuário Completo**: Edite suas informações pessoais, apelido, telefone, documentos, data de nascimento e até mesmo suas preferências de jogo. O formulário de endereço conta com **preenchimento automático via CEP** para agilizar o cadastro.
 - **Mural de Avisos**: Fique por dentro dos últimos comunicados da administração com um modal de login e uma página de histórico de avisos.
 - **Sistema de Cotas Justo**: As reservas são validadas de acordo com a categoria do associado (Player, Gamer, Master), garantindo o uso justo dos recursos.
-- **Pagamentos Simplificados**: Gere um QR Code PIX para pagamento rápido e fácil da mensalidade.
+- **Pagamentos Simplificados**: Gere um QR Code PIX através do gateway de pagamento seguro para quitar sua matrícula e mensalidades.
+- **Transparência na Matrícula**: Visualize claramente o valor da taxa de inscrição (joia) durante o processo e confirme o status do seu pagamento diretamente no seu perfil.
 
 ### Para Administradores
 

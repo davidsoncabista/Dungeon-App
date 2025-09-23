@@ -4,20 +4,20 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 
 ## Foco Atual (Sprint 8)
 
-### Foco: Implementação de Pagamentos e Finalização do MVP
+### Foco: Polimento do Fluxo de Pagamento e Documentação
 
-- [ ] **Integração de Pagamentos com PIX via Stripe**:
-  - [x] **Backend (Cloud Functions)**:
-    - [x] Configurar um endpoint (Cloud Function) para receber webhooks do Stripe.
-    - [x] Criar uma Cloud Function (`createPixPayment`) que gera uma cobrança PIX no Stripe e armazena o `payment_intent_id` no Firestore, associado ao usuário e à cobrança.
-    - [ ] Na função do webhook, ouvir o evento `checkout.session.completed` para atualizar o status da cobrança no Firestore para "Pago".
-  - [ ] **Frontend (Aplicação)**:
-    - [ ] Na página de "Cobranças", o botão "Pagar com PIX" chamará a função `createPixPayment`.
-    - [ ] Após a chamada, exibir um modal com o QR Code e o código "copia e cola" retornados pelo Stripe.
-    - [ ] Implementar um listener em tempo real na página de cobranças para ouvir as mudanças no documento da cobrança no Firestore. Quando o status mudar para "Pago", o modal é fechado e a UI é atualizada.
-  - [ ] **Segurança e Configuração**:
-    - [ ] Adicionar as chaves de API do Stripe (publicável e secreta) ao Google Secret Manager e configurar o acesso para as Cloud Functions.
-    - [ ] Proteger a Cloud Function `createPixPayment` para ser chamada apenas por usuários autenticados.
+- [x] **Refatoração do Fluxo de Pagamento da Matrícula**:
+  - [x] **Frontend**: Substituída a lógica de alteração de plano por um modal de confirmação de pagamento. A chamada para o gateway (Mercado Pago) agora é feita sob demanda.
+  - [x] **Backend**: Removida a Cloud Function que gerava cobranças com base na mudança de categoria do usuário. A função `createMercadoPagoPayment` foi aprimorada para lidar com a criação de pagamentos de matrícula (mensalidade + joia), adicionando metadados do plano.
+  - [x] **Webhook**: Garantido que o webhook do Mercado Pago atualize corretamente o status e a categoria do usuário após a confirmação do pagamento, assegurando a integridade do processo.
+- [x] **Melhoria na Experiência do Usuário (UX)**:
+  - [x] **Verificação de Maioridade**: Adicionada regra de validação no formulário de perfil para permitir o cadastro apenas de maiores de 18 anos.
+  - [x] **Preenchimento Automático de Endereço**: Implementada a integração com a API ViaCEP no formulário de perfil para preencher campos de endereço automaticamente.
+  - [x] **Transparência de Pagamentos**:
+    - [x] O valor da taxa de inscrição (joia) agora é exibido de forma clara no modal de confirmação da matrícula.
+    - [x] Adicionado um indicador de status ("Pago"/"Pendente") para a taxa de inscrição no card "Meu Plano" do usuário.
+- [x] **Documentação**:
+  - [x] Atualizados os arquivos `ARCHITECTURE.md` e `README.md` para refletir todas as novas funcionalidades implementadas.
 
 ---
 
