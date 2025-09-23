@@ -2,7 +2,7 @@
 import type { Timestamp } from "firebase/firestore";
 
 export type TransactionStatus = "Pago" | "Pendente" | "Vencido";
-export type TransactionType = "Mensalidade" | "Avulso";
+export type TransactionType = "Mensalidade" | "Avulso" | "Inicial";
 
 export interface Transaction {
   id: string;
@@ -16,4 +16,5 @@ export interface Transaction {
   createdAt: Timestamp;
   paidAt?: Timestamp;
   dueDate?: Timestamp;
+  paymentGatewayId?: string; // e.g., MercadoPago payment ID
 }

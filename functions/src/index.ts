@@ -509,6 +509,7 @@ export const mercadoPagoWebhook = functions
                     };
 
                     const today = new Date();
+                    // Regra de negócio: se o usuário se inscreveu depois do dia 15, a próxima fatura não é gerada
                     if (today.getDate() > 15) {
                         userUpdateData.skipNextBilling = true;
                     }

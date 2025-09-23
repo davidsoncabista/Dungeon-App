@@ -20,13 +20,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import type { User } from "@/lib/types/user"
 import type { TransactionStatus, TransactionType } from "@/lib/types/transaction"
 import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react"
 
 const transactionFormSchema = z.object({
   userId: z.string({ required_error: "É necessário selecionar um usuário." }),
   description: z.string().min(3, { message: "A descrição deve ter pelo menos 3 caracteres." }),
   amount: z.coerce.number().positive({ message: "O valor deve ser positivo." }),
   status: z.enum(["Pendente", "Pago", "Vencido"], { required_error: "O status é obrigatório." }),
-  type: z.enum(["Mensalidade", "Avulso"], { required_error: "O tipo é obrigatório." }),
+  type: z.enum(["Mensalidade", "Avulso", "Inicial"], { required_error: "O tipo é obrigatório." }),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -37,10 +38,9 @@ interface AddTransactionDialogProps {
     onSave: (data: any) => void;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    children: React.ReactNode;
 }
 
-export function AddTransactionDialog({ users, loadingUsers, onSave, isOpen, setIsOpen, children }: AddTransactionDialogProps) {
+export function AddTransactionDialog({ users, loadingUsers, onSave, isOpen, setIsOpen }: AddTransactionDialogProps) {
   
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -66,7 +66,12 @@ export function AddTransactionDialog({ users, loadingUsers, onSave, isOpen, setI
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>{children}</DialogTrigger>
+        <DialogTrigger asChild>
+            <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nova Cobrança
+            </Button>
+        </DialogTrigger>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Criar Nova Cobrança</DialogTitle>

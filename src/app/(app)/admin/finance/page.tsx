@@ -14,13 +14,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle, CheckCircle2, ShieldAlert, DollarSign } from "lucide-react";
+import { MoreHorizontal, PlusCircle, CheckCircle2, ShieldAlert, DollarSign, Eye } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { AddTransactionDialog } from "@/components/app/admin/finance/add-transaction-dialog";
+import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const { toast } = useToast();
@@ -34,9 +35,13 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                 status: 'Pago',
                 paidAt: serverTimestamp()
             });
+            // Also update user status to 'Ativo'
+            const userRef = doc(firestore, 'users', transaction.userId);
+            await updateDoc(userRef, { status: 'Ativo' });
+
             toast({
                 title: "Transação Atualizada",
-                description: "A cobrança foi marcada como paga.",
+                description: "A cobrança foi marcada como paga e o status do usuário foi reativado.",
             });
         } catch (error) {
             console.error("Erro ao marcar como pago:", error);
@@ -76,6 +81,12 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
+                        <TransactionDetailsDialog transaction={transaction}>
+                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver Detalhes
+                            </DropdownMenuItem>
+                        </TransactionDetailsDialog>
                         {transaction.status !== 'Pago' && (
                              <DropdownMenuItem onClick={handleMarkAsPaid}>
                                 <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -186,12 +197,7 @@ export default function FinanceAdminPage() {
                     onSave={handleCreateTransaction}
                     isOpen={isAddModalOpen}
                     setIsOpen={setIsAddModalOpen}
-                >
-                    <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Nova Cobrança
-                    </Button>
-                </AddTransactionDialog>
+                />
             </div>
 
             <Card>

@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, Award, Loader2, Info } from "lucide-react";
+import { Check, Dices, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
@@ -22,19 +22,20 @@ import type { Transaction, TransactionStatus } from "@/lib/types/transaction";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
     const { toast } = useToast();
-    const [user] = useAuthState(auth);
-    const firestore = getFirestore(app);
     const functions = getFunctions(app, 'southamerica-east1');
 
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [preferenceId, setPreferenceId] = useState<string | null>(null);
     const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
     
+    const firestore = getFirestore(app);
     const plansRef = collection(firestore, 'plans');
     const plansQuery = query(plansRef, orderBy("price"));
     const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
@@ -80,7 +81,6 @@ const SubscribeView = () => {
             setIsGeneratingPayment(false);
         }
     };
-
 
     const getPlanFeatures = (plan: Plan) => {
         const features = [];
@@ -207,8 +207,9 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     const searchParams = useSearchParams();
     const router = useRouter();
     
+    const [paymentTransaction, setPaymentTransaction] = useState<Transaction | null>(null);
     const [preferenceId, setPreferenceId] = useState<string | null>(null);
-    const [isGeneratingPayment, setIsGeneratingPayment] = useState<string | null>(null);
+    const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
 
     const transactionsRef = collection(firestore, 'transactions');
     const transactionsQuery = authUser ? query(transactionsRef, where("userId", "==", authUser.uid), orderBy("createdAt", "desc")) : null;
@@ -230,6 +231,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         }
         if (searchParams.get('payment_canceled') === 'true') {
              toast({ title: "Pagamento Cancelado", description: "O processo de pagamento foi cancelado.", variant: 'destructive' });
+             setPaymentTransaction(null);
              setPreferenceId(null);
             router.replace('/billing');
         }
@@ -246,7 +248,8 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     }, []);
 
     const handleMercadoPagoPayment = async (transaction: Transaction) => {
-        setIsGeneratingPayment(transaction.id);
+        setPaymentTransaction(transaction);
+        setIsGeneratingPayment(true);
         setPreferenceId(null);
         try {
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
@@ -263,13 +266,14 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
             }
         } catch (error: any) {
             console.error("Erro ao criar pagamento com Mercado Pago:", error);
+            setPaymentTransaction(null);
             toast({
                 title: "Erro ao Gerar Cobrança",
                 description: error.message || 'Ocorreu um erro desconhecido.',
                 variant: 'destructive'
             });
         } finally {
-            setIsGeneratingPayment(null);
+            setIsGeneratingPayment(false);
         }
     };
     
@@ -295,11 +299,11 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         }
 
         if (errorTransactions) {
-            return <TableRow><TableCell colSpan={4} className="text-center text-destructive">Erro ao carregar seu histórico.</TableCell></TableRow>;
+            return <TableRow><TableCell colSpan={5} className="text-center text-destructive">Erro ao carregar seu histórico.</TableCell></TableRow>;
         }
 
         if (!transactions || transactions.length === 0) {
-            return <TableRow><TableCell colSpan={4} className="h-24 text-center">Nenhuma cobrança encontrada em seu histórico.</TableCell></TableRow>;
+            return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhuma cobrança encontrada em seu histórico.</TableCell></TableRow>;
         }
 
         return transactions.map((t: Transaction) => (
@@ -307,33 +311,30 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 <TableCell>{t.createdAt ? format(t.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
                 <TableCell>{t.description}</TableCell>
                 <TableCell>R$ {t.amount.toFixed(2).replace('.', ',')}</TableCell>
+                <TableCell>
+                    <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
+                </TableCell>
                 <TableCell className="text-right">
-                    {t.status === "Pendente" ? (
-                         isGeneratingPayment === t.id ? (
-                            <Button size="sm" disabled>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2"/> Gerando...
-                            </Button>
-                        ) : preferenceId && isGeneratingPayment !== t.id ? (
-                           <div id={`wallet-${t.id}`}>
-                                <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
-                           </div>
-                        ) : (
-                             <Button 
-                                size="sm" 
-                                onClick={() => handleMercadoPagoPayment(t)}
-                            >
-                                Pagar com Mercado Pago
-                            </Button>
-                        )
-                    ) : (
-                        <Badge className={getStatusBadge(t.status)}>{t.status}</Badge>
-                    )}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <TransactionDetailsDialog transaction={t}>
+                                <DropdownMenuItem onSelect={e => e.preventDefault()}><Eye className="mr-2 h-4 w-4" />Ver Detalhes</DropdownMenuItem>
+                            </TransactionDetailsDialog>
+                             {t.status === "Pendente" && (
+                                <DropdownMenuItem onClick={() => handleMercadoPagoPayment(t)}>Pagar com Mercado Pago</DropdownMenuItem>
+                             )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </TableCell>
             </TableRow>
         ));
     };
     
     return (
+        <>
         <div className="grid gap-8">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Minha Matrícula e Cobranças</h1>
@@ -353,6 +354,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                                         <TableHead>Data</TableHead>
                                         <TableHead>Descrição</TableHead>
                                         <TableHead>Valor</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Ação</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -386,6 +388,30 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 </div>
             </div>
         </div>
+        <Dialog open={!!paymentTransaction} onOpenChange={(isOpen) => { if (!isOpen) { setPaymentTransaction(null); setPreferenceId(null); }}}>
+            <DialogContent>
+                 <DialogHeader>
+                    <DialogTitle>Finalizar Pagamento</DialogTitle>
+                    <DialogDescription>
+                       Cobrança: {paymentTransaction?.description} no valor de R$ {paymentTransaction?.amount.toFixed(2).replace('.',',')}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    {isGeneratingPayment && !preferenceId && (
+                         <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Gerando link de pagamento...</span>
+                        </div>
+                    )}
+                    {preferenceId && (
+                        <div id="wallet-dialog-container">
+                             <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+        </>
     )
 }
 
