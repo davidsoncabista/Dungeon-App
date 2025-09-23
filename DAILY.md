@@ -2,7 +2,26 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Foco Atual (Sprint 8)
+## Foco Atual (Sprint 9)
+
+### Foco: Comunicação Direta e Refatoração da Área de Admin
+
+- [x] **Implementação do Sistema de Mensagens Diretas**:
+  - [x] **Backend**: Criada a Cloud Function `sendUserMessage` para permitir que administradores enviem mensagens seguras a usuários.
+  - [x] **Frontend (Admin)**: Desenvolvida a nova página `/admin/messages` com formulário para envio de mensagens categorizadas (aviso, advertência, etc.) e um histórico de envio.
+  - [x] **Frontend (Usuário)**: Criada a página `/messages` para que os usuários visualizem sua caixa de entrada privada, com um indicador visual de mensagens não lidas no cabeçalho.
+- [x] **Refatoração da Área de Administração**:
+  - [x] Reorganizada a antiga página `/admin` em sub-rotas dedicadas: `/admin/system`, `/admin/finance` e `/admin/messages`, melhorando a organização e a navegação.
+- [x] **Proteção de Rotas Aprimorada**:
+  - [x] A lógica no `AppLayout` foi fortalecida para redirecionar usuários com status "Pendente" (inadimplente) ou "Bloqueado" para a página de cobranças, restringindo o acesso a funcionalidades de membro.
+- [x] **Melhora na Transparência Financeira**:
+  - [x] Adicionada a funcionalidade de "Ver Detalhes" nas listas de transações (para admin e usuários), exibindo informações completas em um modal.
+- [x] **Documentação**:
+  - [x] Atualizados os arquivos `ARCHITECTURE.md` e `README.md` para refletir os novos recursos e a estrutura de acesso aprimorada.
+
+---
+
+## Concluído: Sprint 8
 
 ### Foco: Polimento do Fluxo de Pagamento e Documentação
 

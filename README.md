@@ -7,28 +7,32 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 
 ### Para Associados
 
-- **Agenda Multivisualização**: Uma agenda robusta que permite visualizar a disponibilidade das salas em formato de **calendário mensal** ou em uma **timeline diária/semanal**, adaptando-se às preferências do usuário.
+- **Autenticação Segura e Acessível**: Login simplificado com Google, utilizando um fluxo (`signInWithRedirect`) compatível com WebViews de aplicativos móveis.
+- **Controle de Acesso por Status**: O sistema garante que apenas membros com status "Ativo" possam realizar novas reservas, direcionando usuários com pendências para a página de cobrança.
+- **Agenda Multivisualização**: Uma agenda robusta que permite visualizar a disponibilidade das salas em formato de **calendário mensal** ou em uma **timeline diária/semanal**.
 - **Fluxo de Onboarding Guiado**: Novos usuários são recebidos com um tour interativo que os orienta a completar o perfil e a escolher um plano de associação.
 - **Gerenciamento de Reservas**: Os usuários podem criar novas reservas, editar agendamentos futuros e visualizar seu histórico completo na página "Minhas Reservas".
 - **Gerenciamento de Participação**: Flexibilidade para o organizador editar os participantes e para os convidados saírem de uma reserva futura.
-- **Extrato de Reservas com Ordenação**: Visualize e filtre seus agendamentos passados e futuros. Ordene a lista por data ou número de participantes para melhor organização.
+- **Extrato de Reservas com Ordenação**: Visualize, filtre e veja os detalhes de seus agendamentos passados e futuros. Ordene a lista por data ou número de participantes para melhor organização.
 - **Controle de Cotas Transparente**: Um painel em "Minhas Reservas" exibe em tempo real o saldo de cotas de reserva mensal, corujão e de convidados, com a data de renovação do ciclo.
-- **Perfil de Usuário Completo**: Edite suas informações pessoais, apelido, telefone, documentos, data de nascimento e até mesmo suas preferências de jogo. O formulário de endereço conta com **preenchimento automático via CEP** para agilizar o cadastro.
-- **Mural de Avisos**: Fique por dentro dos últimos comunicados da administração com um modal de login e uma página de histórico de avisos.
-- **Sistema de Cotas Justo**: As reservas são validadas de acordo com a categoria do associado (Player, Gamer, Master), garantindo o uso justo dos recursos.
+- **Perfil de Usuário Completo**: Edite suas informações pessoais, apelido, telefone, documentos, data de nascimento (com **verificação de maioridade**) e preferências de jogo. O formulário de endereço conta com **preenchimento automático via CEP**.
+- **Comunicação Centralizada**:
+  - **Mural de Avisos**: Fique por dentro dos últimos comunicados gerais da administração.
+  - **Caixa de Entrada Privada**: Receba mensagens diretas da administração (avisos, advertências, etc.) com um indicador de notificações não lidas no cabeçalho.
 - **Pagamentos Simplificados**: Gere um QR Code PIX através do gateway de pagamento seguro para quitar sua matrícula e mensalidades.
 - **Transparência na Matrícula**: Visualize claramente o valor da taxa de inscrição (joia) durante o processo e confirme o status do seu pagamento diretamente no seu perfil.
 
 ### Para Administradores
 
-- **Painel de Controle Centralizado**: Uma área de administração robusta para gerenciar todos os aspectos do sistema.
-- **Gerenciamento de Planos e Regras de Negócio**: Crie, edite e remova planos de associação dinamicamente. Controle os preços, cotas de reserva (semanal, mensal, corujão), limite mensal de convidados e peso de voto para cada plano em uma única interface. As alterações são refletidas instantaneamente na página de matrícula.
-- **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros, gerencie status de pagamento, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`) com segurança através de `Custom Claims`.
-- **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e outras configurações.
-- **Comunicação Direta**: Envie avisos para todos os usuários através de um formulário integrado e acompanhe quem já visualizou.
-- **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação, número de adimplentes e muito mais.
-- **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações, edições ou cancelamentos quando necessário.
-- **Gestão Financeira**: Gerencie cobranças avulsas e tenha acesso ao histórico de transações de todos os membros.
+- **Painel de Controle Centralizado**: Uma área de administração robusta e organizada em seções (`Sistema`, `Finanças`, `Mensagens`) para gerenciar todos os aspectos do sistema.
+- **Comunicação Direta com Membros**: Envie mensagens privadas e categorizadas (aviso, advertência, multa, etc.) para usuários específicos através da página de `Mensagens`, com histórico de envio.
+- **Gerenciamento de Planos e Regras de Negócio**: Crie, edite e remova planos de associação dinamicamente. Controle os preços, cotas de reserva e limites de convidados em uma única interface.
+- **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros, gerencie status, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`).
+- **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e configurações.
+- **Comunicação em Massa**: Envie avisos para todos os usuários através de um formulário integrado no Mural de Avisos.
+- **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação e número de adimplentes.
+- **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações ou cancelamentos.
+- **Gestão Financeira**: Gerencie cobranças avulsas, marque transações como pagas e tenha acesso ao histórico financeiro de todos os membros.
 
 ## Desenvolvimento e Deploy
 
