@@ -21,6 +21,7 @@ import type { User } from "@/lib/types/user"
 import type { TransactionStatus, TransactionType } from "@/lib/types/transaction"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
+import { PlusCircle } from "lucide-react"
 
 const transactionFormSchema = z.object({
   userId: z.string({ required_error: "É necessário selecionar um usuário." }),
