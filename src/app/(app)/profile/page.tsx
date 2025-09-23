@@ -42,7 +42,16 @@ const profileFormSchema = z.object({
   cpf: z.string().min(11, { message: "O CPF deve ter 11 dígitos." }),
   rg: z.string().optional(),
   address: z.string().min(10, { message: "O endereço deve ter pelo menos 10 caracteres." }),
-  birthdate: z.date({ required_error: "A data de nascimento é obrigatória."}),
+  birthdate: z.date({ required_error: "A data de nascimento é obrigatória."}).refine((date) => {
+    const today = new Date();
+    const birthDate = new Date(date);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age >= 18;
+  }, { message: "Você deve ter pelo menos 18 anos para se cadastrar." }),
   socialMedia: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
   gameTypes: z.array(z.string()).optional(),
 });
@@ -424,5 +433,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-
-    
