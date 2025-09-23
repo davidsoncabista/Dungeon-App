@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.0 - 2025-09-20 15:00:00 - davidson.dev.br
+
+- **feat(release): Lançamento da primeira versão estável (v1.0.0)**
+  - Esta versão consolida todas as funcionalidades desenvolvidas durante as fases alfa e beta, marcando o lançamento oficial do sistema para a Associação Dungeon Belém.
+  - **Destaques da Versão:**
+    - **Sistema de Pagamentos Completo**: Integração com Mercado Pago para matrículas e cobranças, com confirmação via webhook.
+    - **Comunicação Direta**: Sistema de mensagens privadas entre administração e usuários.
+    - **Controle de Acesso Robusto**: Proteção de rotas baseada no status do usuário (Ativo, Pendente, etc.).
+    - **Melhorias de Usabilidade**: Adicionado preenchimento de endereço via CEP, verificação de maioridade e filtros/ordenação em listas importantes.
+
 ## v1.0.0-beta.1 - 2025-09-20 14:00:00 - davidson.dev.br
 
 - **feat(release): Lançamento da primeira versão Beta (v1.0.0-beta.1)**
