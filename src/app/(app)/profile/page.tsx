@@ -14,25 +14,84 @@ import { getFirestore, doc, updateDoc } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 import type { User } from "@/lib/types/user"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, type UseFormReturn } from "react-hook-form"
 import { z } from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Info } from "lucide-react"
+import { CalendarIcon, Info, Loader2 } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
 import { ptBR } from "date-fns/locale"
 import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef } from "react"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
   { id: 'Board Game', label: 'Board Game' },
   { id: 'Card Game', label: 'Card Game' },
 ] as const;
+
+// --- VIA CEP API ---
+interface ViaCepResponse {
+    cep: string;
+    logradouro: string;
+    complemento: string;
+    bairro: string;
+    localidade: string;
+    uf: string;
+    erro?: boolean;
+}
+
+const fetchAddressFromCep = async (cep: string): Promise<ViaCepResponse | null> => {
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.erro ? null : data;
+    } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+        return null;
+    }
+};
+
+const useCepAutocomplete = (form: UseFormReturn<any>) => {
+    const [isCepLoading, setIsCepLoading] = useState(false);
+    const [cepError, setCepError] = useState<string | null>(null);
+    const numberInputRef = useRef<HTMLInputElement>(null);
+
+    const cep = form.watch('cep');
+
+    useEffect(() => {
+        const cleanedCep = cep?.replace(/\D/g, '');
+        if (cleanedCep?.length === 8) {
+            const searchCep = async () => {
+                setIsCepLoading(true);
+                setCepError(null);
+                const address = await fetchAddressFromCep(cleanedCep);
+                if (address) {
+                    form.setValue('street', address.logradouro, { shouldValidate: true });
+                    form.setValue('neighborhood', address.bairro, { shouldValidate: true });
+                    form.setValue('city', address.localidade, { shouldValidate: true });
+                    form.setValue('state', address.uf, { shouldValidate: true });
+                    numberInputRef.current?.focus();
+                } else {
+                    setCepError("CEP não encontrado ou inválido.");
+                }
+                setIsCepLoading(false);
+            };
+            searchCep();
+        } else {
+             setCepError(null);
+        }
+    }, [cep, form]);
+
+    return { isCepLoading, cepError, numberInputRef };
+}
+// --------------------
 
 
 const profileFormSchema = z.object({
@@ -41,7 +100,6 @@ const profileFormSchema = z.object({
   phone: z.string().min(10, { message: "O telefone deve ter pelo menos 10 dígitos." }),
   cpf: z.string().min(11, { message: "O CPF deve ter 11 dígitos." }),
   rg: z.string().optional(),
-  address: z.string().min(10, { message: "O endereço deve ter pelo menos 10 caracteres." }),
   birthdate: z.date({ required_error: "A data de nascimento é obrigatória."}).refine((date) => {
     const today = new Date();
     const birthDate = new Date(date);
@@ -54,8 +112,16 @@ const profileFormSchema = z.object({
   }, { message: "Você deve ter pelo menos 18 anos para se cadastrar." }),
   socialMedia: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
   gameTypes: z.array(z.string()).optional(),
+  
+  // Endereço
+  cep: z.string().min(8, { message: "O CEP deve ter 8 dígitos." }),
+  street: z.string().min(3, { message: "O logradouro é obrigatório."}),
+  number: z.string().min(1, { message: "O número é obrigatório."}),
+  complement: z.string().optional(),
+  neighborhood: z.string().min(3, { message: "O bairro é obrigatório."}),
+  city: z.string().min(3, { message: "A cidade é obrigatória."}),
+  state: z.string().min(2, { message: "O estado (UF) é obrigatório."}),
 });
-
 
 export default function ProfilePage() {
   const [user, loadingAuth] = useAuthState(auth);
@@ -74,22 +140,36 @@ export default function ProfilePage() {
         phone: appUser.phone || "",
         cpf: appUser.cpf || "",
         rg: appUser.rg || "",
-        address: appUser.address || "",
         birthdate: appUser.birthdate ? parseISO(appUser.birthdate) : undefined,
         socialMedia: appUser.socialMedia || "",
         gameTypes: appUser.gameTypes || [],
+        cep: appUser.address?.cep || "",
+        street: appUser.address?.street || "",
+        number: appUser.address?.number || "",
+        complement: appUser.address?.complement || "",
+        neighborhood: appUser.address?.neighborhood || "",
+        city: appUser.address?.city || "",
+        state: appUser.address?.state || "",
     } : {
         name: user?.displayName || "",
         nickname: "",
         phone: "",
         cpf: "",
         rg: "",
-        address: "",
         birthdate: undefined,
         socialMedia: "",
         gameTypes: [],
+        cep: "",
+        street: "",
+        number: "",
+        complement: "",
+        neighborhood: "",
+        city: "",
+        state: "",
     }
   });
+
+  const { isCepLoading, cepError, numberInputRef } = useCepAutocomplete(form);
 
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
@@ -99,12 +179,20 @@ export default function ProfilePage() {
         name: data.name,
         phone: data.phone,
         cpf: data.cpf,
-        address: data.address,
         birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
         gameTypes: data.gameTypes || [],
         nickname: data.nickname || null,
         rg: data.rg || null,
         socialMedia: data.socialMedia || null,
+        address: {
+            cep: data.cep,
+            street: data.street,
+            number: data.number,
+            complement: data.complement || null,
+            neighborhood: data.neighborhood,
+            city: data.city,
+            state: data.state,
+        }
       };
 
       // Se for o primeiro preenchimento, muda o status para Ativo e categoria para Visitante
@@ -294,18 +382,102 @@ export default function ProfilePage() {
                         </FormItem>
                     )}
                 />
-                <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Endereço Completo *</FormLabel>
-                          <FormControl><Textarea placeholder="Rua, Número, Bairro, CEP, Cidade, Estado" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                />
               </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Endereço</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="cep"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>CEP *</FormLabel>
+                                <div className="relative">
+                                    <FormControl>
+                                        <Input placeholder="00000-000" maxLength={9} {...field} />
+                                    </FormControl>
+                                    {isCepLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />}
+                                </div>
+                                {cepError && <p className="text-sm font-medium text-destructive">{cepError}</p>}
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                       <FormField
+                            control={form.control}
+                            name="street"
+                            render={({ field }) => (
+                                <FormItem className="col-span-3 sm:col-span-2">
+                                    <FormLabel>Logradouro *</FormLabel>
+                                    <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="number"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Número *</FormLabel>
+                                    <FormControl><Input ref={numberInputRef} {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                     <FormField
+                        control={form.control}
+                        name="complement"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Complemento (Opcional)</FormLabel>
+                                <FormControl><Input placeholder="Apto, Bloco, etc." {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="neighborhood"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Bairro *</FormLabel>
+                                <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                       <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                                <FormItem className="col-span-3 sm:col-span-2">
+                                    <FormLabel>Cidade *</FormLabel>
+                                    <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="state"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>UF *</FormLabel>
+                                    <FormControl><Input disabled={isCepLoading} maxLength={2} {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </CardContent>
             </Card>
 
              <Card>
@@ -433,3 +605,5 @@ export default function ProfilePage() {
     </div>
   )
 }
+
+    

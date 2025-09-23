@@ -5,6 +5,16 @@ export type UserStatus = "Ativo" | "Pendente" | "Bloqueado";
 export type AdminRole = "Administrador" | "Editor" | "Revisor" | "Membro";
 export type GameType = "RPG" | "Board Game" | "Card Game";
 
+export interface Address {
+    cep: string;
+    street: string;
+    number: string;
+    complement: string | null;
+    neighborhood: string;
+    city: string;
+    state: string;
+}
+
 export interface User {
   id: string; // Corresponde ao UID do Firebase Auth
   uid: string; // UID do Firebase Auth
@@ -22,7 +32,9 @@ export interface User {
   cpf?: string;
   rg?: string;
   birthdate?: string; // Formato YYYY-MM-DD
-  address?: string;
+  address?: Address;
   socialMedia?: string;
   gameTypes?: GameType[];
 }
+
+    

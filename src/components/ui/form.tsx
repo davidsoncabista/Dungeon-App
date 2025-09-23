@@ -10,6 +10,7 @@ import {
   type ControllerProps,
   type FieldPath,
   type FieldValues,
+  type UseFormReturn,
 } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
@@ -175,4 +176,7 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  type UseFormReturn
 }
+
+    
