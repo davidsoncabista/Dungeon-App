@@ -72,11 +72,11 @@ export default function AdminPage() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [registrationFee, setRegistrationFee] = useState(0);
+  const [registrationFee, setRegistrationFee] = useState<string | number>(0);
 
   useEffect(() => {
-    if (settings) {
-      setRegistrationFee(settings.registrationFee || 0);
+    if (settings && typeof settings.registrationFee === 'number') {
+      setRegistrationFee(settings.registrationFee);
     }
   }, [settings]);
 
@@ -158,8 +158,14 @@ export default function AdminPage() {
 
   const handleSaveRegistrationFee = async () => {
     if (!canEdit) return;
+    const feeValue = Number(registrationFee);
+    if (isNaN(feeValue) || feeValue < 0) {
+        toast({ title: "Valor Inválido", description: "Por favor, insira um número válido para a taxa.", variant: "destructive"});
+        return;
+    }
+
     try {
-        await setDoc(settingsRef, { registrationFee: registrationFee }, { merge: true });
+        await setDoc(settingsRef, { registrationFee: feeValue }, { merge: true });
         toast({ title: "Taxa de Inscrição Salva", description: "O novo valor foi salvo com sucesso." });
     } catch (error) {
         console.error("Erro ao salvar taxa de inscrição:", error);
@@ -384,12 +390,12 @@ export default function AdminPage() {
                 <CardContent>
                     {loadingSettings ? <Skeleton className="h-10 w-full"/> : (
                         <div className="space-y-2">
-                            <label htmlFor="registration-fee" className="text-sm font-medium">Valor da Joia (Taxa de Inscrição)</label>
+                            <label htmlFor="registration-fee" className="text-sm font-medium">Taxa de Inscrição (Joia)</label>
                             <Input
                                 id="registration-fee"
                                 type="number"
                                 value={registrationFee}
-                                onChange={(e) => setRegistrationFee(Number(e.target.value))}
+                                onChange={(e) => setRegistrationFee(e.target.value)}
                                 onBlur={handleSaveRegistrationFee}
                                 className="text-center"
                                 disabled={!canEdit}
@@ -483,5 +489,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    
