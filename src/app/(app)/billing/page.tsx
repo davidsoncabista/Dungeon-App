@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye } from "lucide-react";
+import { Check, Dices, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
@@ -247,6 +247,11 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         return format(nextBilling, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     }, []);
 
+    const isRegistrationFeePaid = useMemo(() => {
+        if (!transactions) return false;
+        return transactions.some(t => t.type === 'Inicial' && t.status === 'Pago');
+    }, [transactions]);
+
     const handleMercadoPagoPayment = async (transaction: Transaction) => {
         setPaymentTransaction(transaction);
         setIsGeneratingPayment(true);
@@ -380,6 +385,18 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                                 <span className="font-semibold">{currentUser.createdAt ? format(currentUser.createdAt.toDate(), 'dd/MM/yyyy') : 'N/A'}</span>
                             </div>
                             <div className="flex justify-between items-baseline">
+                                <span className="text-sm text-muted-foreground">Taxa de Inscrição</span>
+                                {isRegistrationFeePaid ? (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                                        <CheckCircle className="mr-1 h-3 w-3" /> Paga
+                                    </Badge>
+                                ) : (
+                                     <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                                        Pendente
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="flex justify-between items-baseline">
                                 <span className="text-sm text-muted-foreground">Próxima Cobrança</span>
                                 <span className="font-semibold">{nextBillingDate}</span>
                             </div>
@@ -448,3 +465,4 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
+
