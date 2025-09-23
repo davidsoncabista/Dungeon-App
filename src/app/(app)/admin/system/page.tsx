@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, AlertTriangle, Eye, Lock, MessageSquareText, FileDigit } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -72,11 +72,14 @@ export default function AdminPage() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [registrationFee, setRegistrationFee] = useState<string | number>(0);
+  const [registrationFee, setRegistrationFee] = useState<string | number>('');
+  const [extraInvitePrice, setExtraInvitePrice] = useState<string | number>('');
+
 
   useEffect(() => {
-    if (settings && typeof settings.registrationFee === 'number') {
-      setRegistrationFee(settings.registrationFee);
+    if (settings) {
+      setRegistrationFee(settings.registrationFee || '');
+      setExtraInvitePrice(settings.extraInvitePrice || '');
     }
   }, [settings]);
 
@@ -94,7 +97,6 @@ export default function AdminPage() {
         invites: 0,
         votingWeight: 1,
         corujaoQuota: 0,
-        extraInvitePrice: 0,
       };
       await setDoc(newPlanRef, newPlan);
       toast({ title: "Plano Criado!", description: `O plano "${data.name}" foi adicionado.` });
@@ -156,22 +158,22 @@ export default function AdminPage() {
     }
   };
 
-  const handleSaveRegistrationFee = async () => {
+  const handleSaveSettings = async (field: 'registrationFee' | 'extraInvitePrice', value: string | number) => {
     if (!canEdit) return;
-    const feeValue = Number(registrationFee);
-    if (isNaN(feeValue) || feeValue < 0) {
-        toast({ title: "Valor Inválido", description: "Por favor, insira um número válido para a taxa.", variant: "destructive"});
+    const numericValue = Number(value);
+     if (isNaN(numericValue) || numericValue < 0) {
+        toast({ title: "Valor Inválido", description: "Por favor, insira um número válido.", variant: "destructive"});
         return;
     }
 
     try {
-        await setDoc(settingsRef, { registrationFee: feeValue }, { merge: true });
-        toast({ title: "Taxa de Inscrição Salva", description: "O novo valor foi salvo com sucesso." });
+        await setDoc(settingsRef, { [field]: numericValue }, { merge: true });
+        toast({ title: "Configuração Salva", description: "O novo valor foi salvo com sucesso." });
     } catch (error) {
-        console.error("Erro ao salvar taxa de inscrição:", error);
+        console.error("Erro ao salvar configuração:", error);
         toast({ title: "Erro ao Salvar", description: "Não foi possível salvar o novo valor.", variant: "destructive" });
     }
-  };
+  }
   
   const renderContent = () => {
     if (loadingPlans || loadingUser) {
@@ -183,7 +185,6 @@ export default function AdminPage() {
             <TableCell className="hidden md:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell className="hidden lg:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-            <TableCell className="hidden lg:table-cell"><Skeleton className="h-10 w-24 mx-auto" /></TableCell>
             <TableCell className="hidden lg:table-cell"><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-10 w-10 ml-auto" /></TableCell>
         </TableRow>
@@ -193,7 +194,7 @@ export default function AdminPage() {
     if (errorPlans) {
       return (
         <TableRow>
-          <TableCell colSpan={9}>
+          <TableCell colSpan={8}>
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
@@ -209,7 +210,7 @@ export default function AdminPage() {
     if (!plans || plans.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={9} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
+          <TableCell colSpan={8} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
         </TableRow>
       );
     }
@@ -259,15 +260,6 @@ export default function AdminPage() {
                 defaultValue={plan.invites} 
                 onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)}
                 className="w-20 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
-           <TableCell className="hidden lg:table-cell">
-              <Input 
-                type="number" 
-                defaultValue={plan.extraInvitePrice || 0} 
-                onBlur={(e) => handleFieldChange(plan.id, 'extraInvitePrice', e.target.value)}
-                className="w-24 mx-auto text-center"
                 disabled={!canEdit}
               />
           </TableCell>
@@ -322,7 +314,7 @@ export default function AdminPage() {
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle>Gerenciamento de Planos e Regras</CardTitle>
+                        <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
                         <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
                     </div>
                      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
@@ -361,7 +353,6 @@ export default function AdminPage() {
                                             <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
                                             <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
                                             <TableHead className="text-center">Cota Convites</TableHead>
-                                            <TableHead className="text-center hidden lg:table-cell">Convite Extra (R$)</TableHead>
                                             <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
                                             <TableHead className="text-right">Ações</TableHead>
                                         </TableRow>
@@ -384,42 +375,42 @@ export default function AdminPage() {
         <div className="space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><FileDigit className="h-5 w-5" /> Configurações Gerais</CardTitle>
-                    <CardDescription>Defina regras globais do sistema.</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><FileDigit className="h-5 w-5" /> Configurações Financeiras</CardTitle>
+                    <CardDescription>Defina regras financeiras globais do sistema.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    {loadingSettings ? <Skeleton className="h-10 w-full"/> : (
-                        <div className="space-y-2">
-                            <label htmlFor="registration-fee" className="text-sm font-medium">Taxa de Inscrição (Joia)</label>
-                            <Input
-                                id="registration-fee"
-                                type="number"
-                                value={registrationFee}
-                                onChange={(e) => setRegistrationFee(e.target.value)}
-                                onBlur={handleSaveRegistrationFee}
-                                className="text-center"
-                                disabled={!canEdit}
-                                placeholder="0.00"
-                            />
-                            <p className="text-xs text-muted-foreground">Valor único cobrado na primeira associação.</p>
-                        </div>
+                <CardContent className="space-y-4">
+                    {loadingSettings ? <Skeleton className="h-24 w-full"/> : (
+                        <>
+                            <div className="space-y-2">
+                                <label htmlFor="registration-fee" className="text-sm font-medium">Taxa de Inscrição (Joia)</label>
+                                <Input
+                                    id="registration-fee"
+                                    type="number"
+                                    value={registrationFee}
+                                    onChange={(e) => setRegistrationFee(e.target.value)}
+                                    onBlur={() => handleSaveSettings('registrationFee', registrationFee)}
+                                    className="text-center"
+                                    disabled={!canEdit}
+                                    placeholder="0.00"
+                                />
+                                <p className="text-xs text-muted-foreground">Valor único cobrado na primeira associação.</p>
+                            </div>
+                             <div className="space-y-2">
+                                <label htmlFor="extra-invite-price" className="text-sm font-medium">Preço do Convite Extra</label>
+                                <Input
+                                    id="extra-invite-price"
+                                    type="number"
+                                    value={extraInvitePrice}
+                                    onChange={(e) => setExtraInvitePrice(e.target.value)}
+                                    onBlur={() => handleSaveSettings('extraInvitePrice', extraInvitePrice)}
+                                    className="text-center"
+                                    disabled={!canEdit}
+                                    placeholder="0.00"
+                                />
+                                <p className="text-xs text-muted-foreground">Valor cobrado por cada convidado que exceder a cota gratuita do plano.</p>
+                            </div>
+                        </>
                     )}
-                </CardContent>
-            </Card>
-            <Card className="bg-muted/30 border-dashed">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-muted-foreground">
-                        <MessageSquareText className="h-5 w-5" />
-                        Mensagens Diretas (Em Breve)
-                    </CardTitle>
-                    <CardDescription>
-                        Envie notificações e mensagens diretamente para usuários específicos.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-center h-full text-center text-sm text-muted-foreground">
-                        <p>Esta área permitirá a comunicação direta com os membros da associação para avisos importantes, confirmações ou feedbacks.</p>
-                    </div>
                 </CardContent>
             </Card>
         </div>

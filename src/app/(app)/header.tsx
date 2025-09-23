@@ -1,11 +1,16 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
 import type { User as AppUser } from "@/lib/types/user"
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { getFirestore, collection, query, where } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+import type { UserMessage } from "@/lib/types/userMessage";
+
 
 import { Button } from "@/components/ui/button"
 import {
@@ -43,6 +48,7 @@ const adminNavItems = [
     { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
+    { href: "/admin/messages", label: "Mensagens", icon: MessageSquare, roles: ["Administrador"] },
     { href: "/admin/system", label: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
 ]
 
@@ -55,10 +61,15 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = getFirestore(app);
   
   const userRole = currentUserData?.role || 'Membro';
   const userStatus = currentUserData?.status || 'Pendente';
   const userCategory = currentUserData?.category || 'Visitante';
+
+  const messagesQuery = user ? query(collection(firestore, 'userMessages'), where('recipientId', '==', user.uid), where('read', '==', false)) : null;
+  const [unreadMessages] = useCollectionData<UserMessage>(messagesQuery);
+  const unreadCount = unreadMessages?.length || 0;
 
 
   const handleLogout = async () => {
@@ -116,7 +127,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
             href={item.href}
             className={cn(
                 "text-muted-foreground transition-colors hover:text-foreground",
-                pathname === item.href && "text-foreground font-semibold"
+                pathname.startsWith(item.href) && "text-foreground font-semibold"
             )}
           >
             {item.label}
@@ -154,7 +165,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
                 href={item.href}
                 className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                    pathname === item.href && "bg-muted text-primary"
+                    pathname.startsWith(item.href) && "bg-muted text-primary"
                 )}
                 >
                 <item.icon className="h-5 w-5" />
@@ -174,9 +185,17 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
               <span className="sr-only">Mural de Avisos</span>
             </Link>
         </Button>
-         <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notificações</span>
+         <Button variant="ghost" size="icon" className="rounded-full relative" asChild>
+            <Link href="/messages">
+              <Bell className="h-5 w-5" />
+               {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
+                </span>
+              )}
+              <span className="sr-only">Mensagens Privadas</span>
+            </Link>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -201,6 +220,9 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
               <Link href="/profile"><User className="mr-2 h-4 w-4" />Perfil</Link>
+          </DropdownMenuItem>
+           <DropdownMenuItem asChild>
+              <Link href="/messages"><Bell className="mr-2 h-4 w-4" />Mensagens {unreadCount > 0 && <span className="ml-auto text-xs bg-destructive text-destructive-foreground rounded-full px-1.5">{unreadCount}</span>}</Link>
           </DropdownMenuItem>
           <DropdownMenuItem disabled>
               <Settings className="mr-2 h-4 w-4" />

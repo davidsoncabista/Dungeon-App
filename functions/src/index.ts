@@ -136,7 +136,9 @@ export const handleBookingWrite = functions
     
     const planData = plansSnapshot.docs[0].data();
     const freeInvites = planData.invites || 0;
-    const extraInvitePrice = planData.extraInvitePrice || 0;
+    
+    const settingsDoc = await db.collection('systemSettings').doc('config').get();
+    const extraInvitePrice = settingsDoc.data()?.extraInvitePrice || 0;
     
     if (extraInvitePrice <= 0) {
       return null;
@@ -318,6 +320,60 @@ export const checkOverduePayments = functions
       return null;
     }
   });
+
+
+// --- FUNÇÃO DE ENVIAR MENSAGEM ---
+export const sendUserMessage = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    // 1. Verificação de autenticação e permissão
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+    if (context.auth.token.role !== 'Administrador') {
+        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem enviar mensagens.");
+    }
+
+    const { recipientId, title, content, category } = data;
+    
+    // 2. Validação dos dados
+    if (!recipientId || !title || !content || !category) {
+        throw new functions.https.HttpsError("invalid-argument", "Todos os campos são obrigatórios.");
+    }
+
+    try {
+        const senderId = context.auth.uid;
+        const senderDoc = await db.collection('users').doc(senderId).get();
+        const senderName = senderDoc.data()?.name || 'Administração';
+
+        const recipientDoc = await db.collection('users').doc(recipientId).get();
+        const recipientName = recipientDoc.data()?.name || 'Destinatário Desconhecido';
+
+        const newMessageRef = db.collection("userMessages").doc();
+        
+        // 3. Criação do documento da mensagem
+        await newMessageRef.set({
+            id: newMessageRef.id,
+            recipientId: recipientId,
+            recipientName: recipientName, // Denormalizado para facilitar a exibição
+            senderId: senderId,
+            senderName: senderName,
+            title: title,
+            content: content,
+            category: category,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false,
+        });
+
+        console.log(`[Messages] Mensagem enviada de ${senderName} (${senderId}) para ${recipientName} (${recipientId}).`);
+        return { success: true, messageId: newMessageRef.id };
+
+    } catch (error) {
+        console.error("Erro ao enviar mensagem direta:", error);
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao enviar a mensagem.");
+    }
+});
+
 
 
 // --- FUNÇÕES DE PAGAMENTO ---

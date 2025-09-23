@@ -15,20 +15,17 @@ import { WelcomeModal } from "@/components/app/welcome-modal";
 import { NoticeModal } from "@/components/app/notice-modal";
 
 // Rotas de administração, ordenadas da mais restrita para a menos.
-const adminOnlyRoutes = ["/admin/system", "/admin/finance"];
+const adminOnlyRoutes = ["/admin/system", "/admin/finance", "/admin/messages"];
 const editorRoutes = ["/rooms", "/statistics", "/users"];
 const revisorRoutes = ["/statistics", "/users"]; // Revisores não podem editar salas
 const allAdminRoutes = [...new Set([...adminOnlyRoutes, ...editorRoutes, ...revisorRoutes])];
 
 
 // Rotas principais para membros ativos.
-const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile", "/notices"];
-
-// Rotas permitidas para usuários que ainda não se matricularam (Visitantes).
-const visitorRoutes = ["/billing", "/profile", "/my-bookings"];
+const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile", "/notices", "/messages"];
 
 // Rotas permitidas para qualquer usuário logado, independente do status
-const publicLoggedInRoutes = ["/profile", "/billing", "/my-bookings"];
+const publicLoggedInRoutes = ["/profile", "/billing", "/my-bookings", "/messages"];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
@@ -103,15 +100,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }
 
         // REGRA 3: MATRÍCULA PENDENTE (Categoria 'Visitante')
-        // Se o cadastro está completo mas ele ainda é 'Visitante', ele é direcionado para a página de matrícula.
+        // Se o cadastro está completo mas ele ainda é 'Visitante', ele pode acessar algumas páginas públicas.
         if (currentUser.category === 'Visitante' && !publicLoggedInRoutes.includes(pathname)) {
-             if (!isWelcomeModalOpen) {
+             if (!isWelcomeModalOpen) { // Evita redirecionar enquanto o modal de boas vindas está aberto
                 router.push('/billing');
             }
             return;
         }
         
-        // REGRA 4: USUÁRIO NÃO-ATIVO (Pendente ou Bloqueado)
+        // REGRA 4: USUÁRIO NÃO-ATIVO (Pendente de pagamento ou Bloqueado)
         // Se o usuário não está ativo e não está tentando acessar uma página pública de logado, redireciona para cobranças.
         if (currentUser.status !== 'Ativo' && currentUser.status !== 'Pendente' && !publicLoggedInRoutes.includes(pathname)) {
             router.push('/billing');
