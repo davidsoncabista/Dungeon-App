@@ -28,7 +28,7 @@ const memberRoutes = ["/online-schedule", "/my-bookings", "/billing", "/profile"
 const visitorRoutes = ["/billing", "/profile", "/my-bookings"];
 
 // Rotas permitidas para qualquer usuário logado, independente do status
-const publicLoggedInRoutes = ["/profile", "/billing"];
+const publicLoggedInRoutes = ["/profile", "/billing", "/my-bookings"];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [user, loading, error] = useAuthState(auth);
