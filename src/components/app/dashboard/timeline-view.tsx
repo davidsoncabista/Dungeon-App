@@ -2,12 +2,10 @@
 "use client"
 
 import * as React from "react";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 import type { Booking } from "@/lib/types/booking";
 import type { Room } from "@/lib/types/room";
 import type { User as AppUser } from "@/lib/types/user";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { AccordionScheduleView } from "@/components/app/dashboard/accordion-schedule-view";
 import { ScheduleView } from "@/components/app/dashboard/schedule-view";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -24,7 +22,6 @@ interface TimelineViewProps {
 }
 
 export function TimelineView({ selectedDate, bookings, rooms, isLoading, currentUser }: TimelineViewProps) {
-    const { isMobile } = useIsMobile();
     const [isModalOpen, setIsModalOpen] = React.useState(false);
 
     const canBook = currentUser?.status === 'Ativo';
@@ -33,7 +30,6 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
         if (!bookings) return [];
         const dateStr = format(selectedDate, "yyyy-MM-dd");
         
-        // Inclui reservas que começam no dia anterior e terminam neste dia (corujão)
         const prevDateStr = format(new Date(selectedDate.getTime() - 86400000), "yyyy-MM-dd");
         
         return bookings.filter(booking => {
@@ -61,40 +57,26 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
     
     return (
         <div>
-            {isMobile && (
-                 <div className="flex justify-end mb-4">
-                    <BookingModal
-                        initialDate={selectedDate}
-                        onOpenChange={setIsModalOpen}
-                        allBookings={bookings || []}
-                    >
-                        <Button disabled={!canBook}>
-                            <PlusCircle className="mr-2 h-4 w-4" />Nova Reserva
-                        </Button>
-                    </BookingModal>
-                </div>
-            )}
-            {isMobile ? (
-                <AccordionScheduleView
-                    rooms={availableRooms}
-                    bookings={bookingsForSelectedDate}
-                    selectedDate={selectedDate}
-                    setModalOpen={setIsModalOpen}
+            <div className="flex justify-end mb-4 md:hidden">
+                <BookingModal
+                    initialDate={selectedDate}
+                    onOpenChange={setIsModalOpen}
                     allBookings={bookings || []}
-                    canBook={canBook}
-                    currentUser={currentUser}
-                />
-            ) : (
-                <ScheduleView
-                    rooms={availableRooms}
-                    bookings={bookingsForSelectedDate}
-                    selectedDate={selectedDate}
-                    setModalOpen={setIsModalOpen}
-                    allBookings={bookings || []}
-                    canBook={canBook}
-                    currentUser={currentUser}
-                />
-            )}
+                >
+                    <Button disabled={!canBook}>
+                        <PlusCircle className="mr-2 h-4 w-4" />Nova Reserva
+                    </Button>
+                </BookingModal>
+            </div>
+             <ScheduleView
+                rooms={availableRooms}
+                bookings={bookingsForSelectedDate}
+                selectedDate={selectedDate}
+                setModalOpen={setIsModalOpen}
+                allBookings={bookings || []}
+                canBook={canBook}
+                currentUser={currentUser}
+            />
         </div>
     );
 }
