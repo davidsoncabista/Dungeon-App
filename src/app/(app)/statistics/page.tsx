@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Pie, PieChart, Tooltip } from "recharts"
-import { BookOpenCheck, Crown, Users, ArrowUpDown, UserCheck, UserX } from "lucide-react"
+import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX } from "lucide-react"
 import type { UserCategory, User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
@@ -17,7 +17,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Booking } from "@/lib/types/booking"
 import type { Room } from "@/lib/types/room"
 import { Button } from "@/components/ui/button"
-import { isPast, parseISO } from "date-fns"
+import { isPast, parseISO, getMonth, format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 const chartConfig = {
   bookings: {
@@ -59,22 +60,20 @@ export default function StatisticsPage() {
   const { 
     roomChartData,
     totalBookings,
-    mostPopularRoom,
-    percentageOfTotal,
     activeMembers,
     inactiveOrVisitors,
-    upcomingBookingsCount
+    upcomingBookingsCount,
+    monthlyBirthdays
   } = useMemo(() => {
     // Return empty state if data is not ready
     if (!users || !bookings || !rooms) {
         return {
             roomChartData: [],
             totalBookings: 0,
-            mostPopularRoom: { room: 'N/A', bookings: 0 },
-            percentageOfTotal: '0',
             activeMembers: [],
             inactiveOrVisitors: [],
-            upcomingBookingsCount: 0
+            upcomingBookingsCount: 0,
+            monthlyBirthdays: []
         };
     }
 
@@ -107,9 +106,6 @@ export default function StatisticsPage() {
     // 2. Stats Cards
     const totalBookingsCount = bookings.length;
     const upcomingCount = bookings.filter(b => !isPast(parseISO(`${b.date}T${b.endTime}`))).length;
-    const popularRoom = roomData.length > 0 ? roomData.reduce((prev, current) => (prev.bookings > current.bookings) ? prev : current) : {room: 'N/A', bookings: 0};
-    const totalBookingsInPopularRoom = popularRoom.bookings;
-    const percent = totalBookingsCount > 0 ? ((totalBookingsInPopularRoom / totalBookingsCount) * 100).toFixed(0) : '0';
     
     // 3. User lists (active and inactive)
     const active = users?.filter(u => u.status === 'Ativo' && u.category !== 'Visitante') || [];
@@ -130,14 +126,26 @@ export default function StatisticsPage() {
     active.sort(sortFunction);
     inactive.sort(sortFunction);
 
+    // 5. Monthly Birthdays
+    const currentMonth = getMonth(new Date());
+    const birthdays = users.filter(user => {
+        if (!user.birthdate) return false;
+        // Adiciona 1 ao mês do parseISO pois ele é 0-indexed, enquanto getMonth() não.
+        const birthMonth = getMonth(parseISO(user.birthdate));
+        return birthMonth === currentMonth;
+    }).sort((a,b) => {
+        if (!a.birthdate || !b.birthdate) return 0;
+        // Ordena pelo dia do mês
+        return parseISO(a.birthdate).getDate() - parseISO(b.birthdate).getDate();
+    });
+
     return {
         roomChartData: roomData,
         totalBookings: totalBookingsCount,
-        mostPopularRoom: popularRoom,
-        percentageOfTotal: percent,
         activeMembers: active,
         inactiveOrVisitors: inactive,
         upcomingBookingsCount: upcomingCount,
+        monthlyBirthdays: birthdays
     };
   }, [bookings, rooms, users, sortKey, sortOrder]);
   
@@ -199,12 +207,26 @@ export default function StatisticsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sala Mais Popular</CardTitle>
-            <Crown className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Aniversariantes do Mês</CardTitle>
+            <Cake className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{mostPopularRoom.room}</div>}
-            {isLoading ? <Skeleton className="h-4 w-1/2 mt-1" /> : <p className="text-xs text-muted-foreground">{percentageOfTotal}% do total de reservas</p>}
+            {isLoading ? <Skeleton className="h-8 w-full" /> : (
+                <ScrollArea className="h-[60px]">
+                    {monthlyBirthdays.length > 0 ? (
+                        <ul className="space-y-1 text-sm">
+                            {monthlyBirthdays.map(user => (
+                                <li key={user.uid} className="flex justify-between items-center">
+                                    <span className="font-medium truncate">{user.name.split(' ')[0]}</span>
+                                    <span className="text-muted-foreground">{format(parseISO(user.birthdate!), 'dd/MM')}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-xs text-muted-foreground text-center pt-4">Nenhum aniversariante este mês.</p>
+                    )}
+                </ScrollArea>
+            )}
           </CardContent>
         </Card>
          <Card>
