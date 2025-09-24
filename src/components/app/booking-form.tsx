@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
-import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
+import { format, parse, isBefore, addMinutes, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getBookingDurationAndEnd, FIXED_SLOTS } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -30,23 +30,18 @@ import { useState, useMemo } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth, app } from "@/lib/firebase"
-import { getFirestore, collection, query, orderBy, where } from "firebase/firestore"
+import { getFirestore, collection, query, orderBy } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import type { User } from "@/lib/types/user"
-import type { Plan } from "@/lib/types/plan"
 import { Skeleton } from "../ui/skeleton"
 import { ScrollArea } from "../ui/scroll-area"
 import { Checkbox } from "../ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar as CalendarPicker } from "../ui/calendar"
 
 
 const createBookingFormSchema = (
-  allRooms: Room[] = [],
-  allUserBookings: Booking[] = [],
-  userPlan: Plan | undefined,
-  userId: string | undefined
+  allRooms: Room[] = []
 ) => z.object({
   date: z.date({ required_error: "A data da reserva é obrigatória." }),
   roomId: z.string({ required_error: "Você deve selecionar uma sala." }),
@@ -57,7 +52,7 @@ const createBookingFormSchema = (
   startTime: z.string({ required_error: "O horário de início é obrigatório."}),
   endTime: z.string({ required_error: "O horário de fim é obrigatório."}),
 }).superRefine((data, ctx) => {
-    // 1. Validação de capacidade da sala
+    // Validação de capacidade da sala
     const selectedRoom = allRooms.find(r => r.id === data.roomId);
     if (selectedRoom) {
         const totalParticipants = data.participants.length + (data.guests?.length ?? 0);
@@ -66,78 +61,6 @@ const createBookingFormSchema = (
                 code: z.ZodIssueCode.custom,
                 message: `O número total de participantes (${totalParticipants}) não pode exceder a capacidade da sala (${selectedRoom.capacity}).`,
                 path: ["guests"], 
-            });
-        }
-    }
-
-    // 2. Validação de cotas (Apenas para o organizador)
-    if (userPlan && allUserBookings && userId) {
-        const bookingDate = data.date;
-
-        // Filtra apenas as reservas organizadas pelo usuário atual
-        const organizedBookings = allUserBookings.filter(b => b.organizerId === userId);
-
-        // --- CÁLCULO DE USO ---
-        const startOfBookingWeek = startOfWeek(bookingDate, { weekStartsOn: 1 });
-        const endOfBookingWeek = endOfWeek(bookingDate, { weekStartsOn: 1 });
-        const startOfBookingMonth = startOfMonth(bookingDate);
-        const endOfBookingMonth = endOfMonth(bookingDate);
-
-        // Contagem para o período relevante
-        const weeklyBookings = organizedBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return d >= startOfBookingWeek && d <= endOfBookingWeek;
-        }).length;
-
-        const monthlyBookings = organizedBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return d >= startOfBookingMonth && d <= endOfBookingMonth;
-        }).length;
-
-        const corujaoBookings = organizedBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return b.startTime === '23:00' && d >= startOfBookingMonth && d <= endOfBookingMonth;
-        }).length;
-
-        const monthlyGuestsCount = organizedBookings.reduce((acc, b) => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            if (d >= startOfBookingMonth && d <= endOfBookingMonth) {
-                return acc + (b.guests?.length || 0);
-            }
-            return acc;
-        }, 0);
-        
-        // --- VALIDAÇÕES ---
-        if (userPlan.weeklyQuota > 0 && weeklyBookings >= userPlan.weeklyQuota) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você atingiu sua cota de ${userPlan.weeklyQuota} reserva(s) semanal(is).`,
-                path: ["date"],
-            });
-        }
-        
-        if (userPlan.monthlyQuota > 0 && monthlyBookings >= userPlan.monthlyQuota) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você atingiu sua cota de ${userPlan.monthlyQuota} reserva(s) mensal(is).`,
-                path: ["date"],
-            });
-        }
-        
-        if (data.startTime === '23:00' && userPlan.corujaoQuota > 0 && corujaoBookings >= userPlan.corujaoQuota) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
-                path: ["startTime"],
-            });
-        }
-
-        const currentGuests = data.guests?.length || 0;
-        if (userPlan.invites > 0 && (monthlyGuestsCount + currentGuests) > userPlan.invites) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você excedeu sua cota mensal de ${userPlan.invites} convidado(s). Você já convidou ${monthlyGuestsCount} este mês.`,
-                path: ["guests"],
             });
         }
     }
@@ -164,22 +87,14 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
 
   const usersRef = collection(firestore, 'users');
   const [allUsers, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy("name")), { idField: 'id' });
-  const currentUser = allUsers?.find(u => u.uid === user?.uid);
-
-  const plansRef = collection(firestore, 'plans');
-  const [plans, loadingPlans] = useCollectionData<Plan>(plansRef, { idField: 'id' });
-  const userPlan = plans?.find(p => p.name === currentUser?.category);
   
-  // Busca todas as reservas para validar cotas corretamente
-  const [allUserBookings, loadingUserBookings] = useCollectionData<Booking>(collection(firestore, 'bookings'));
-
   // --- State do formulário ---
   const [step, setStep] = useState(0);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
   const [guestSearchTerm, setGuestSearchTerm] = useState("");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
-  const formSchema = useMemo(() => createBookingFormSchema(allRooms || [], allUserBookings || [], userPlan, user?.uid), [allRooms, allUserBookings, userPlan, user]);
+  const formSchema = useMemo(() => createBookingFormSchema(allRooms || []), [allRooms]);
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
@@ -267,9 +182,9 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     let fieldsToValidate: (keyof BookingFormValues)[] = [];
     switch (step) {
         case 0: fieldsToValidate = ["date", "roomId"]; break;
-        case 1: fieldsToValidate = ["title", "startTime", "endTime", "date"]; break; // Re-valida a data por causa das cotas
-        case 2: fieldsToValidate = ["participants", "date"]; break; // Adiciona date para revalidar cotas
-        case 3: fieldsToValidate = ["participants", "guests", "date"]; break; // Adiciona date para revalidar cotas
+        case 1: fieldsToValidate = ["title", "startTime", "endTime"]; break;
+        case 2: fieldsToValidate = ["participants"]; break;
+        case 3: fieldsToValidate = ["participants", "guests"]; break;
     }
 
     const isValid = await form.trigger(fieldsToValidate);
@@ -328,7 +243,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
       form.setValue(field, newValues, { shouldValidate: true });
   };
 
-  const isLoading = loadingRooms || loadingUsers || loadingPlans || loadingUserBookings;
+  const isLoading = loadingRooms || loadingUsers;
 
   return (
     <Form {...form}>
@@ -573,7 +488,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                 {isLoading ? <Skeleton className="h-40 w-full" /> : (
                   <div className="space-y-2">
                     <FormLabel>Convidados (Visitantes e Não-Ativos)</FormLabel>
-                    <FormDescription>Selecione os convidados para a sessão.</FormDescription>
+                    <FormDescription>Selecione os convidados para a sessão. Uma taxa pode ser aplicada para convidados extras.</FormDescription>
                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Buscar por nome ou apelido..." className="pl-9" value={guestSearchTerm} onChange={(e) => setGuestSearchTerm(e.target.value)} />
