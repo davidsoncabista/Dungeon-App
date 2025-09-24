@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 
 export type UserCategory = "Player" | "Gamer" | "Master" | "Visitante";
@@ -24,17 +25,15 @@ export interface User {
   category: UserCategory;
   status: UserStatus;
   role: AdminRole;
-  createdAt: Timestamp; // Adicionado para rastrear data de criação
+  createdAt: Timestamp | Date | null; // Adicionado para rastrear data de criação
 
   // Novos campos
   nickname?: string;
   phone?: string;
   cpf?: string;
   rg?: string;
-  birthdate?: string; // Formato YYYY-MM-DD
+  birthdate?: string | null; // Formato YYYY-MM-DD
   address?: Address;
   socialMedia?: string;
   gameTypes?: GameType[];
 }
-
-    

@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
+import { Timestamp } from "firebase/firestore"
+import { ptBR } from "date-fns/locale"
 
 const gameTypes: { id: GameType; label: string }[] = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -40,7 +42,8 @@ const userFormSchema = z.object({
   status: z.enum(["Ativo", "Pendente", "Bloqueado"], { required_error: "O status é obrigatório." }),
   nickname: z.string().optional(),
   phone: z.string().optional(),
-  birthdate: z.date().optional(),
+  birthdate: z.date().optional().nullable(),
+  createdAt: z.date().optional().nullable(), // Campo para "Membro desde"
   gameTypes: z.array(z.string()).optional(),
 });
 
@@ -77,7 +80,8 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
       status: defaultValues?.status || "Pendente",
       nickname: defaultValues?.nickname || "",
       phone: defaultValues?.phone || "",
-      birthdate: defaultValues?.birthdate ? parseISO(defaultValues.birthdate) : undefined,
+      birthdate: defaultValues?.birthdate ? parseISO(defaultValues.birthdate) : null,
+      createdAt: defaultValues?.createdAt instanceof Timestamp ? defaultValues.createdAt.toDate() : (defaultValues?.createdAt || null),
       gameTypes: defaultValues?.gameTypes || []
     },
   });
@@ -88,13 +92,14 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
             ...defaultValues,
             nickname: defaultValues.nickname || "",
             phone: defaultValues.phone || "",
-            birthdate: defaultValues.birthdate ? parseISO(defaultValues.birthdate) : undefined
+            birthdate: defaultValues.birthdate ? parseISO(defaultValues.birthdate) : null,
+            createdAt: defaultValues.createdAt instanceof Timestamp ? defaultValues.createdAt.toDate() : (defaultValues.createdAt || null),
         })
     }
   }, [isEditMode, defaultValues, form])
 
   function onSubmit(data: UserFormValues) {
-    const dataToSave = {
+    const dataToSave: Partial<User> = {
       name: data.name,
       email: data.email,
       category: data.category,
@@ -103,6 +108,7 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
       nickname: data.nickname || null,
       phone: data.phone || null,
       birthdate: data.birthdate ? format(data.birthdate, 'yyyy-MM-dd') : null,
+      createdAt: data.createdAt ? Timestamp.fromDate(data.createdAt) : null,
     };
     onSuccess(dataToSave as Partial<User>);
   }
@@ -161,47 +167,89 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
               )}
             />
         </div>
-        <FormField
-            control={form.control}
-            name="birthdate"
-            render={({ field }) => (
-                <FormItem className="flex flex-col">
-                <FormLabel>Data de Nascimento</FormLabel>
-                <Popover>
-                    <PopoverTrigger asChild>
-                    <FormControl>
-                        <Button
-                        variant={"outline"}
-                        className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                        )}
-                        >
-                        {field.value ? (
-                            format(field.value, "PPP")
-                        ) : (
-                            <span>Escolha uma data</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                    </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                    />
-                    </PopoverContent>
-                </Popover>
-                <FormMessage />
-                </FormItem>
-            )}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+                control={form.control}
+                name="birthdate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Data de Nascimento</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "dd/MM/yyyy")
+                            ) : (
+                                <span>Escolha uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value ?? undefined}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="createdAt"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Membro Desde</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "dd/MM/yyyy")
+                            ) : (
+                                <span>Escolha uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            locale={ptBR}
+                            mode="single"
+                            selected={field.value ?? undefined}
+                            onSelect={field.onChange}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -303,5 +351,3 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
     </Form>
   )
 }
-
-    
