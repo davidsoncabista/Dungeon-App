@@ -1,6 +1,12 @@
 # Changelog
 
-## v1.2.0-beta.0 - 2025-09-20 18:00:00 - davidson.dev.br
+## v1.2.1 - 2025-09-20 18:30:00 - davidson.dev.br
+
+- **docs(regras): Adiciona documentação do modelo de dados para as Regras de Acesso**
+  - Adicionada uma nova seção ao arquivo `ARCHITECTURE.md` que define formalmente a estrutura de dados do objeto `accessRules`.
+  - Esta documentação detalha o propósito de cada campo (`description` e `pages`), servindo como uma "fonte da verdade" para o sistema de permissões visualizado no painel de administração.
+
+## v1.2.0 - 2025-09-20 18:00:00 - davidson.dev.br
 
 - **feat(voting): Adiciona módulo de votação para membros**
   - Esta versão introduz a primeira fase do sistema de votação, focada na experiência do membro votante.
@@ -8,7 +14,7 @@
     - **Página de Votação Condicional**: Criada a nova página `/voting`, que se torna visível no menu apenas quando há uma votação ativa para a qual o membro é elegível.
     - **Interface de Voto e Resultados**: Membros elegíveis podem visualizar as opções de voto, registrar sua escolha uma única vez e, após votar ou ao término da votação, visualizar os resultados apurados.
     - **Verificação de Elegibilidade**: O sistema valida em tempo real se um usuário pode participar de uma votação, cruzando o ID do membro com a lista de votantes elegíveis definida pelo administrador.
-    - **Placeholder para Gestão (Admin)**: Adicionado um card na página de "Sistema" para a futura implementação da interface de criação e gerenciamento de votações.
+    - **Gestão de Votação (Admin)**: Implementada a interface de criação e gerenciamento de votações na página de "Sistema", permitindo ao administrador definir título, descrição, opções e eleger os votantes.
 
 ## v1.1.0-beta - 2025-09-20 16:00:00 - davidson.dev.br
 
@@ -204,4 +210,3 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
-                                                                                                                                                                                      
