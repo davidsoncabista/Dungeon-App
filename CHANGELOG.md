@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.2 - 2025-09-20 18:45:00 - davidson.dev.br
+
+- **docs(architecture): Evolui a arquitetura para regras de acesso dinâmicas e especifica a API**
+  - Formalizada a decisão de evoluir o sistema de Regras de Acesso de uma estrutura estática para um modelo dinâmico gerenciado via API e banco de dados.
+  - A documentação de arquitetura (`ARCHITECTURE.md`) foi atualizada para descrever o novo fluxo e a especificação da API CRUD (`POST`, `GET`, `PUT`, `DELETE` para `/regras`).
+
 ## v1.2.1 - 2025-09-20 18:30:00 - davidson.dev.br
 
 - **docs(regras): Adiciona documentação do modelo de dados para as Regras de Acesso**
@@ -38,7 +44,7 @@
     - **Controle de Acesso Robusto**: Proteção de rotas baseada no status do usuário (Ativo, Pendente, etc.).
     - **Melhorias de Usabilidade**: Adicionado preenchimento de endereço via CEP, verificação de maioridade e filtros/ordenação em listas importantes.
 
-## v1.0.0-beta.1 - 2025-09-20 14:00:00 - davidson.dev.br
+## v1_0_0-beta.1 - 2025-09-20 14:00:00 - davidson.dev.br
 
 - **feat(release): Lançamento da primeira versão Beta (v1.0.0-beta.1)**
   - Esta versão marca a transição do projeto para a fase beta, consolidando funcionalidades críticas para testes em um ambiente mais amplo antes do lançamento oficial.
