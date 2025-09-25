@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { app, auth } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getFirestore, doc, updateDoc, Timestamp, collection, query, where, httpsCallable } from "firebase/firestore"
+import { getFirestore, doc, updateDoc, Timestamp, collection, query, where } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 import type { User, AdminRole } from "@/lib/types/user"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,7 +28,7 @@ import { ptBR } from "date-fns/locale"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
-import { getFunctions } from "firebase/functions"
+import { getFunctions, httpsCallable } from "firebase/functions"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -635,6 +635,18 @@ export default function ProfilePage() {
                       <Button variant="outline" onClick={handleUpdateAvatar}>Alterar Foto</Button>
                       <p className="text-xs text-muted-foreground text-center">Sua foto é sincronizada com a conta Google.</p>
                   </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5" />
+                        Nível de Acesso
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                   {appUser ? <Badge className={cn("text-lg", roleBadgeClass[appUser.role])}>{appUser.role}</Badge> : <Skeleton className="h-6 w-24 rounded-full"/>}
+                </CardContent>
               </Card>
 
               <Card>
