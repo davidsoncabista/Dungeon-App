@@ -1,4 +1,3 @@
-
 {
   "indexes": [
     {
@@ -13,7 +12,27 @@
           "fieldPath": "date",
           "order": "DESCENDING"
         }
-      ]
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "polls",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "eligibleVoters",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
     },
     {
       "collectionGroup": "transactions",
@@ -27,7 +46,8 @@
           "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
-      ]
+      ],
+      "density": "SPARSE_ALL"
     },
     {
       "collectionGroup": "userMessages",
@@ -41,21 +61,8 @@
           "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
-      ]
-    },
-    {
-      "collectionGroup": "polls",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "eligibleVoters",
-          "arrayConfig": "CONTAINS"
-        }
-      ]
+      ],
+      "density": "SPARSE_ALL"
     }
   ],
   "fieldOverrides": []
