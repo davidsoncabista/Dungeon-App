@@ -59,9 +59,11 @@ export function PollForm({ onSave, onCancel, defaultValues, activeUsers }: PollF
   });
   
   const filteredUsers = useMemo(() => {
+    if (!activeUsers) return [];
     if (!searchTerm) return activeUsers;
     return activeUsers.filter(user =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.nickname && user.nickname.toLowerCase().includes(searchTerm.toLowerCase())) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm, activeUsers]);
@@ -146,7 +148,7 @@ export function PollForm({ onSave, onCancel, defaultValues, activeUsers }: PollF
                                     checked={field.value?.includes(user.uid)}
                                     onCheckedChange={(checked) => {
                                         return checked
-                                        ? field.onChange([...field.value, user.uid])
+                                        ? field.onChange([...(field.value || []), user.uid])
                                         : field.onChange(field.value?.filter((value) => value !== user.uid))
                                     }}
                                 />
