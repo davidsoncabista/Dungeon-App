@@ -4,8 +4,9 @@
 import { useMemo, useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, where, doc, setDoc, serverTimestamp } from "firebase/firestore"
+import { getFirestore, collection, query, where, doc } from "firebase/firestore"
 import { auth, app } from "@/lib/firebase"
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 import type { User } from "@/lib/types/user"
 import type { Poll, Vote } from "@/lib/types/poll"
@@ -23,6 +24,7 @@ import { Progress } from "@/components/ui/progress"
 export default function VotingPage() {
     const [user, loadingAuth] = useAuthState(auth);
     const firestore = getFirestore(app);
+    const functions = getFunctions(app, 'southamerica-east1');
     const { toast } = useToast();
 
     // State
@@ -30,11 +32,7 @@ export default function VotingPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // --- Firestore Data ---
-    const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
-    const [appUser] = useCollectionData<User>(userQuery);
-    const currentUser = appUser?.[0];
-
-    const pollQuery = query(collection(firestore, 'polls'), where('status', '==', 'Aberta'));
+    const pollQuery = user ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
     const [activePolls, loadingPolls] = useCollectionData<Poll>(pollQuery, { idField: 'id' });
     const activePoll = useMemo(() => activePolls?.[0], [activePolls]);
 
@@ -42,7 +40,6 @@ export default function VotingPage() {
     const [votes, loadingVotes] = useCollectionData<Vote>(votesQuery, { idField: 'id' });
 
     // --- Memoized Values ---
-    const isEligible = useMemo(() => activePoll?.eligibleVoters.includes(user?.uid || ''), [activePoll, user]);
     const hasVoted = useMemo(() => votes?.some(v => v.userId === user?.uid), [votes, user]);
 
     const pollResults = useMemo(() => {
@@ -63,22 +60,15 @@ export default function VotingPage() {
     
     // --- Handlers ---
     const handleSubmitVote = async () => {
-        if (!selectedOption || !user || !activePoll || !currentUser) return;
+        if (!selectedOption || !user || !activePoll) return;
         setIsSubmitting(true);
         try {
-            const voteRef = doc(collection(firestore, `polls/${activePoll.id}/votes`));
-            await setDoc(voteRef, {
-                id: voteRef.id,
-                pollId: activePoll.id,
-                userId: user.uid,
-                selectedOption,
-                votingWeight: currentUser.category === 'Master' ? 2 : 1, // Exemplo de peso de voto
-                votedAt: serverTimestamp(),
-            });
+            const castVoteFunction = httpsCallable(functions, 'castVote');
+            await castVoteFunction({ pollId: activePoll.id, selectedOption });
             toast({ title: "Voto Registrado!", description: "Seu voto foi computado com sucesso. Obrigado por participar!" });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao registrar voto:", error);
-            toast({ title: "Erro!", description: "Não foi possível registrar seu voto.", variant: "destructive" });
+            toast({ title: "Erro!", description: error.message || "Não foi possível registrar seu voto.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -103,17 +93,8 @@ export default function VotingPage() {
         );
     }
     
-    if (!isEligible) {
-         return (
-            <Card className="max-w-3xl mx-auto border-destructive">
-                <CardContent className="pt-6 text-center">
-                    <ShieldAlert className="h-12 w-12 mx-auto text-destructive" />
-                    <h2 className="mt-4 text-2xl font-semibold">Acesso Negado</h2>
-                    <p className="mt-2 text-muted-foreground">Você não está na lista de membros elegíveis para participar desta votação.</p>
-                </CardContent>
-            </Card>
-        );
-    }
+    // Note: A verificação de elegibilidade já é feita na query do Firestore e na regra do menu,
+    // então não precisamos de uma tela de "Acesso Negado" aqui.
 
     return (
         <div className="max-w-3xl mx-auto">

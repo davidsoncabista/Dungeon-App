@@ -432,6 +432,18 @@ export const castVote = functions
     const voteRef = pollRef.collection('votes').doc(userId); // Usa UID como ID do voto para garantir unicidade
 
     try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError("not-found", "Perfil de usuário não encontrado.");
+        }
+        const userCategory = userDoc.data()?.category;
+        
+        const plansSnapshot = await db.collection('plans').where('name', '==', userCategory).limit(1).get();
+        if (plansSnapshot.empty) {
+            throw new functions.https.HttpsError("not-found", "Plano de associação do usuário não encontrado.");
+        }
+        const votingWeight = plansSnapshot.docs[0].data().votingWeight || 1;
+
         return await db.runTransaction(async (transaction) => {
             const pollDoc = await transaction.get(pollRef);
             if (!pollDoc.exists || pollDoc.data()?.status !== 'Aberta') {
@@ -447,11 +459,7 @@ export const castVote = functions
             if (userVoteDoc.exists) {
                  throw new functions.https.HttpsError("already-exists", "Você já votou nesta enquete.");
             }
-
-            const userDoc = await db.collection('users').doc(userId).get();
-            const userPlan = await db.collection('plans').doc(userDoc.data()?.category || '').get();
-            const votingWeight = userPlan.data()?.votingWeight || 1;
-
+            
             transaction.set(voteRef, {
                 pollId: pollId,
                 userId: userId,
@@ -464,7 +472,6 @@ export const castVote = functions
         });
     } catch (error: any) {
         console.error("Erro ao registrar voto:", error);
-        // Retransmite o erro com o código e mensagem originais se for um HttpsError
         if (error.code) {
             throw error;
         }
