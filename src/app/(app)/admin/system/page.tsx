@@ -191,92 +191,96 @@ export default function AdminPage() {
   };
   
   // --- Render Functions ---
-  const renderPlansContent = () => {
+  const renderPlansMobileContent = () => {
     if (loadingPlans || loadingUser) {
         return Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="border-b last:border-b-0">
-                <div className="p-4 flex flex-col md:hidden gap-2">
-                    <Skeleton className="h-6 w-32" />
-                    <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Preço:</span><Skeleton className="h-8 w-20" /></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Semanal:</span><Skeleton className="h-8 w-20" /></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Mensal:</span><Skeleton className="h-8 w-20" /></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Corujão:</span><Skeleton className="h-8 w-20" /></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Convites:</span><Skeleton className="h-8 w-20" /></div>
-                    <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Peso de Voto:</span><Skeleton className="h-8 w-20" /></div>
-                </div>
-                 <TableRow className="hidden md:table-row">
-                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-24 mx-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-10 w-10 ml-auto" /></TableCell>
-                </TableRow>
+            <div key={i} className="p-4 flex flex-col gap-2 border-b">
+                <Skeleton className="h-6 w-32" />
+                <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Preço:</span><Skeleton className="h-8 w-20" /></div>
+                <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Semanal:</span><Skeleton className="h-8 w-20" /></div>
             </div>
         ));
-    }
-    if (errorPlans) {
-      return (
-        <div className="p-4 md:p-0">
-          <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
-              <ShieldAlert className="h-8 w-8 text-destructive" />
-              <div>
-                  <h4 className="font-bold text-destructive">Erro ao carregar planos</h4>
-                  <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. (${errorPlans.message})</p>
-              </div>
-          </div>
-        </div>
-      );
     }
     if (!plans || plans.length === 0) {
       return (<p className="text-center text-muted-foreground py-10">Nenhum plano encontrado.</p>);
     }
+     return plans.map(plan => (
+        <div key={plan.id} className="p-4 flex flex-col gap-3 border-b">
+            <div className="flex justify-between items-center">
+                <span className="font-bold text-lg">{plan.name}</span>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Preço (R$):</span><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Semanal:</span><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Mensal:</span><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Corujão:</span><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Convites:</span><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Peso de Voto:</span><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+        </div>
+    ));
+  }
+  
+  const renderPlansDesktopContent = () => {
+     if (loadingPlans || loadingUser) {
+        return Array.from({ length: 3 }).map((_, i) => (
+             <TableRow key={i}>
+                <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-10 w-24 mx-auto" /></TableCell>
+                <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+                <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+                <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+                <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+                <TableCell><Skeleton className="h-10 w-20 mx-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-10 w-10 ml-auto" /></TableCell>
+            </TableRow>
+        ));
+    }
+     if (errorPlans) {
+      return (
+        <TableRow>
+            <TableCell colSpan={8}>
+                <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
+                    <ShieldAlert className="h-8 w-8 text-destructive" />
+                    <div>
+                        <h4 className="font-bold text-destructive">Erro ao carregar planos</h4>
+                        <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. (${errorPlans.message})</p>
+                    </div>
+                </div>
+            </TableCell>
+        </TableRow>
+      );
+    }
+     if (!plans || plans.length === 0) {
+      return (<TableRow><TableCell colSpan={8} className="text-center py-10">Nenhum plano encontrado.</TableCell></TableRow>);
+    }
 
-    return plans.map(plan => (
-      <div key={plan.id} className="border-b last:border-b-0 md:contents">
-          {/* Mobile View */}
-           <div className="p-4 flex flex-col md:hidden gap-3">
-              <div className="flex justify-between items-center">
-                  <span className="font-bold text-lg">{plan.name}</span>
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
-              </div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Preço (R$):</span><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Semanal:</span><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Mensal:</span><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Corujão:</span><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Convites:</span><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Peso de Voto:</span><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-          </div>
-          {/* Desktop View */}
-           <TableRow className="hidden md:table-row">
-              <TableCell className="font-bold">{plan.name}</TableCell>
-              <TableCell><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 mx-auto text-center" disabled={!canEdit}/></TableCell>
-              <TableCell><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-              <TableCell><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-              <TableCell><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-              <TableCell><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-              <TableCell><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-              <TableCell className="text-right">
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
-              </TableCell>
-           </TableRow>
-      </div>
+     return plans.map(plan => (
+        <TableRow key={plan.id}>
+            <TableCell className="font-bold">{plan.name}</TableCell>
+            <TableCell><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell className="text-right">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </TableCell>
+        </TableRow>
     ));
   }
 
@@ -325,26 +329,30 @@ export default function AdminPage() {
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <div className={cn(!canEdit ? 'cursor-not-allowed' : '', 'md:border rounded-md')}>
-                                     <Table className="hidden md:table">
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Plano</TableHead>
-                                                <TableHead className="text-center">Preço (R$)</TableHead>
-                                                <TableHead className="text-center">Cota Semanal</TableHead>
-                                                <TableHead className="text-center">Cota Mensal</TableHead>
-                                                <TableHead className="text-center">Cota Corujão</TableHead>
-                                                <TableHead className="text-center">Cota Convites</TableHead>
-                                                <TableHead className="text-center">Peso de Voto</TableHead>
-                                                <TableHead className="text-right">Ações</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody className="hidden md:table-row-group">
-                                            {renderPlansContent()}
-                                        </TableBody>
-                                    </Table>
-                                    <div className="md:hidden">
-                                        {renderPlansContent()}
+                                <div className={cn(!canEdit ? 'cursor-not-allowed' : '')}>
+                                    {/* Desktop Table */}
+                                    <div className="border rounded-md hidden md:block">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Plano</TableHead>
+                                                    <TableHead className="text-center">Preço (R$)</TableHead>
+                                                    <TableHead className="text-center">Cota Semanal</TableHead>
+                                                    <TableHead className="text-center">Cota Mensal</TableHead>
+                                                    <TableHead className="text-center">Cota Corujão</TableHead>
+                                                    <TableHead className="text-center">Cota Convites</TableHead>
+                                                    <TableHead className="text-center">Peso de Voto</TableHead>
+                                                    <TableHead className="text-right">Ações</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {renderPlansDesktopContent()}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    {/* Mobile List */}
+                                    <div className="md:hidden border rounded-md">
+                                        {renderPlansMobileContent()}
                                     </div>
                                 </div>
                             </TooltipTrigger>
@@ -426,5 +434,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    
