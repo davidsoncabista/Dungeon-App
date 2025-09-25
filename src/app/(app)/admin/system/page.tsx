@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit, Vote, BarChart3, BadgeCheck, Square, Play } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -63,7 +63,20 @@ export default function AdminPage() {
   // --- Data Fetching ---
   const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(query(collection(firestore, 'plans'), orderBy("price")), { idField: 'id' });
   const [appUser, loadingUser] = useCollectionData<AppUser>(user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null);
-  const [activeUsers, loadingActiveUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), where('status', '==', 'Ativo'), where('category', '!=', 'Visitante')), { idField: 'id' });
+  
+  const [allUsers, loadingAllUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy("name")), { idField: 'id' });
+
+  const { activeUsers, loadingActiveUsers } = useMemo(() => {
+      if (loadingAllUsers) {
+          return { activeUsers: [], loadingActiveUsers: true };
+      }
+      if (!allUsers) {
+          return { activeUsers: [], loadingActiveUsers: false };
+      }
+      const filtered = allUsers.filter(u => u.status === 'Ativo' && u.category !== 'Visitante');
+      return { activeUsers: filtered, loadingActiveUsers: false };
+  }, [allUsers, loadingAllUsers]);
+
   const [polls, loadingPolls] = useCollectionData<Poll>(query(collection(firestore, 'polls'), orderBy("createdAt", "desc")), { idField: 'id' });
   const [settings, loadingSettings] = useDocumentData(doc(firestore, 'systemSettings', 'config'));
   
@@ -297,7 +310,7 @@ export default function AdminPage() {
                     {poll.status}
                 </Badge>
             </TableCell>
-            <TableCell className="hidden sm:table-cell">{format(poll.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
+            <TableCell className="hidden sm:table-cell">{poll.createdAt ? format(poll.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''}</TableCell>
             <TableCell className="text-right">
                 <PollActions poll={poll} canManage={canEdit} />
             </TableCell>
