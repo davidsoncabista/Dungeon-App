@@ -22,20 +22,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const [appUser] = useCollectionData<User>(userQuery);
     const currentUserRole = appUser?.[0]?.role;
 
-    const adminNavItems = [
+    // Itens que aparecem no menu lateral da área /admin
+    const sideNavItems = [
       { href: "/admin/system", label: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
       { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
       { href: "/admin/messages", label: "Mensagens", icon: MessageSquare, roles: ["Administrador"] },
       { href: "/admin/access-rules", label: "Regras de Acesso", icon: Eye, roles: ["Administrador"] },
-      // Itens que podem ser visíveis para outros roles
-      { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
-      { href: "/users", label: "Usuários", icon: Users, roles: ["Revisor", "Editor", "Administrador"] },
-      { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     ];
     
-    // Itens que aparecem no menu lateral da área /admin
-    const sideNavItems = adminNavItems.filter(item => item.href.startsWith('/admin/'));
-
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-1">
