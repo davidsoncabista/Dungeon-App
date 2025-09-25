@@ -37,8 +37,6 @@ export default function AccessRulesPage() {
   const [deletingRule, setDeletingRule] = useState<AccessRule | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canManage = user?.getIdTokenResult().then(r => r.claims.role === 'Administrador');
-
   // --- Handlers ---
   const handleSave = async (data: AccessRule) => {
     setIsSubmitting(true);

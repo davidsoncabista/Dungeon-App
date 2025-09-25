@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign, MessageSquare, Vote } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign, MessageSquare, Vote, Eye } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
@@ -52,6 +52,7 @@ const adminNavItems = [
     { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
     { href: "/admin/messages", label: "Mensagens", icon: MessageSquare, roles: ["Administrador"] },
     { href: "/admin/system", label: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
+    { href: "/admin/access-rules", label: "Regras de Acesso", icon: Eye, roles: ["Administrador"] },
 ]
 
 interface AppHeaderProps {

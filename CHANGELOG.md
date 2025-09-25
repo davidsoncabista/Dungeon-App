@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.4 - 2025-09-21 11:00:00 - davidson.dev.br
+
+- **feat(ui): Cria a interface de controle para as regras de acesso**
+  - Com o backend já implementado, este commit adiciona a nova tela de "Regras de Acesso" na área de administração.
+  - Desenvolvidos os componentes de interface (lista, formulários, modais) para a gestão das regras.
+  - Realizada a integração com as Cloud Functions recém-criadas para consumir e manipular os dados.
+  - Adicionada a nova rota e o item de menu na navegação da área administrativa.
+
 ## v1.2.3 - 2025-09-21 10:00:00 - davidson.dev.br
 
 - **feat(api): Implementa os endpoints CRUD para o gerenciamento de regras**
