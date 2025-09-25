@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -10,9 +9,9 @@ import { useToast } from "@/hooks/use-toast"
 import { app, auth } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getFirestore, doc, updateDoc } from "firebase/firestore"
+import { getFirestore, doc, updateDoc, Timestamp, collection, query, where, httpsCallable } from "firebase/firestore"
 import { useDocumentData } from "react-firebase-hooks/firestore"
-import type { User } from "@/lib/types/user"
+import type { User, AdminRole } from "@/lib/types/user"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, type UseFormReturn } from "react-hook-form"
 import { z } from "zod"
@@ -20,7 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Info, Loader2 } from "lucide-react"
+import { CalendarIcon, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -28,6 +27,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { ptBR } from "date-fns/locale"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
+import { Badge } from "@/components/ui/badge"
+import { getFunctions } from "firebase/functions"
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -123,12 +124,24 @@ const profileFormSchema = z.object({
   state: z.string().min(2, { message: "O estado (UF) é obrigatório."}),
 });
 
+const roleBadgeClass: Record<AdminRole, string> = {
+    Administrador: "bg-destructive text-destructive-foreground",
+    Editor: "bg-blue-500 text-white",
+    Revisor: "bg-yellow-500 text-black",
+    Membro: "bg-secondary text-secondary-foreground",
+    Visitante: "bg-muted text-muted-foreground",
+}
+
+
 export default function ProfilePage() {
   const [user, loadingAuth] = useAuthState(auth);
   const { toast } = useToast();
   const router = useRouter();
+  const [isRefreshingClaims, setIsRefreshingClaims] = useState(false);
+
 
   const firestore = getFirestore(app);
+  const functions = getFunctions(app, 'southamerica-east1');
   const userDocRef = user ? doc(firestore, "users", user.uid) : null;
   const [appUser, loadingUser, userError] = useDocumentData<User>(userDocRef);
 
@@ -228,6 +241,30 @@ export default function ProfilePage() {
         description: "A funcionalidade de upload de imagem será implementada em breve.",
         variant: "default",
       })
+  }
+
+  const handleRefreshClaims = async () => {
+    setIsRefreshingClaims(true);
+    try {
+      const refreshClaimsFunc = httpsCallable(functions, 'refreshClaims');
+      await refreshClaimsFunc();
+      
+      // Força a atualização do token no lado do cliente
+      await user?.getIdToken(true);
+
+      toast({
+        title: "Permissões Atualizadas!",
+        description: "Seu token de acesso foi atualizado com as últimas permissões.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao Atualizar Permissões",
+        description: error.message || "Não foi possível atualizar seu token.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingClaims(false);
+    }
   }
 
   if (loadingAuth || loadingUser) {
@@ -585,7 +622,7 @@ export default function ProfilePage() {
             </div>
           </div>
           
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 space-y-8">
               <Card>
                   <CardHeader>
                       <CardTitle>Foto de Perfil</CardTitle>
@@ -599,11 +636,41 @@ export default function ProfilePage() {
                       <p className="text-xs text-muted-foreground text-center">Sua foto é sincronizada com a conta Google.</p>
                   </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5" />
+                        Diagnóstico de Acesso
+                    </CardTitle>
+                    <CardDescription>Suas permissões atuais no sistema.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {appUser && (
+                        <>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Nível de Acesso:</span>
+                                <Badge variant={appUser.role === 'Administrador' ? 'destructive' : 'secondary'}>{appUser.role}</Badge>
+                            </div>
+                             <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Status da Conta:</span>
+                                <Badge variant={appUser.status === 'Ativo' ? 'default' : 'outline'} className={appUser.status === 'Ativo' ? 'bg-green-100 text-green-800' : ''}>{appUser.status}</Badge>
+                            </div>
+                             <div className="flex flex-col space-y-1 text-sm">
+                                <span className="text-muted-foreground">Seu UID:</span>
+                                <p className="text-xs font-mono bg-muted p-2 rounded-md break-all">{appUser.uid}</p>
+                            </div>
+                        </>
+                    )}
+                    <Button onClick={handleRefreshClaims} disabled={isRefreshingClaims} className="w-full">
+                        {isRefreshingClaims ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Atualizar Permissões
+                    </Button>
+                </CardContent>
+              </Card>
           </div>
         </form>
       </Form>
     </div>
   )
 }
-
-    

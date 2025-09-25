@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.1 - 2025-09-22 10:30:00 - davidson.dev.br
+
+- **feat(ui): Adiciona exibição do nível de acesso do usuário no perfil**
+  - Este commit introduz um novo card na página de perfil do usuário que exibe o seu papel (role) atual no sistema, como "Membro", "Visitante", "Editor", "Revisor" ou "Administrador".
+  - Essa mudança melhora a clareza para o usuário, permitindo que ele identifique rapidamente seu nível de permissão e entenda quais funcionalidades estão disponíveis para ele.
+
 ## v1.3.0 - 2025-09-22 10:00:00 - davidson.dev.br
 
 - **feat(release): Lançamento da versão 1.3.0 - Gestão de Acesso Dinâmico**
@@ -241,4 +247,3 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
-

@@ -1,9 +1,8 @@
-
 import { Timestamp } from "firebase/firestore";
 
 export type UserCategory = "Player" | "Gamer" | "Master" | "Visitante";
 export type UserStatus = "Ativo" | "Pendente" | "Bloqueado";
-export type AdminRole = "Administrador" | "Editor" | "Revisor" | "Membro";
+export type AdminRole = "Administrador" | "Editor" | "Revisor" | "Membro" | "Visitante";
 export type GameType = "RPG" | "Board Game" | "Card Game";
 
 export interface Address {
