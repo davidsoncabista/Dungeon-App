@@ -70,3 +70,17 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Navegação por Teclado**: Todos os elementos interativos (botões, links, inputs) devem ser totalmente navegáveis e operáveis utilizando apenas o teclado.
 - **Leitores de Tela**: A aplicação deve ser compatível com leitores de tela (como NVDA e VoiceOver), utilizando HTML semântico e atributos ARIA (`aria-label`, `aria-describedby`, etc.) para fornecer contexto adequado.
 - **Rótulos e Descrições**: Todos os campos de formulário e controles devem ter rótulos claros e, quando necessário, descrições.
+
+### 2. Modelo de Dados: Regras de Acesso
+A visualização das regras de acesso na página `/admin/system` é gerada a partir de uma estrutura de dados fixa, que serve como uma "fonte da verdade" documental sobre as permissões de cada nível de usuário no sistema.
+
+#### Estrutura do Objeto `accessRules`
+O objeto é um registro onde cada chave corresponde a um `AdminRole` (ou `Visitante`) e o valor é um objeto com a seguinte estrutura:
+
+-   **`description`** (string):
+    -   **Propósito:** Fornece uma explicação em linguagem natural sobre o escopo de permissões daquele nível de acesso.
+    -   **Exemplo:** `"Acesso total. Pode gerenciar planos, usuários, salas, finanças e as configurações do sistema."`
+
+-   **`pages`** (array de strings):
+    -   **Propósito:** Lista os nomes das páginas ou funcionalidades principais que o usuário com aquele nível de acesso pode visualizar e interagir.
+    -   **Exemplo:** `["Agenda Online", "Minhas Reservas", "Cobranças", "Estatísticas", "Usuários", "Salas", "Finanças", "Sistema"]`
