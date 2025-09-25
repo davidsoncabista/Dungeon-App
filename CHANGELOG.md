@@ -1,8 +1,9 @@
 # Changelog
 
-## v1.3.0 - 2025-09-22 10:00:00 - davidson.dev.br
+## v1.3.0 - 2025-09-22 10:01:00 - davidson.dev.br
 
-- **feat(release): Lançamento da versão 1.3.0 - Gestão de Acesso Dinâmico**
+- **feat(release): Lançamento da versão 1.
+3.0 - Gestão de Acesso Dinâmico**
   - Esta versão introduz um sistema completo para o gerenciamento dinâmico das regras de acesso, permitindo que administradores modifiquem permissões em tempo real.
   - **Destaques da Versão:**
     - **API de Regras de Acesso**: Implementado o backend com endpoints CRUD (`criar`, `atualizar`, `excluir`) para a gestão de níveis de permissão (Administrador, Editor, Revisor).
