@@ -42,14 +42,6 @@
           "order": "DESCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "polls",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "eligibleVoters", "arrayConfig": "CONTAINS" }
-      ]
     }
   ],
   "fieldOverrides": []
