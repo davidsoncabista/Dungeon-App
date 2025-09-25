@@ -1,6 +1,34 @@
 # Changelog
 
-## v1.2.0-beta.0 - 2025-09-20 18:00:00 - davidson.dev.br
+## v1.2.4 - 2025-09-21 11:00:00 - davidson.dev.br
+
+- **feat(ui): Cria a interface de controle para as regras de acesso**
+  - Com o backend já implementado, este commit adiciona a nova tela de "Regras de Acesso" na área de administração.
+  - Desenvolvidos os componentes de interface (lista, formulários, modais) para a gestão das regras.
+  - Realizada a integração com as Cloud Functions recém-criadas para consumir e manipular os dados.
+  - Adicionada a nova rota e o item de menu na navegação da área administrativa.
+
+## v1.2.3 - 2025-09-21 10:00:00 - davidson.dev.br
+
+- **feat(api): Implementa os endpoints CRUD para o gerenciamento de regras**
+  - Implementado o backend para a API de Regras de Acesso, trazendo à vida a especificação definida anteriormente.
+  - Adicionados os controladores e a lógica de serviço para criar, ler, atualizar e deletar regras via Funções Chamáveis do Firebase.
+  - Incluída a integração com o Firestore para persistência das regras, protegida por novas regras de segurança.
+  - Garantido que a API segue o contrato definido na documentação, com validação de dados de entrada via Zod.
+
+## v1.2.2 - 2025-09-20 18:45:00 - davidson.dev.br
+
+- **docs(architecture): Evolui a arquitetura para regras de acesso dinâmicas e especifica a API**
+  - Formalizada a decisão de evoluir o sistema de Regras de Acesso de uma estrutura estática para um modelo dinâmico gerenciado via API e banco de dados.
+  - A documentação de arquitetura (`ARCHITECTURE.md`) foi atualizada para descrever o novo fluxo e a especificação da API CRUD (`POST`, `GET`, `PUT`, `DELETE` para `/regras`).
+
+## v1.2.1 - 2025-09-20 18:30:00 - davidson.dev.br
+
+- **docs(regras): Adiciona documentação do modelo de dados para as Regras de Acesso**
+  - Adicionada uma nova seção ao arquivo `ARCHITECTURE.md` que define formalmente a estrutura de dados do objeto `accessRules`.
+  - Esta documentação detalha o propósito de cada campo (`description` e `pages`), servindo como uma "fonte da verdade" para o sistema de permissões visualizado no painel de administração.
+
+## v1.2.0 - 2025-09-20 18:00:00 - davidson.dev.br
 
 - **feat(voting): Adiciona módulo de votação para membros**
   - Esta versão introduz a primeira fase do sistema de votação, focada na experiência do membro votante.
@@ -8,7 +36,7 @@
     - **Página de Votação Condicional**: Criada a nova página `/voting`, que se torna visível no menu apenas quando há uma votação ativa para a qual o membro é elegível.
     - **Interface de Voto e Resultados**: Membros elegíveis podem visualizar as opções de voto, registrar sua escolha uma única vez e, após votar ou ao término da votação, visualizar os resultados apurados.
     - **Verificação de Elegibilidade**: O sistema valida em tempo real se um usuário pode participar de uma votação, cruzando o ID do membro com a lista de votantes elegíveis definida pelo administrador.
-    - **Placeholder para Gestão (Admin)**: Adicionado um card na página de "Sistema" para a futura implementação da interface de criação e gerenciamento de votações.
+    - **Gestão de Votação (Admin)**: Implementada a interface de criação e gerenciamento de votações na página de "Sistema", permitindo ao administrador definir título, descrição, opções e eleger os votantes.
 
 ## v1.1.0-beta - 2025-09-20 16:00:00 - davidson.dev.br
 
@@ -32,7 +60,7 @@
     - **Controle de Acesso Robusto**: Proteção de rotas baseada no status do usuário (Ativo, Pendente, etc.).
     - **Melhorias de Usabilidade**: Adicionado preenchimento de endereço via CEP, verificação de maioridade e filtros/ordenação em listas importantes.
 
-## v1.0.0-beta.1 - 2025-09-20 14:00:00 - davidson.dev.br
+## v1_0_0-beta.1 - 2025-09-20 14:00:00 - davidson.dev.br
 
 - **feat(release): Lançamento da primeira versão Beta (v1.0.0-beta.1)**
   - Esta versão marca a transição do projeto para a fase beta, consolidando funcionalidades críticas para testes em um ambiente mais amplo antes do lançamento oficial.
@@ -204,4 +232,3 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
-                                                                                                                                                                                      

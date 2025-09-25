@@ -29,6 +29,7 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
 - **Comunicação Direta com Membros**: Envie mensagens privadas e categorizadas (aviso, advertência, multa, etc.) para usuários específicos através da página de `Mensagens`, com histórico de envio.
 - **Sistema de Votação Democrático**: Crie votações flexíveis, defina quem pode votar, inicie, encerre e apure os resultados ponderados pelo peso de voto de cada membro, tudo em uma interface centralizada.
 - **Gerenciamento de Planos e Regras de Negócio**: Crie, edite e remova planos de associação dinamicamente. Controle os preços, cotas de reserva e limites de convidados em uma única interface.
+- **Gerenciamento de Regras de Acesso via API**: Acesse uma interface dedicada para criar, editar e excluir dinamicamente as regras e permissões de cada nível de acesso (Administrador, Editor, Revisor), ajustando o que cada um pode ver e fazer no sistema em tempo real, sem necessidade de um novo deploy.
 - **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros, gerencie status, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`).
 - **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e configurações.
 - **Comunicação em Massa**: Envie avisos para todos os usuários através de um formulário integrado no Mural de Avisos.

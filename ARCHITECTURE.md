@@ -70,3 +70,30 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Navegação por Teclado**: Todos os elementos interativos (botões, links, inputs) devem ser totalmente navegáveis e operáveis utilizando apenas o teclado.
 - **Leitores de Tela**: A aplicação deve ser compatível com leitores de tela (como NVDA e VoiceOver), utilizando HTML semântico e atributos ARIA (`aria-label`, `aria-describedby`, etc.) para fornecer contexto adequado.
 - **Rótulos e Descrições**: Todos os campos de formulário e controles devem ter rótulos claros e, quando necessário, descrições.
+
+### 2. API de Regras de Acesso (CRUD)
+A arquitetura do sistema está evoluindo de uma estrutura de regras estática (definida no código-fonte) para um modelo dinâmico gerenciado via banco de dados e exposto através de uma API RESTful. Isso permitirá que as permissões de cada nível de usuário (`AdminRole`) sejam modificadas em tempo de execução, sem a necessidade de um novo deploy.
+
+-   **`POST /regras`**: Cria uma nova regra de acesso.
+    -   **Payload de Requisição:** `AccessRule`
+    -   **Resposta de Sucesso (201):** A regra recém-criada.
+
+-   **`GET /regras/{id}`**: Busca uma regra de acesso específica pelo seu ID.
+    -   **Parâmetro de URL:** `id` (string)
+    -   **Resposta de Sucesso (200):** O objeto `AccessRule` correspondente.
+
+-   **`PUT /regras/{id}`**: Atualiza uma regra de acesso existente.
+    -   **Parâmetro de URL:** `id` (string)
+    -   **Payload de Requisição:** `Partial<AccessRule>`
+    -   **Resposta de Sucesso (200):** A regra atualizada.
+
+-   **`DELETE /regras/{id}`**: Exclui uma regra de acesso.
+    -   **Parâmetro de URL:** `id` (string)
+    -   **Resposta de Sucesso (204):** Sem conteúdo.
+
+#### Modelo de Dados: `AccessRule`
+O objeto `AccessRule` representa a estrutura de uma regra de acesso no banco de dados.
+
+-   **`id`** (string, obrigatório): Identificador único da regra (ex: "Administrador", "Editor").
+-   **`description`** (string, obrigatório): Explicação em linguagem natural sobre o escopo de permissões.
+-   **`pages`** (array de strings, obrigatório): Lista de páginas ou funcionalidades que o nível de acesso pode visualizar e interagir.
