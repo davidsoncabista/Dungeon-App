@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -667,30 +668,6 @@ export default function ProfilePage() {
                            <Skeleton className="h-6 w-full rounded-full"/>
                        </div>
                    )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5" />
-                        Diagnóstico de Acesso
-                    </CardTitle>
-                    <CardDescription>Suas permissões e informações de sistema.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {appUser && (
-                        <>
-                             <div className="flex flex-col space-y-1 text-sm">
-                                <span className="text-muted-foreground">Seu UID:</span>
-                                <p className="text-xs font-mono bg-muted p-2 rounded-md break-all">{appUser.uid}</p>
-                            </div>
-                        </>
-                    )}
-                    <Button onClick={handleRefreshClaims} disabled={isRefreshingClaims} className="w-full">
-                        {isRefreshingClaims ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
-                        Atualizar Permissões
-                    </Button>
                 </CardContent>
               </Card>
           </div>
