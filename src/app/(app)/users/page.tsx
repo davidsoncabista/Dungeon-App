@@ -35,6 +35,7 @@ import { app } from "@/lib/firebase"
 import { getFirestore, collection, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
 
 const roleBadgeClass: Record<AdminRole, string> = {
     Administrador: "bg-role-admin text-role-admin-foreground",
@@ -328,6 +329,8 @@ export default function UsersPage() {
 
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useState('');
+
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -338,12 +341,22 @@ export default function UsersPage() {
     }
   }
 
-  const sortedUsers = useMemo(() => {
+  const filteredAndSortedUsers = useMemo(() => {
     if (!users) return [];
+    
+    let filtered = [...users];
+
+    if (searchTerm) {
+        const lowercasedTerm = searchTerm.toLowerCase();
+        filtered = filtered.filter(u => 
+            u.name.toLowerCase().includes(lowercasedTerm) || 
+            u.email.toLowerCase().includes(lowercasedTerm)
+        );
+    }
     
     const categoryOrder: Record<UserCategory, number> = { "Master": 1, "Gamer": 2, "Player": 3, "Visitante": 4 };
 
-    return [...users].sort((a, b) => {
+    return filtered.sort((a, b) => {
         let comparison = 0;
         if (sortKey === 'name') {
             comparison = a.name.localeCompare(b.name);
@@ -353,7 +366,7 @@ export default function UsersPage() {
         return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-  }, [users, sortKey, sortOrder]);
+  }, [users, sortKey, sortOrder, searchTerm]);
 
 
   const renderContent = () => {
@@ -381,11 +394,11 @@ export default function UsersPage() {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center text-destructive">Erro ao carregar usuários: {error.message}. Verifique as regras de segurança do Firestore.</TableCell></TableRow>;
     }
 
-    if (!sortedUsers || sortedUsers.length === 0) {
-        return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado.</TableCell></TableRow>;
+    if (!filteredAndSortedUsers || filteredAndSortedUsers.length === 0) {
+        return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado com os filtros atuais.</TableCell></TableRow>;
     }
     
-    return sortedUsers.map(user => (
+    return filteredAndSortedUsers.map(user => (
         <UserTableRow
             key={user.uid}
             user={user}
@@ -409,6 +422,13 @@ export default function UsersPage() {
           <CardDescription>Uma lista de todos os usuários cadastrados no sistema. A criação de novos usuários é feita automaticamente quando eles logam com o Google pela primeira vez.</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+             <Input 
+                placeholder="Buscar por nome ou e-mail..." 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)}
+             />
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
