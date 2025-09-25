@@ -9,7 +9,7 @@ import type { Booking } from "@/lib/types/booking"
 import { auth, app } from "@/lib/firebase"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { Clock, Users, User, Info, Pencil } from "lucide-react"
+import { Clock, Users, User, Info, Pencil, CalendarPlus } from "lucide-react"
 import { EditBookingModal } from "./edit-booking-modal"
 import { getFirestore, collection, query, where, doc } from "firebase/firestore"
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
@@ -65,6 +65,32 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
         onOpenChange(open);
     }
     
+    const handleAddToGoogleCalendar = () => {
+        if (!room) return;
+
+        const parseTime = (timeStr: string) => parseISO(`${booking.date}T${timeStr}:00`);
+        const startTime = parseTime(booking.startTime);
+        let endTime = parseTime(booking.endTime);
+        
+        // Handle overnight bookings
+        if (endTime < startTime) {
+            endTime.setDate(endTime.getDate() + 1);
+        }
+
+        const formatToGoogleDate = (date: Date) => format(date, "yyyyMMdd'T'HHmmss'Z'", { timeZone: 'UTC' });
+        
+        const googleCalendarUrl = new URL("https://www.google.com/calendar/render");
+        googleCalendarUrl.searchParams.append("action", "TEMPLATE");
+        googleCalendarUrl.searchParams.append("text", booking.title || `Sessão na ${room.name}`);
+        googleCalendarUrl.searchParams.append("dates", `${formatToGoogleDate(startTime)}/${formatToGoogleDate(endTime)}`);
+        googleCalendarUrl.searchParams.append("details", booking.description || `Reserva na sala ${room.name}.`);
+        googleCalendarUrl.searchParams.append("location", `Dungeon Belém - Sala ${room.name}`);
+        googleCalendarUrl.searchParams.append("sf", "true");
+        googleCalendarUrl.searchParams.append("output", "xml");
+
+        window.open(googleCalendarUrl.toString(), "_blank");
+    }
+
     return (
         <Dialog open={isMyModalOpen} onOpenChange={handleMyOpenChange}>
             <DialogTrigger asChild>{children}</DialogTrigger>
@@ -109,14 +135,18 @@ export const BookingDetailsModal = ({ booking, onOpenChange, children }: { booki
                    </div>
                    )}
                 </div>
-                 {canEdit && (
-                    <div className="flex justify-end gap-2">
+                 <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button variant="outline" onClick={handleAddToGoogleCalendar}>
+                        <CalendarPlus className="mr-2 h-4 w-4" />
+                        Adicionar ao Google Calendar
+                    </Button>
+                    {canEdit && (
                         <EditBookingModal booking={booking} onOpenChange={setIsMyModalOpen}>
-                            <Button variant="outline"><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
+                            <Button><Pencil className="mr-2 h-4 w-4" /> Editar</Button>
                         </EditBookingModal>
-                    </div>
-                )}
+                    )}
+                </div>
             </DialogContent>
         </Dialog>
-    )
+    );
 }
