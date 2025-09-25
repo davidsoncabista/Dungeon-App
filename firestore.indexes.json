@@ -47,14 +47,8 @@
       "collectionGroup": "polls",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "eligibleVoters",
-          "arrayConfig": "CONTAINS"
-        }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "eligibleVoters", "arrayConfig": "CONTAINS" }
       ]
     }
   ],
