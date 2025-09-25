@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit, Vote } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -310,68 +310,82 @@ export default function AdminPage() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
-                        <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
+        <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
+                            <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
+                        </div>
+                        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                            <DialogTrigger asChild>
+                                <Button disabled={isSaving || !canEdit}>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Novo Plano
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Criar Novo Plano</DialogTitle>
+                                    <DialogDescription>
+                                        Defina o nome do novo plano. Os outros valores podem ser editados na tabela.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <PlanForm 
+                                    onSave={handleCreatePlan} 
+                                    onCancel={() => setIsCreateModalOpen(false)} 
+                                />
+                            </DialogContent>
+                        </Dialog>
                     </div>
-                     <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button disabled={isSaving || !canEdit}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Novo Plano
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Criar Novo Plano</DialogTitle>
-                                <DialogDescription>
-                                    Defina o nome do novo plano. Os outros valores podem ser editados na tabela.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <PlanForm 
-                                onSave={handleCreatePlan} 
-                                onCancel={() => setIsCreateModalOpen(false)} 
-                            />
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <div className={!canEdit ? 'cursor-not-allowed' : ''}>
-                               <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Plano</TableHead>
-                                            <TableHead className="text-center">Preço (R$)</TableHead>
-                                            <TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead>
-                                            <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
-                                            <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
-                                            <TableHead className="text-center">Cota Convites</TableHead>
-                                            <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
-                                            <TableHead className="text-right">Ações</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                    {renderContent()}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </TooltipTrigger>
-                         {!canEdit && (
-                            <TooltipContent>
-                                <p>Você não tem permissão para editar os planos.</p>
-                            </TooltipContent>
-                         )}
-                    </Tooltip>
-                </TooltipProvider>
-            </CardContent>
-        </Card>
+                </CardHeader>
+                <CardContent>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className={!canEdit ? 'cursor-not-allowed' : ''}>
+                                <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Plano</TableHead>
+                                                <TableHead className="text-center">Preço (R$)</TableHead>
+                                                <TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead>
+                                                <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
+                                                <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
+                                                <TableHead className="text-center">Cota Convites</TableHead>
+                                                <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
+                                                <TableHead className="text-right">Ações</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                        {renderContent()}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </TooltipTrigger>
+                            {!canEdit && (
+                                <TooltipContent>
+                                    <p>Você não tem permissão para editar os planos.</p>
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
+                    </TooltipProvider>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
+                    <CardDescription>Crie e gerencie as votações da associação.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-8">
+                        <p className="text-muted-foreground">A interface de gerenciamento de votações será implementada aqui.</p>
+                        <Button className="mt-4" disabled={!canEdit}>Criar Nova Votação</Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
         <div className="space-y-8">
             <Card>
                 <CardHeader>

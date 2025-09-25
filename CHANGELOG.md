@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.0-beta.0 - 2025-09-20 18:00:00 - davidson.dev.br
+
+- **feat(voting): Adiciona módulo de votação para membros**
+  - Esta versão introduz a primeira fase do sistema de votação, focada na experiência do membro votante.
+  - **Destaques da Versão:**
+    - **Página de Votação Condicional**: Criada a nova página `/voting`, que se torna visível no menu apenas quando há uma votação ativa para a qual o membro é elegível.
+    - **Interface de Voto e Resultados**: Membros elegíveis podem visualizar as opções de voto, registrar sua escolha uma única vez e, após votar ou ao término da votação, visualizar os resultados apurados.
+    - **Verificação de Elegibilidade**: O sistema valida em tempo real se um usuário pode participar de uma votação, cruzando o ID do membro com a lista de votantes elegíveis definida pelo administrador.
+    - **Placeholder para Gestão (Admin)**: Adicionado um card na página de "Sistema" para a futura implementação da interface de criação e gerenciamento de votações.
+
 ## v1.1.0-beta - 2025-09-20 16:00:00 - davidson.dev.br
 
 - **feat(release): Lançamento da versão Beta 1.1.0**

@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign, MessageSquare } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign, MessageSquare, Vote } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
@@ -10,6 +10,7 @@ import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, where } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import type { UserMessage } from "@/lib/types/userMessage";
+import type { Poll } from "@/lib/types/poll";
 
 
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/online-schedule", label: "Agenda Online", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/billing", label: "Cobranças", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/voting", label: "Votação", icon: Vote, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
 ];
 
 // Navegação visível para usuários 'Visitante' ou 'Pendente'
@@ -67,9 +69,14 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   const userStatus = currentUserData?.status || 'Pendente';
   const userCategory = currentUserData?.category || 'Visitante';
 
+  // --- Buscas para notificações e votações ---
   const messagesQuery = user ? query(collection(firestore, 'userMessages'), where('recipientId', '==', user.uid), where('read', '==', false)) : null;
   const [unreadMessages] = useCollectionData<UserMessage>(messagesQuery);
   const unreadCount = unreadMessages?.length || 0;
+
+  const pollsQuery = user ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
+  const [activePolls] = useCollectionData<Poll>(pollsQuery);
+  const isVotingActive = (activePolls?.length || 0) > 0;
 
 
   const handleLogout = async () => {
@@ -98,7 +105,13 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
         return visitorNavItems.filter(item => item.roles.includes(userCategory));
     }
     // Membros ativos e admins
-    return navItems.filter(item => item.roles.includes(userRole));
+    return navItems.filter(item => {
+        // Oculta "Votação" se não houver uma ativa para o usuário
+        if (item.href === "/voting" && !isVotingActive) {
+            return false;
+        }
+        return item.roles.includes(userRole);
+    });
   }
 
   const getVisibleAdminNavItems = () => {
