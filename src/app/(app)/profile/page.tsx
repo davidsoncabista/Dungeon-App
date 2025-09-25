@@ -10,6 +10,7 @@ import { app, auth } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getFirestore, doc, updateDoc, Timestamp, collection, query, where } from "firebase/firestore"
+import { getFunctions, httpsCallable } from "firebase/functions"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 import type { User, AdminRole } from "@/lib/types/user"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,7 +29,7 @@ import { ptBR } from "date-fns/locale"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
-import { getFunctions, httpsCallable } from "firebase/functions"
+
 
 const gameTypes = [
   { id: 'RPG', label: 'RPG de Mesa' },
@@ -641,11 +642,31 @@ export default function ProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <ShieldCheck className="h-5 w-5" />
-                        Nível de Acesso
+                        Minha Posição na Guilda
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex justify-center">
-                   {appUser ? <Badge className={cn("text-lg", roleBadgeClass[appUser.role])}>{appUser.role}</Badge> : <Skeleton className="h-6 w-24 rounded-full"/>}
+                <CardContent className="space-y-4">
+                   {appUser ? (
+                       <>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Nível de Acesso</span>
+                                <Badge className={cn("text-base", roleBadgeClass[appUser.role])}>{appUser.role}</Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Status da Conta</span>
+                                <Badge variant={appUser.status === 'Ativo' ? 'secondary' : 'outline'} className={cn({
+                                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': appUser.status === 'Ativo',
+                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': appUser.status === 'Pendente',
+                                    'bg-destructive/20 text-destructive dark:bg-destructive/30': appUser.status === 'Bloqueado',
+                                })}>{appUser.status}</Badge>
+                            </div>
+                       </>
+                   ) : (
+                       <div className="space-y-4">
+                           <Skeleton className="h-6 w-full rounded-full"/>
+                           <Skeleton className="h-6 w-full rounded-full"/>
+                       </div>
+                   )}
                 </CardContent>
               </Card>
 
@@ -655,19 +676,11 @@ export default function ProfilePage() {
                         <ShieldCheck className="h-5 w-5" />
                         Diagnóstico de Acesso
                     </CardTitle>
-                    <CardDescription>Suas permissões atuais no sistema.</CardDescription>
+                    <CardDescription>Suas permissões e informações de sistema.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {appUser && (
                         <>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Nível de Acesso:</span>
-                                <Badge variant={appUser.role === 'Administrador' ? 'destructive' : 'secondary'}>{appUser.role}</Badge>
-                            </div>
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Status da Conta:</span>
-                                <Badge variant={appUser.status === 'Ativo' ? 'default' : 'outline'} className={appUser.status === 'Ativo' ? 'bg-green-100 text-green-800' : ''}>{appUser.status}</Badge>
-                            </div>
                              <div className="flex flex-col space-y-1 text-sm">
                                 <span className="text-muted-foreground">Seu UID:</span>
                                 <p className="text-xs font-mono bg-muted p-2 rounded-md break-all">{appUser.uid}</p>
