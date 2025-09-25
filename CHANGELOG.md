@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.0-beta - 2025-09-20 16:00:00 - davidson.dev.br
+
+- **feat(release): Lançamento da versão Beta 1.1.0**
+  - Esta versão foca em melhorias de usabilidade, performance e novas funcionalidades para enriquecer a experiência do usuário e do administrador.
+  - **Destaques da Versão:**
+    - **Integração com Google Calendar**: Usuários agora podem adicionar suas reservas diretamente à sua agenda Google com um único clique.
+    - **Filtro e Ordenação**: Adicionada funcionalidade de pesquisa e ordenação em listas chave (Usuários, Finanças, Minhas Reservas) para facilitar a navegação.
+    - **Otimizações de Performance**: Implementado "code splitting", remoção de código não utilizado e "preconnect hints" para um carregamento significativamente mais rápido.
+    - **Novas Ferramentas de Admin**: Administradores agora podem editar a data "Membro desde" dos usuários.
+    - **UX Melhorada**: O painel de estatísticas agora exibe os aniversariantes do mês, promovendo a comunidade.
+    - **Correção de Acesso**: Garantido que todos os usuários logados, incluindo visitantes, possam acessar a página "Minhas Reservas".
+
 ## v1.0.0 - 2025-09-20 15:00:00 - davidson.dev.br
 
 - **feat(release): Lançamento da primeira versão estável (v1.0.0)**
@@ -173,7 +185,7 @@
                                                                                                                                                                         - **Funcionalidades do Administrador**:
                                                                                                                                                                             - O Dashboard de "Estatísticas" foi conectado ao `mock-service` para exibir gráficos e métricas dinâmicas.
 
-                                                                                                                                                                            ## v0.0.1 - 2025-09-04 16:30:00 - davidson.dev.br
+                                                                                                                                                                            ## v0.0.1 - 2025-09-04 16:30:00 - davidson-br
 
                                                                                                                                                                             - Criação da estrutura de documentação do projeto.
                                                                                                                                                                             - Adicionados os arquivos:
