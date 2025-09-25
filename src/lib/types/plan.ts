@@ -8,5 +8,4 @@ export interface Plan {
     corujaoQuota: number;
     invites: number;
     votingWeight: number;
-    extraInvitePrice: number;
 }
