@@ -375,6 +375,103 @@ export const sendUserMessage = functions
 });
 
 
+// --- FUNÇÕES DE VOTAÇÃO ---
+const checkAdmin = (context: functions.https.CallableContext) => {
+    if (!context.auth || context.auth.token.role !== 'Administrador') {
+        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem realizar esta ação.");
+    }
+};
+
+export const startPoll = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    checkAdmin(context);
+    const { pollId } = data;
+    if (!pollId) throw new functions.https.HttpsError("invalid-argument", "ID da votação é obrigatório.");
+
+    try {
+        await db.collection('polls').doc(pollId).update({ status: "Aberta" });
+        return { success: true, message: "Votação iniciada com sucesso." };
+    } catch (error) {
+        console.error("Erro ao iniciar votação:", error);
+        throw new functions.https.HttpsError("internal", "Erro ao iniciar votação.");
+    }
+});
+
+export const endPoll = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    checkAdmin(context);
+    const { pollId } = data;
+    if (!pollId) throw new functions.https.HttpsError("invalid-argument", "ID da votação é obrigatório.");
+
+    try {
+        await db.collection('polls').doc(pollId).update({ status: "Fechada", closedAt: admin.firestore.FieldValue.serverTimestamp() });
+        return { success: true, message: "Votação encerrada com sucesso." };
+    } catch (error) {
+        console.error("Erro ao encerrar votação:", error);
+        throw new functions.https.HttpsError("internal", "Erro ao encerrar votação.");
+    }
+});
+
+export const castVote = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+
+    const { pollId, selectedOption } = data;
+    const userId = context.auth.uid;
+
+    if (!pollId || !selectedOption) {
+        throw new functions.https.HttpsError("invalid-argument", "Todos os campos são obrigatórios.");
+    }
+
+    const pollRef = db.collection('polls').doc(pollId);
+    const voteRef = pollRef.collection('votes').doc(userId); // Usa UID como ID do voto para garantir unicidade
+
+    try {
+        return await db.runTransaction(async (transaction) => {
+            const pollDoc = await transaction.get(pollRef);
+            if (!pollDoc.exists || pollDoc.data()?.status !== 'Aberta') {
+                throw new functions.https.HttpsError("failed-precondition", "Esta votação não está aberta.");
+            }
+
+            const pollData = pollDoc.data();
+            if (!pollData?.eligibleVoters.includes(userId)) {
+                throw new functions.https.HttpsError("permission-denied", "Você não é elegível para votar nesta enquete.");
+            }
+            
+            const userVoteDoc = await transaction.get(voteRef);
+            if (userVoteDoc.exists) {
+                 throw new functions.https.HttpsError("already-exists", "Você já votou nesta enquete.");
+            }
+
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userPlan = await db.collection('plans').doc(userDoc.data()?.category || '').get();
+            const votingWeight = userPlan.data()?.votingWeight || 1;
+
+            transaction.set(voteRef, {
+                pollId: pollId,
+                userId: userId,
+                selectedOption: selectedOption,
+                votingWeight: votingWeight,
+                votedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            return { success: true, message: "Voto registrado com sucesso." };
+        });
+    } catch (error: any) {
+        console.error("Erro ao registrar voto:", error);
+        // Retransmite o erro com o código e mensagem originais se for um HttpsError
+        if (error.code) {
+            throw error;
+        }
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro ao registrar seu voto.");
+    }
+});
+
 
 // --- FUNÇÕES DE PAGAMENTO ---
 export const createMercadoPagoPayment = functions

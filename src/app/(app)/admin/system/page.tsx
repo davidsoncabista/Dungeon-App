@@ -6,20 +6,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit, Vote } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit, Vote, BarChart3, BadgeCheck, Square, Play } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { PlanForm } from "@/components/app/admin/plan-form"
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore"
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from "firebase/firestore"
 import { app, auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { AdminRole, User as AppUser } from "@/lib/types/user";
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import type { Poll } from "@/lib/types/poll"
+import { PollForm } from "@/components/app/admin/system/poll-form"
+import { Badge } from "@/components/ui/badge"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { PollActions } from "@/components/app/admin/system/poll-actions"
+
 
 // Objeto que serve como documentação viva das regras de acesso do sistema.
 const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
@@ -37,7 +44,7 @@ const accessRules: Record<AdminRole | 'Visitante', { description: string; pages:
     },
     Membro: {
         description: "Acesso padrão para associados. Pode fazer reservas e gerenciar seu perfil.",
-        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil"]
+        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Votação"]
     },
     // Regra para usuários que completaram o cadastro mas ainda não escolheram um plano.
     Visitante: {
@@ -53,24 +60,23 @@ export default function AdminPage() {
   const firestore = getFirestore(app);
   
   // --- Data Fetching ---
-  const plansRef = collection(firestore, 'plans');
-  const plansQuery = query(plansRef, orderBy("price"));
-  const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
-
-  const usersRef = collection(firestore, 'users');
-  const currentUserQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
-  const [appUser, loadingUser] = useCollectionData<AppUser>(currentUserQuery);
-  const currentUser = appUser?.[0];
-
-  const settingsRef = doc(firestore, 'systemSettings', 'config');
-  const [settings, loadingSettings, errorSettings] = useDocumentData(settingsRef);
+  const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(query(collection(firestore, 'plans'), orderBy("price")), { idField: 'id' });
+  const [appUser, loadingUser] = useCollectionData<AppUser>(user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null);
+  const [activeUsers, loadingActiveUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), where('status', '==', 'Ativo'), where('category', '!=', 'Visitante')), { idField: 'id' });
+  const [polls, loadingPolls] = useCollectionData<Poll>(query(collection(firestore, 'polls'), orderBy("createdAt", "desc")), { idField: 'id' });
+  const [settings, loadingSettings] = useDocumentData(doc(firestore, 'systemSettings', 'config'));
   
+  const currentUser = appUser?.[0];
   const canEdit = currentUser?.role === 'Administrador';
 
   // --- Component State ---
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isPlanCreateModalOpen, setIsPlanCreateModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
+
+  const [isPollCreateModalOpen, setIsPollCreateModalOpen] = useState(false);
+  const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [registrationFee, setRegistrationFee] = useState<string | number>('');
   const [extraInvitePrice, setExtraInvitePrice] = useState<string | number>('');
@@ -83,11 +89,12 @@ export default function AdminPage() {
     }
   }, [settings]);
 
+  // --- Plan Handlers ---
   const handleCreatePlan = async (data: { name: string }) => {
     if (!canEdit) return;
     setIsSaving(true);
     try {
-      const newPlanRef = doc(plansRef);
+      const newPlanRef = doc(collection(firestore, 'plans'));
       const newPlan: Plan = {
         id: newPlanRef.id,
         name: data.name,
@@ -100,9 +107,8 @@ export default function AdminPage() {
       };
       await setDoc(newPlanRef, newPlan);
       toast({ title: "Plano Criado!", description: `O plano "${data.name}" foi adicionado.` });
-      setIsCreateModalOpen(false);
+      setIsPlanCreateModalOpen(false);
     } catch (error) {
-      console.error("Erro ao criar plano:", error);
       toast({ title: "Erro!", description: "Não foi possível criar o plano.", variant: "destructive" });
     } finally {
         setIsSaving(false);
@@ -117,7 +123,6 @@ export default function AdminPage() {
       toast({ title: "Plano Atualizado!", description: "O nome do plano foi alterado." });
       setEditingPlan(null);
     } catch (error) {
-       console.error("Erro ao atualizar plano:", error);
        toast({ title: "Erro!", description: "Não foi possível alterar o nome do plano.", variant: "destructive" });
     } finally {
         setIsSaving(false);
@@ -132,7 +137,6 @@ export default function AdminPage() {
         toast({ title: "Plano Excluído!", description: "O plano foi removido com sucesso." });
         setDeletingPlan(null);
     } catch (error) {
-        console.error("Erro ao excluir plano:", error);
         toast({ title: "Erro!", description: "Não foi possível remover o plano.", variant: "destructive" });
     } finally {
         setIsSaving(false);
@@ -141,20 +145,11 @@ export default function AdminPage() {
 
   const handleFieldChange = async (planId: string, field: keyof Plan, value: string | number) => {
     if (!canEdit) return;
-    const planRef = doc(firestore, "plans", planId);
     try {
-        await updateDoc(planRef, { [field]: Number(value) });
-        toast({
-            title: "Campo Atualizado",
-            description: `O campo foi salvo com sucesso.`,
-        });
+        await updateDoc(doc(firestore, "plans", planId), { [field]: Number(value) });
+        toast({ title: "Campo Atualizado", description: `O campo foi salvo com sucesso.` });
     } catch (error) {
-        console.error(`Erro ao atualizar o campo ${String(field)}:`, error);
-        toast({
-            title: "Erro ao Salvar",
-            description: `Não foi possível atualizar o campo.`,
-            variant: "destructive",
-        });
+        toast({ title: "Erro ao Salvar", description: `Não foi possível atualizar o campo.`, variant: "destructive" });
     }
   };
 
@@ -165,17 +160,37 @@ export default function AdminPage() {
         toast({ title: "Valor Inválido", description: "Por favor, insira um número válido.", variant: "destructive"});
         return;
     }
-
     try {
-        await setDoc(settingsRef, { [field]: numericValue }, { merge: true });
+        await setDoc(doc(firestore, 'systemSettings', 'config'), { [field]: numericValue }, { merge: true });
         toast({ title: "Configuração Salva", description: "O novo valor foi salvo com sucesso." });
     } catch (error) {
-        console.error("Erro ao salvar configuração:", error);
         toast({ title: "Erro ao Salvar", description: "Não foi possível salvar o novo valor.", variant: "destructive" });
     }
   }
+
+  // --- Poll Handlers ---
+   const handleCreatePoll = async (data: any) => {
+    if (!canEdit) return;
+    setIsSaving(true);
+    try {
+      const newPollRef = doc(collection(firestore, 'polls'));
+      await setDoc(newPollRef, {
+        ...data,
+        id: newPollRef.id,
+        status: 'Fechada',
+        createdAt: serverTimestamp(),
+      });
+      toast({ title: "Votação Criada!", description: "A nova votação foi criada com sucesso." });
+      setIsPollCreateModalOpen(false);
+    } catch (error) {
+      toast({ title: "Erro!", description: "Não foi possível criar a votação.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
-  const renderContent = () => {
+  // --- Render Functions ---
+  const renderPlansContent = () => {
     if (loadingPlans || loadingUser) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
@@ -190,7 +205,6 @@ export default function AdminPage() {
         </TableRow>
       ));
     }
-
     if (errorPlans) {
       return (
         <TableRow>
@@ -206,99 +220,50 @@ export default function AdminPage() {
         </TableRow>
       );
     }
-    
     if (!plans || plans.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={8} className="text-center h-24">Nenhum plano encontrado. Crie o primeiro plano para começar.</TableCell>
-        </TableRow>
-      );
+      return (<TableRow><TableCell colSpan={8} className="text-center h-24">Nenhum plano encontrado.</TableCell></TableRow>);
     }
 
     return plans.map(plan => (
       <TableRow key={plan.id}>
           <TableCell className="font-bold">{plan.name}</TableCell>
-          <TableCell>
-              <Input 
-                type="number" 
-                defaultValue={plan.price}
-                onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)}
-                className="w-24 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
-            <TableCell className="hidden md:table-cell">
-              <Input 
-                type="number" 
-                defaultValue={plan.weeklyQuota} 
-                onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)}
-                className="w-20 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
-          <TableCell className="hidden md:table-cell">
-              <Input 
-                type="number" 
-                defaultValue={plan.monthlyQuota} 
-                onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)}
-                className="w-20 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
-          <TableCell className="hidden lg:table-cell">
-              <Input 
-                type="number" 
-                defaultValue={plan.corujaoQuota || 0} 
-                onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)}
-                className="w-20 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
-          <TableCell>
-              <Input 
-                type="number" 
-                defaultValue={plan.invites} 
-                onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)}
-                className="w-20 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
-          <TableCell className="hidden lg:table-cell">
-              <Input 
-                type="number" 
-                defaultValue={plan.votingWeight} 
-                onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)}
-                className="w-20 mx-auto text-center"
-                disabled={!canEdit}
-              />
-          </TableCell>
+          <TableCell><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 mx-auto text-center" disabled={!canEdit}/></TableCell>
+          <TableCell className="hidden md:table-cell"><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+          <TableCell className="hidden md:table-cell"><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+          <TableCell className="hidden lg:table-cell"><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+          <TableCell><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+          <TableCell className="hidden lg:table-cell"><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
           <TableCell className="text-right">
               <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={isSaving || !canEdit}>
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Ações para {plan.name}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                      <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Editar Nome
-                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                          onSelect={() => setDeletingPlan(plan)}
-                          disabled={!canEdit}
-                      >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
               </DropdownMenu>
           </TableCell>
       </TableRow>
+    ));
+  }
+
+  const renderPollsContent = () => {
+    if(loadingPolls) return Array.from({ length: 2 }).map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell></TableRow>);
+    if (!polls || polls.length === 0) return <TableRow><TableCell colSpan={4} className="text-center h-24">Nenhuma votação criada.</TableCell></TableRow>;
+
+    return polls.map(poll => (
+        <TableRow key={poll.id}>
+            <TableCell className="font-medium">{poll.title}</TableCell>
+            <TableCell>
+                <Badge variant={poll.status === 'Aberta' ? 'default' : 'secondary'} className={poll.status === 'Aberta' ? 'bg-green-600' : ''}>
+                    {poll.status}
+                </Badge>
+            </TableCell>
+            <TableCell className="hidden sm:table-cell">{format(poll.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
+            <TableCell className="text-right">
+                <PollActions poll={poll} canManage={canEdit} />
+            </TableCell>
+        </TableRow>
     ));
   }
 
@@ -314,75 +279,31 @@ export default function AdminPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
-                            <CardDescription>Defina os preços, cotas de reserva e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
-                        </div>
-                        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                            <DialogTrigger asChild>
-                                <Button disabled={isSaving || !canEdit}>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Novo Plano
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Criar Novo Plano</DialogTitle>
-                                    <DialogDescription>
-                                        Defina o nome do novo plano. Os outros valores podem ser editados na tabela.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <PlanForm 
-                                    onSave={handleCreatePlan} 
-                                    onCancel={() => setIsCreateModalOpen(false)} 
-                                />
-                            </DialogContent>
+                        <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
+                        <Dialog open={isPlanCreateModalOpen} onOpenChange={setIsPlanCreateModalOpen}>
+                            <DialogTrigger asChild><Button disabled={isSaving || !canEdit}><PlusCircle className="mr-2 h-4 w-4" />Novo Plano</Button></DialogTrigger>
+                            <DialogContent><DialogHeader><DialogTitle>Criar Novo Plano</DialogTitle><DialogDescription>Defina o nome do novo plano. Os outros valores podem ser editados na tabela.</DialogDescription></DialogHeader><PlanForm onSave={handleCreatePlan} onCancel={() => setIsPlanCreateModalOpen(false)} /></DialogContent>
                         </Dialog>
                     </div>
+                     <CardDescription>Defina os preços e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className={!canEdit ? 'cursor-not-allowed' : ''}>
-                                <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Plano</TableHead>
-                                                <TableHead className="text-center">Preço (R$)</TableHead>
-                                                <TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead>
-                                                <TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead>
-                                                <TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead>
-                                                <TableHead className="text-center">Cota Convites</TableHead>
-                                                <TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead>
-                                                <TableHead className="text-right">Ações</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                        {renderContent()}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </TooltipTrigger>
-                            {!canEdit && (
-                                <TooltipContent>
-                                    <p>Você não tem permissão para editar os planos.</p>
-                                </TooltipContent>
-                            )}
-                        </Tooltip>
-                    </TooltipProvider>
+                    <TooltipProvider><Tooltip><TooltipTrigger asChild><div className={!canEdit ? 'cursor-not-allowed' : ''}><Table><TableHeader><TableRow><TableHead>Plano</TableHead><TableHead className="text-center">Preço (R$)</TableHead><TableHead className="text-center hidden md:table-cell">Cota Semanal</TableHead><TableHead className="text-center hidden md:table-cell">Cota Mensal</TableHead><TableHead className="text-center hidden lg:table-cell">Cota Corujão</TableHead><TableHead className="text-center">Cota Convites</TableHead><TableHead className="text-center hidden lg:table-cell">Peso de Voto</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>{renderPlansContent()}</TableBody></Table></div></TooltipTrigger>{!canEdit && (<TooltipContent><p>Você não tem permissão para editar os planos.</p></TooltipContent>)}</Tooltip></TooltipProvider>
                 </CardContent>
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
+                         <Dialog open={isPollCreateModalOpen} onOpenChange={setIsPollCreateModalOpen}>
+                            <DialogTrigger asChild><Button disabled={isSaving || !canEdit || loadingActiveUsers}><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
+                            <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle>Criar Nova Votação</DialogTitle><DialogDescription>Preencha os detalhes e selecione os membros elegíveis.</DialogDescription></DialogHeader><PollForm onSave={handleCreatePoll} onCancel={() => setIsPollCreateModalOpen(false)} activeUsers={activeUsers || []} /></DialogContent>
+                        </Dialog>
+                    </div>
                     <CardDescription>Crie e gerencie as votações da associação.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-8">
-                        <p className="text-muted-foreground">A interface de gerenciamento de votações será implementada aqui.</p>
-                        <Button className="mt-4" disabled={!canEdit}>Criar Nova Votação</Button>
-                    </div>
+                     <Table><TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Status</TableHead><TableHead className="hidden sm:table-cell">Criação</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>{renderPollsContent()}</TableBody></Table>
                 </CardContent>
             </Card>
         </div>
@@ -397,30 +318,12 @@ export default function AdminPage() {
                         <>
                             <div className="space-y-2">
                                 <label htmlFor="registration-fee" className="text-sm font-medium">Taxa de Inscrição (Joia)</label>
-                                <Input
-                                    id="registration-fee"
-                                    type="number"
-                                    value={registrationFee}
-                                    onChange={(e) => setRegistrationFee(e.target.value)}
-                                    onBlur={() => handleSaveSettings('registrationFee', registrationFee)}
-                                    className="text-center"
-                                    disabled={!canEdit}
-                                    placeholder="0.00"
-                                />
+                                <Input id="registration-fee" type="number" value={registrationFee} onChange={(e) => setRegistrationFee(e.target.value)} onBlur={() => handleSaveSettings('registrationFee', registrationFee)} className="text-center" disabled={!canEdit} placeholder="0.00"/>
                                 <p className="text-xs text-muted-foreground">Valor único cobrado na primeira associação.</p>
                             </div>
                              <div className="space-y-2">
                                 <label htmlFor="extra-invite-price" className="text-sm font-medium">Preço do Convite Extra</label>
-                                <Input
-                                    id="extra-invite-price"
-                                    type="number"
-                                    value={extraInvitePrice}
-                                    onChange={(e) => setExtraInvitePrice(e.target.value)}
-                                    onBlur={() => handleSaveSettings('extraInvitePrice', extraInvitePrice)}
-                                    className="text-center"
-                                    disabled={!canEdit}
-                                    placeholder="0.00"
-                                />
+                                <Input id="extra-invite-price" type="number" value={extraInvitePrice} onChange={(e) => setExtraInvitePrice(e.target.value)} onBlur={() => handleSaveSettings('extraInvitePrice', extraInvitePrice)} className="text-center" disabled={!canEdit} placeholder="0.00"/>
                                 <p className="text-xs text-muted-foreground">Valor cobrado por cada convidado que exceder a cota gratuita do plano.</p>
                             </div>
                         </>
@@ -432,63 +335,30 @@ export default function AdminPage() {
       
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Visualização das Regras de Acesso
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2"><Eye className="h-5 w-5" /> Visualização das Regras de Acesso</CardTitle>
             <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
         {Object.entries(accessRules).map(([role, rule]) => (
             <div key={role} className="p-4 rounded-lg border bg-muted/50">
-            <h4 className="font-bold flex items-center gap-2">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                {role}
-            </h4>
+            <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{role}</h4>
             <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
             <div className="flex flex-wrap gap-2">
-                {rule.pages.map(page => (
-                    <span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>
-                ))}
+                {rule.pages.map(page => (<span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>))}
             </div>
             </div>
         ))}
         </CardContent>
     </Card>
 
-      {/* Edit Modal */}
+      {/* Edit Plan Modal */}
       <Dialog open={!!editingPlan} onOpenChange={(isOpen) => !isOpen && setEditingPlan(null)}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle>
-                 <DialogDescription>
-                    Altere o nome do plano. Os outros valores são gerenciados na tabela principal.
-                </DialogDescription>
-            </DialogHeader>
-            <PlanForm
-                onSave={handleUpdatePlan}
-                onCancel={() => setEditingPlan(null)}
-                defaultValues={editingPlan!}
-            />
-        </DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle><DialogDescription>Altere o nome do plano. Os outros valores são gerenciados na tabela principal.</DialogDescription></DialogHeader><PlanForm onSave={handleUpdatePlan} onCancel={() => setEditingPlan(null)} defaultValues={editingPlan!}/></DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Plan Confirmation Dialog */}
       <AlertDialog open={!!deletingPlan} onOpenChange={(isOpen) => !isOpen && setDeletingPlan(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Esta ação é irreversível. O plano "{deletingPlan?.name}" será permanentemente removido.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setDeletingPlan(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeletePlan} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Sim, excluir plano
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Você tem certeza?</AlertDialogTitle><AlertDialogDescription>Esta ação é irreversível. O plano "{deletingPlan?.name}" será permanentemente removido.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setDeletingPlan(null)}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeletePlan} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Sim, excluir plano</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
     </div>
