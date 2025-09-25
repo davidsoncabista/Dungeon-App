@@ -4,10 +4,82 @@ import * as functions from "firebase-functions";
 import { setDate, subMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MercadoPagoConfig, Preference } from "mercadopago";
+import { z } from "zod";
 
 // Inicializa o Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
+
+// --- SCHEMAS DE VALIDAÇÃO ---
+const AccessRuleSchema = z.object({
+    id: z.string().min(1),
+    description: z.string().min(1),
+    pages: z.array(z.string()),
+});
+type AccessRule = z.infer<typeof AccessRuleSchema>;
+
+
+// --- FUNÇÕES DE CHECK DE PERMISSÃO ---
+const checkAdmin = (context: functions.https.CallableContext) => {
+    if (!context.auth || context.auth.token.role !== 'Administrador') {
+        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem realizar esta ação.");
+    }
+};
+
+// --- FUNÇÕES CRUD PARA REGRAS DE ACESSO (NOVO) ---
+export const createRule = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data: AccessRule, context) => {
+    checkAdmin(context);
+    try {
+      AccessRuleSchema.parse(data);
+      const { id, ...ruleData } = data;
+      await db.collection('accessRules').doc(id).set(ruleData);
+      return { success: true, message: `Regra "${id}" criada com sucesso.` };
+    } catch (error) {
+      console.error("Erro ao criar regra:", error);
+      if (error instanceof z.ZodError) {
+          throw new functions.https.HttpsError("invalid-argument", "Dados da regra inválidos.");
+      }
+      throw new functions.https.HttpsError("internal", "Erro interno ao criar regra.");
+    }
+});
+
+export const updateRule = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data: AccessRule, context) => {
+    checkAdmin(context);
+    try {
+        AccessRuleSchema.parse(data);
+        const { id, ...ruleData } = data;
+        await db.collection('accessRules').doc(id).update(ruleData);
+        return { success: true, message: `Regra "${id}" atualizada com sucesso.` };
+    } catch (error) {
+        console.error("Erro ao atualizar regra:", error);
+        if (error instanceof z.ZodError) {
+          throw new functions.https.HttpsError("invalid-argument", "Dados da regra inválidos.");
+        }
+        throw new functions.https.HttpsError("internal", "Erro interno ao atualizar regra.");
+    }
+});
+
+export const deleteRule = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data: { id: string }, context) => {
+    checkAdmin(context);
+    const { id } = data;
+    if (!id) {
+        throw new functions.https.HttpsError("invalid-argument", "ID da regra é obrigatório.");
+    }
+    try {
+        await db.collection('accessRules').doc(id).delete();
+        return { success: true, message: `Regra "${id}" excluída com sucesso.` };
+    } catch (error) {
+        console.error("Erro ao excluir regra:", error);
+        throw new functions.https.HttpsError("internal", "Erro interno ao excluir regra.");
+    }
+});
+
 
 // --- FUNÇÕES EXISTENTES ---
 
@@ -376,12 +448,6 @@ export const sendUserMessage = functions
 
 
 // --- FUNÇÕES DE VOTAÇÃO ---
-const checkAdmin = (context: functions.https.CallableContext) => {
-    if (!context.auth || context.auth.token.role !== 'Administrador') {
-        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem realizar esta ação.");
-    }
-};
-
 export const startPoll = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {

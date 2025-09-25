@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.3 - 2025-09-21 10:00:00 - davidson.dev.br
+
+- **feat(api): Implementa os endpoints CRUD para o gerenciamento de regras**
+  - Implementado o backend para a API de Regras de Acesso, trazendo à vida a especificação definida anteriormente.
+  - Adicionados os controladores e a lógica de serviço para criar, ler, atualizar e deletar regras via Funções Chamáveis do Firebase.
+  - Incluída a integração com o Firestore para persistência das regras, protegida por novas regras de segurança.
+  - Garantido que a API segue o contrato definido na documentação, com validação de dados de entrada via Zod.
+
 ## v1.2.2 - 2025-09-20 18:45:00 - davidson.dev.br
 
 - **docs(architecture): Evolui a arquitetura para regras de acesso dinâmicas e especifica a API**
