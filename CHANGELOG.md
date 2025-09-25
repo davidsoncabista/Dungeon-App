@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.0 - 2025-09-22 10:00:00 - davidson.dev.br
+
+- **feat(release): Lançamento da versão 1.3.0 - Gestão de Acesso Dinâmico**
+  - Esta versão introduz um sistema completo para o gerenciamento dinâmico das regras de acesso, permitindo que administradores modifiquem permissões em tempo real.
+  - **Destaques da Versão:**
+    - **API de Regras de Acesso**: Implementado o backend com endpoints CRUD (`criar`, `atualizar`, `excluir`) para a gestão de níveis de permissão (Administrador, Editor, Revisor).
+    - **Interface de Gerenciamento**: Criada a nova página `/admin/access-rules`, onde administradores podem visualizar, criar, editar e excluir regras de acesso através de uma interface intuitiva.
+    - **Evolução da Arquitetura**: O sistema agora permite que as regras de acesso sejam gerenciadas via banco de dados, eliminando a necessidade de deploy para ajustar permissões.
+
 ## v1.2.4 - 2025-09-21 11:00:00 - davidson.dev.br
 
 - **feat(ui): Cria a interface de controle para as regras de acesso**
@@ -232,3 +241,4 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
+
