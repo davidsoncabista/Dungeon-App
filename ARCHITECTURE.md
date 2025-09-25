@@ -13,7 +13,8 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Cobranças/Matrícula**: Exibir status de pagamento, permitir quitação e guiar o usuário na escolha de um plano de associação.
 - **Mural de Avisos**: Página para consultar o histórico de comunicados da administração.
 - **Caixa de Mensagens**: Página para o usuário visualizar mensagens privadas enviadas pela administração.
-- **Área do Administrador**: Painel para gerenciamento completo do sistema, incluindo planos, usuários, salas, finanças e regras de negócio.
+- **Página de Votação**: Uma página (`/voting`) que aparece condicionalmente para membros elegíveis quando uma votação está ativa.
+- **Área do Administrador**: Painel para gerenciamento completo do sistema, incluindo planos, usuários, salas, finanças, regras de negócio e votações.
 
 ### 2. Funcionalidades do Usuário (Associado)
 - **Autenticação, Onboarding e Controle de Acesso**:
@@ -38,6 +39,10 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
     - **Gateway de Pagamento**: Integração com o Mercado Pago para processamento de pagamentos via PIX.
     - **Confirmação via Webhook**: Um webhook escuta as confirmações de pagamento, atualizando automaticamente o status da transação e do usuário.
     - **Transparência de Pagamento**: O usuário tem uma visão clara do status de pagamento de sua taxa de inscrição (joia) em seu perfil.
+- **Sistema de Votação**:
+    - **Acesso Condicional**: Um item de menu "Votação" e a página `/voting` se tornam visíveis apenas quando há uma votação ativa para a qual o membro é elegível.
+    - **Interface de Voto**: O membro pode visualizar as opções e registrar seu voto uma única vez.
+    - **Visualização de Resultados**: Após votar ou após o encerramento da votação, o membro pode visualizar o resultado final.
 
 ### 3. Funcionalidades do Administrador
 - **Níveis de Acesso**: Definir perfis de administrador (Administrador, Editor, Revisor) com permissões granulares gerenciadas por Custom Claims no Firebase.
@@ -46,6 +51,11 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
     - **Envio Seguro**: Interface em `/admin/messages` que utiliza uma Cloud Function (`sendUserMessage`) para que administradores possam enviar mensagens privadas a usuários específicos.
     - **Categorização**: As mensagens podem ser categorizadas como `aviso`, `advertencia`, `multa` ou `bloqueio`, facilitando a comunicação formal.
     - **Histórico**: A administração pode visualizar todas as mensagens enviadas e seus status (lida/não lida).
+- **Sistema de Votação Democrático**:
+  - **Criação Flexível**: Interface no painel de administração (`/admin/system`) para criar votações com título, descrição e opções personalizáveis.
+  - **Controle de Votantes**: Permitir que o administrador selecione uma lista de membros "Ativos" elegíveis para cada votação, garantindo que apenas o público certo participe.
+  - **Gestão do Ciclo de Vida**: Funcionalidades para iniciar e encerrar votações manualmente, dando controle total sobre o período de votação.
+  - **Apuração com Peso de Voto**: O sistema calculará automaticamente os resultados finais, ponderando cada voto com base na `category` (e, consequentemente, no `votingWeight`) do membro no momento da votação.
 - **Gerenciamento de Planos e Regras**: Interface em `/admin/system` para criar, editar e excluir planos, controlando preços, cotas e limites.
 - **Gerenciamento de Avisos**: Criar, enviar e monitorar a visualização de avisos públicos.
 - **Gerenciamento de Salas**: CRUD de salas e definição de capacidade.

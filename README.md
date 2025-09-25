@@ -21,16 +21,18 @@ O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de 
   - **Caixa de Entrada Privada**: Receba mensagens diretas da administração (avisos, advertências, etc.) com um indicador de notificações não lidas no cabeçalho.
 - **Pagamentos Simplificados**: Gere um QR Code PIX através do gateway de pagamento seguro para quitar sua matrícula e mensalidades.
 - **Transparência na Matrícula**: Visualize claramente o valor da taxa de inscrição (joia) durante o processo e confirme o status do seu pagamento diretamente no seu perfil.
+- **Participação em Votações**: Participe de votações importantes da associação através de uma página dedicada, que aparece apenas quando você é elegível para votar.
 
 ### Para Administradores
 
 - **Painel de Controle Centralizado**: Uma área de administração robusta e organizada em seções (`Sistema`, `Finanças`, `Mensagens`) para gerenciar todos os aspectos do sistema.
 - **Comunicação Direta com Membros**: Envie mensagens privadas e categorizadas (aviso, advertência, multa, etc.) para usuários específicos através da página de `Mensagens`, com histórico de envio.
+- **Sistema de Votação Democrático**: Crie votações flexíveis, defina quem pode votar, inicie, encerre e apure os resultados ponderados pelo peso de voto de cada membro, tudo em uma interface centralizada.
 - **Gerenciamento de Planos e Regras de Negócio**: Crie, edite e remova planos de associação dinamicamente. Controle os preços, cotas de reserva e limites de convidados em uma única interface.
 - **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros, gerencie status, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`).
 - **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e configurações.
 - **Comunicação em Massa**: Envie avisos para todos os usuários através de um formulário integrado no Mural de Avisos.
-- **Dashboard de Estatísticas**: Visualize métricas de uso, como salas mais populares, taxa de ocupação e número de adimplentes.
+- **Dashboard de Estatísticas**: Visualize métricas de uso, como taxa de ocupação, número de adimplentes e a lista de aniversariantes do mês.
 - **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações ou cancelamentos.
 - **Gestão Financeira**: Gerencie cobranças avulsas, marque transações como pagas e tenha acesso ao histórico financeiro de todos os membros.
 
