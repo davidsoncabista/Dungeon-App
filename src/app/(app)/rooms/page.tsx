@@ -27,14 +27,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, orderBy, setDoc, updateDoc, doc, deleteDoc } from "firebase/firestore"
-import { app } from "@/lib/firebase"
+import { getFirestore, collection, query, orderBy, setDoc, updateDoc, doc, deleteDoc, where } from "firebase/firestore"
+import { app, auth } from "@/lib/firebase"
 import type { Room } from "@/lib/types/room"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RoomForm } from "@/components/app/rooms/room-form"
+import { useAuthState } from "react-firebase-hooks/auth"
+import type { User } from "@/lib/types/user"
 
 // --- COMPONENTE DA LINHA DA TABELA ---
-function RoomTableRow({ room }: { room: Room }) {
+function RoomTableRow({ room, canEdit }: { room: Room, canEdit: boolean }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -95,7 +97,7 @@ function RoomTableRow({ room }: { room: Room }) {
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button aria-haspopup="true" size="icon" variant="ghost">
+                <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
@@ -150,11 +152,18 @@ function RoomTableRow({ room }: { room: Room }) {
 export default function RoomsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
   const firestore = getFirestore(app);
 
   const roomsRef = collection(firestore, 'rooms');
   const roomsQuery = query(roomsRef, orderBy("name"));
-  const [rooms, loading, error] = useCollectionData<Room>(roomsQuery, { idField: 'id' });
+  const [rooms, loadingRooms, errorRooms] = useCollectionData<Room>(roomsQuery, { idField: 'id' });
+  
+  const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+  const [appUser] = useCollectionData<User>(userQuery);
+  const currentUserRole = appUser?.[0]?.role;
+  const canEdit = currentUserRole === 'Administrador' || currentUserRole === 'Editor';
+
 
   const handleCreateRoom = async (data: Omit<Room, 'id' | 'uid'>) => {
     try {
@@ -178,7 +187,7 @@ export default function RoomsPage() {
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (loadingRooms) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-[64px] w-[128px] rounded-md" /></TableCell>
@@ -190,7 +199,7 @@ export default function RoomsPage() {
       ));
     }
 
-    if (error) {
+    if (errorRooms) {
       return (
         <TableRow>
           <TableCell colSpan={5}>
@@ -198,7 +207,7 @@ export default function RoomsPage() {
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
                     <h4 className="font-bold text-destructive">Erro ao carregar salas</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. ({error.message})</p>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. ({errorRooms.message})</p>
                 </div>
             </div>
           </TableCell>
@@ -215,7 +224,7 @@ export default function RoomsPage() {
     }
 
     return rooms.map(room => (
-      <RoomTableRow key={room.id} room={room} />
+      <RoomTableRow key={room.id} room={room} canEdit={canEdit} />
     ));
   }
 
@@ -228,7 +237,7 @@ export default function RoomsPage() {
         </div>
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button disabled={!canEdit}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nova Sala
                 </Button>
@@ -272,5 +281,3 @@ export default function RoomsPage() {
     </div>
   )
 }
-
-    

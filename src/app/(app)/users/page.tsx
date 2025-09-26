@@ -31,11 +31,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { app } from "@/lib/firebase"
-import { getFirestore, collection, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore"
+import { app, auth } from "@/lib/firebase"
+import { getFirestore, collection, doc, updateDoc, deleteDoc, query, orderBy, where } from "firebase/firestore"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
+import { useAuthState } from "react-firebase-hooks/auth"
 
 const roleBadgeClass: Record<AdminRole, string> = {
     Administrador: "bg-role-admin text-role-admin-foreground",
@@ -162,7 +163,7 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
 }
 
 // --- Componente da Linha da Tabela ---
-function UserTableRow({ user }: { user: User; }) {
+function UserTableRow({ user, canEdit, canDelete }: { user: User; canEdit: boolean; canDelete: boolean; }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const firestore = getFirestore(app);
     const { toast } = useToast();
@@ -196,17 +197,23 @@ function UserTableRow({ user }: { user: User; }) {
         `${user.name} foi ${user.status === 'Bloqueado' ? 'desbloqueado' : 'bloqueado'} com sucesso.`
     );
 
-    const handleDeleteUser = () => handleAction(
-        () => deleteDoc(doc(firestore, "users", user.uid)),
-        "Usuário Excluído!",
-        `${user.name} foi removido permanentemente do sistema.`
-    );
+    const handleDeleteUser = () => {
+        if (!canDelete) return;
+        handleAction(
+            () => deleteDoc(doc(firestore, "users", user.uid)),
+            "Usuário Excluído!",
+            `${user.name} foi removido permanentemente do sistema.`
+        );
+    }
 
-    const handleRoleChange = (newRole: AdminRole) => handleAction(
-        () => updateDoc(doc(firestore, "users", user.uid), { role: newRole }),
-        "Nível de Acesso Alterado!",
-        `O nível de acesso de ${user.name} foi definido como ${newRole}.`
-    );
+    const handleRoleChange = (newRole: AdminRole) => {
+         if (!canDelete) return; // Apenas Admins podem mudar roles
+        handleAction(
+            () => updateDoc(doc(firestore, "users", user.uid), { role: newRole }),
+            "Nível de Acesso Alterado!",
+            `O nível de acesso de ${user.name} foi definido como ${newRole}.`
+        );
+    }
 
     return (
         <TableRow key={user.uid}>
@@ -239,21 +246,23 @@ function UserTableRow({ user }: { user: User; }) {
                         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
                                     <MoreHorizontal className="h-4 w-4" />
                                     <span className="sr-only">Toggle menu</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                    <DialogTrigger asChild>
-                                        <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
-                                    </DialogTrigger>
-                                    <EditRoleDialog user={user} onConfirm={handleRoleChange} />
-                                    <DropdownMenuSeparator />
-                                    <BlockUserDialog user={user} onConfirm={handleBlockUser} />
-                                    <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />
-                                </DropdownMenuContent>
+                                {canEdit && (
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                        <DialogTrigger asChild>
+                                            <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                        </DialogTrigger>
+                                        {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} />}
+                                        <DropdownMenuSeparator />
+                                        <BlockUserDialog user={user} onConfirm={handleBlockUser} />
+                                        {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />}
+                                    </DropdownMenuContent>
+                                )}
                             </DropdownMenu>
                             <DialogContent className="sm:max-w-lg">
                                 <DialogHeader>
@@ -288,21 +297,23 @@ function UserTableRow({ user }: { user: User; }) {
                     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
                                 <MoreHorizontal className="h-4 w-4" />
                                 <span className="sr-only">Toggle menu</span>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                <DialogTrigger asChild>
-                                    <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
-                                </DialogTrigger>
-                                <EditRoleDialog user={user} onConfirm={handleRoleChange} />
-                                <DropdownMenuSeparator />
-                                <BlockUserDialog user={user} onConfirm={handleBlockUser} />
-                                <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />
-                            </DropdownMenuContent>
+                            {canEdit && (
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                    </DialogTrigger>
+                                    {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} />}
+                                    <DropdownMenuSeparator />
+                                    <BlockUserDialog user={user} onConfirm={handleBlockUser} />
+                                    {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />}
+                                </DropdownMenuContent>
+                            )}
                         </DropdownMenu>
                          <DialogContent className="sm:max-w-lg">
                             <DialogHeader>
@@ -324,12 +335,21 @@ function UserTableRow({ user }: { user: User; }) {
 // --- Página Principal ---
 export default function UsersPage() {
   const firestore = getFirestore(app);
+  const [user] = useAuthState(auth);
+
   const usersRef = collection(firestore, 'users');
   const [users, loading, error] = useCollectionData<User>(usersRef, { idField: 'id' });
+  
+  const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+  const [appUser] = useCollectionData<User>(userQuery);
+  const currentUserRole = appUser?.[0]?.role;
 
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const canEdit = currentUserRole === 'Administrador' || currentUserRole === 'Editor';
+  const canDelete = currentUserRole === 'Administrador';
 
 
   const handleSort = (key: SortKey) => {
@@ -398,10 +418,12 @@ export default function UsersPage() {
         return <TableRow><TableCell colSpan={5} className="h-24 text-center">Nenhum usuário encontrado com os filtros atuais.</TableCell></TableRow>;
     }
     
-    return filteredAndSortedUsers.map(user => (
+    return filteredAndSortedUsers.map(u => (
         <UserTableRow
-            key={user.uid}
-            user={user}
+            key={u.uid}
+            user={u}
+            canEdit={canEdit}
+            canDelete={canDelete}
         />
     ));
   }
