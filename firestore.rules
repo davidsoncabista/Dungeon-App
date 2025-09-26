@@ -3,97 +3,110 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- REGRAS GERAIS ---
-    // Configurações do Sistema e Planos: Apenas administradores podem ler e escrever.
-    match /systemSettings/{docId} {
-      allow read, write: if request.auth.token.role == 'Administrador';
+    // --- Funções de Ajuda (Helpers) ---
+    function isSignedIn() {
+      return request.auth != null;
     }
-    match /plans/{planId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Administrador';
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    // Função para ler o documento do usuário autenticado
+    function getUserData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+    // Função isAdmin corrigida: agora lê o 'role' diretamente do documento do usuário no Firestore.
+    function isAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).role == 'Administrador';
+    }
+    function isEditorOrAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).role in ['Administrador', 'Editor'];
+    }
+    function isRevisorOrHigher() {
+      return isSignedIn() && getUserData(request.auth.uid).role in ['Administrador', 'Editor', 'Revisor'];
     }
 
-    // --- REGRAS DE ACESSO (NOVO) ---
-    // Apenas Administradores podem gerenciar as regras de acesso.
+    // --- Regras por Coleção ---
+
+    // REGRAS DE ACESSO (Permissões customizadas)
+    // Apenas administradores podem ler e escrever as definições de papéis.
     match /accessRules/{ruleId} {
-      allow read, write: if request.auth.token.role == 'Administrador';
+      allow read, write: if isAdmin();
     }
-    
-    // --- USUÁRIOS ---
-    // Todos podem ler a lista de usuários, mas só o próprio usuário ou um admin pode editar.
+
+    // USUÁRIOS
     match /users/{userId} {
-      allow read, list: if request.auth != null;
-      allow update: if request.auth.uid == userId || request.auth.token.role == 'Administrador';
-      // A criação é feita via Cloud Function (createUserDocument)
-      allow create: if false; 
-      // Apenas admins podem deletar
-      allow delete: if request.auth.token.role == 'Administrador';
-    }
-
-    // --- SALAS ---
-    // Todos podem ler as salas, mas só Editores e Admins podem modificar.
-    match /rooms/{roomId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Editor' || request.auth.token.role == 'Administrador';
-    }
-
-    // --- RESERVAS ---
-    // Regras complexas para reservas.
-    match /bookings/{bookingId} {
-      // Leitura: Permitida para qualquer participante da reserva ou para administradores.
-      allow read: if request.auth.uid in resource.data.participants || request.auth.token.role in ['Administrador', 'Editor', 'Revisor'];
-      // Criação: Permitida para qualquer usuário autenticado (a lógica de cota é validada no frontend/função).
-      allow create: if request.auth.uid == request.resource.data.organizerId;
-      // Atualização: Permitida para o organizador ou para administradores/editores.
-      allow update: if request.auth.uid == resource.data.organizerId 
-                      || request.auth.token.role in ['Administrador', 'Editor']
-                      || (request.auth.uid in resource.data.participants && request.resource.data.participants == resource.data.participants.removeAll([request.auth.uid])); // Permite sair da reserva
-      // Exclusão: Permitida para o organizador ou para administradores/editores.
-      allow delete: if request.auth.uid == resource.data.organizerId || request.auth.token.role in ['Administrador', 'Editor'];
-    }
-
-    // --- AVISOS ---
-    // Todos podem ler. Apenas admins podem criar/editar/excluir.
-    match /notices/{noticeId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth.token.role == 'Administrador';
-    }
-
-    // --- MENSAGENS DIRETAS ---
-    // Apenas o destinatário ou um admin podem ler. A criação é via Cloud Function.
-    match /userMessages/{messageId} {
-      allow read: if request.auth.uid == resource.data.recipientId || request.auth.token.role == 'Administrador';
-      allow update: if request.auth.uid == resource.data.recipientId; // Para marcar como lida
-      allow create, delete: if request.auth.token.role == 'Administrador';
-    }
-    
-    // --- TRANSAÇÕES ---
-    // Apenas o usuário dono da transação ou um admin podem ler.
-    // A criação é via Cloud Function (mensalidades/taxas) ou por um admin.
-    match /transactions/{transactionId} {
-      allow read, list: if request.auth.uid == resource.data.userId || request.auth.token.role == 'Administrador';
-      allow create, update: if request.auth.token.role == 'Administrador';
-      allow delete: if false; // Evitar exclusão de histórico financeiro
-    }
-    
-    // --- VOTAÇÕES ---
-    match /polls/{pollId} {
-      // Leitura permitida para todos os usuários logados.
-      allow read, list: if request.auth != null;
-      // Apenas admins podem criar, editar ou apagar votações.
-      allow create, update, delete: if request.auth.token.role == 'Administrador';
+      // Leitura de um único documento (get): O próprio usuário ou um Revisor (ou superior) pode ler.
+      allow get: if isOwner(userId) || isRevisorOrHigher();
       
-      // Regras para a subcoleção de votos
-      match /votes/{voteId} {
-        // Ninguém pode listar todos os votos para garantir anonimato parcial.
-        allow list: if false;
-        // Leitura permitida apenas para o próprio votante ou para admins.
-        allow read: if request.auth.uid == voteId || request.auth.token.role == 'Administrador';
-        // Voto só pode ser criado pelo próprio usuário autenticado.
-        allow create: if request.auth.uid == voteId;
-        // Votos não podem ser alterados ou excluídos após enviados.
-        allow update, delete: if false;
-      }
+      // Leitura de múltiplos documentos (list/query): Apenas Revisor (ou superior) pode fazer.
+      allow list: if isRevisorOrHigher();
+      
+      // Atualização: O próprio usuário ou um Admin/Editor pode atualizar um perfil.
+      allow update: if isOwner(userId) || isEditorOrAdmin();
+
+      // Criação: A criação de documentos de usuário é controlada pela Cloud Function 'createUserDocument'.
+      // Esta regra permite que a função (que bypassa regras) crie o documento.
+      allow create: if true;
+
+      // Exclusão: Apenas administradores podem excluir usuários.
+      allow delete: if isAdmin();
+    }
+
+    // SALAS
+    match /rooms/{roomId} {
+      allow read: if isSignedIn();
+      allow write: if isEditorOrAdmin();
+    }
+
+    // RESERVAS
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn();
+      // Verificação de status 'Ativo' agora usa a função getUserData()
+      allow create: if isSignedIn() && getUserData(request.auth.uid).status == 'Ativo' && isOwner(request.resource.data.organizerId);
+      allow update: if (isOwner(resource.data.organizerId) || isEditorOrAdmin()) || (isOwner(request.auth.uid) && request.auth.uid in resource.data.participants);
+      allow delete: if isOwner(resource.data.organizerId) || isEditorOrAdmin();
+    }
+    
+    // AVISOS
+    match /notices/{noticeId} {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+    
+    // MENSAGENS DIRETAS
+    match /userMessages/{messageId} {
+        allow read: if isOwner(resource.data.recipientId) || isAdmin();
+        allow update: if isOwner(resource.data.recipientId);
+        allow create, delete: if isAdmin();
+    }
+    
+    // VOTAÇÕES
+    match /polls/{pollId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+
+        match /votes/{voteId} {
+            allow create, read: if isOwner(voteId);
+            allow list: if isAdmin();
+            allow update, delete: if false;
+        }
+    }
+    
+    // CONFIGURAÇÕES DO SISTEMA E PLANOS
+    match /systemSettings/config {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+    }
+    
+    match /plans/{planId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+    }
+    
+    // TRANSAÇÕES FINANCEIRAS
+    match /transactions/{transactionId} {
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        allow write: if isAdmin();
     }
   }
 }
