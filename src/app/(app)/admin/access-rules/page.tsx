@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Eye, Lock } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"
 import { app } from "@/lib/firebase"
@@ -22,10 +22,15 @@ export default function AccessRulesPage() {
   const firestore = getFirestore(app);
 
   // --- Data Fetching ---
-  const [rules, loadingRules, errorRules] = useCollectionData<AccessRule>(
-    query(collection(firestore, 'accessRules'), orderBy("id")), 
+  const [rulesData, loadingRules, errorRules] = useCollectionData<AccessRule>(
+    query(collection(firestore, 'accessRules')), 
     { idField: 'id' }
   );
+
+  const rules = useMemo(() => {
+    if (!rulesData) return [];
+    return [...rulesData].sort((a, b) => a.id.localeCompare(b.id));
+  }, [rulesData]);
 
   // --- Component State ---
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
