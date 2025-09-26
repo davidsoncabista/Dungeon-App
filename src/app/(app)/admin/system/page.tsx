@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { AdminRole, User as AppUser } from "@/lib/types/user";
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { Poll, Vote } from "@/lib/types/poll"
+import type { Poll, Vote as PollVote } from "@/lib/types/poll"
 import { PollForm } from "@/components/app/admin/system/poll-form"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
@@ -29,33 +29,6 @@ import { PollActions } from "@/components/app/admin/system/poll-actions"
 import { cn } from "@/lib/utils"
 import { NoticeForm, type NoticeFormValues } from "@/components/app/notices/notice-form"
 
-
-// Objeto que serve como documentação viva das regras de acesso do sistema.
-const accessRules: Record<AdminRole | 'Visitante', { description: string; pages: string[] }> = {
-    Administrador: {
-        description: "Acesso total. Pode gerenciar planos, usuários, salas, finanças e as configurações do sistema.",
-        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas", "Finanças", "Sistema"]
-    },
-    Editor: {
-        description: "Pode gerenciar usuários, salas e estatísticas, mas não as regras do sistema.",
-        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários", "Salas"]
-    },
-    Revisor: {
-        description: "Pode visualizar estatísticas e gerenciar usuários, mas não edita salas ou regras.",
-        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Estatísticas", "Usuários"]
-    },
-    Membro: {
-        description: "Acesso padrão para associados. Pode fazer reservas e gerenciar seu perfil.",
-        pages: ["Agenda Online", "Minhas Reservas", "Cobranças", "Avisos", "Perfil", "Votação"]
-    },
-    // Regra para usuários que completaram o cadastro mas ainda não escolheram um plano.
-    Visitante: {
-        description: "Acesso de novo usuário. Pode ver a estrutura do app, completar o perfil e se matricular.",
-        pages: ["Minhas Reservas", "Matrícula", "Perfil"]
-    }
-};
-
-
 export default function AdminPage() {
   const { toast } = useToast();
   const [user] = useAuthState(auth);
@@ -63,7 +36,8 @@ export default function AdminPage() {
   
   // --- Data Fetching ---
   const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(query(collection(firestore, 'plans'), orderBy("price")), { idField: 'id' });
-  const [appUser, loadingUser] = useCollectionData<AppUser>(user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null);
+  const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+  const [appUser, loadingUser] = useCollectionData<AppUser>(userQuery);
   
   const [allUsers, loadingAllUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy("name")), { idField: 'id' });
 
@@ -82,7 +56,8 @@ export default function AdminPage() {
   const [settings, loadingSettings] = useDocumentData(doc(firestore, 'systemSettings', 'config'));
   
   const currentUser = appUser?.[0];
-  const canEdit = currentUser?.role === 'Administrador';
+  const canEdit = currentUser?.role === 'Administrador' || currentUser?.role === 'Editor';
+  const isAdmin = currentUser?.role === 'Administrador';
 
   // --- Component State ---
   const [isPlanCreateModalOpen, setIsPlanCreateModalOpen] = useState(false);
@@ -100,19 +75,6 @@ export default function AdminPage() {
   const [registrationFee, setRegistrationFee] = useState<string | number>('');
   const [extraInvitePrice, setExtraInvitePrice] = useState<string | number>('');
 
-  // --- Fetch votes for a specific poll when needed ---
-  const [votesForResults, setVotesForResults] = useState<Vote[]>([]);
-  const [loadingVotes, setLoadingVotes] = useState(false);
-  const [votesPollId, setVotesPollId] = useState<string | null>(null);
-  const [votes] = useCollectionData<Vote>(votesPollId ? query(collection(firestore, `polls/${votesPollId}/votes`)) : null, { idField: 'id' });
-  useEffect(() => {
-    if (votes) {
-      setVotesForResults(votes);
-      setLoadingVotes(false);
-    }
-  }, [votes]);
-
-
   useEffect(() => {
     if (settings) {
       setRegistrationFee(settings.registrationFee || '');
@@ -121,71 +83,46 @@ export default function AdminPage() {
   }, [settings]);
 
   // --- Plan Handlers ---
-  const handleCreatePlan = async (data: { name: string }) => {
-    if (!canEdit) return;
+  const handleUpdatePlan = async (data: Partial<Plan>) => {
+    if (!editingPlan || !isAdmin) return;
     setIsSaving(true);
     try {
-      const newPlanRef = doc(collection(firestore, 'plans'));
-      const newPlan: Plan = {
-        id: newPlanRef.id,
-        name: data.name,
-        price: 0,
-        weeklyQuota: 0,
-        monthlyQuota: 0,
-        invites: 0,
-        votingWeight: 1,
-        corujaoQuota: 0,
-      };
-      await setDoc(newPlanRef, newPlan);
-      toast({ title: "Plano Criado!", description: `O plano "${data.name}" foi adicionado.` });
-      setIsPlanCreateModalOpen(false);
-    } catch (error) {
-      toast({ title: "Erro!", description: "Não foi possível criar o plano.", variant: "destructive" });
-    } finally {
-        setIsSaving(false);
-    }
-  };
-
-  const handleUpdatePlan = async (data: { name: string }) => {
-    if (!editingPlan || !canEdit) return;
-    setIsSaving(true);
-    try {
-      await updateDoc(doc(firestore, "plans", editingPlan.id), { name: data.name });
+      await updateDoc(doc(firestore, "plans", editingPlan.id), data);
       toast({ title: "Plano Atualizado!", description: "O nome do plano foi alterado." });
       setEditingPlan(null);
-    } catch (error) {
-       toast({ title: "Erro!", description: "Não foi possível alterar o nome do plano.", variant: "destructive" });
+    } catch (error: any) {
+       toast({ title: "Erro de Permissão!", description: error.message || "Você não tem permissão para realizar esta ação.", variant: "destructive" });
     } finally {
         setIsSaving(false);
     }
   };
 
   const handleDeletePlan = async () => {
-    if (!deletingPlan || !canEdit) return;
+    if (!deletingPlan || !isAdmin) return;
     setIsSaving(true);
     try {
         await deleteDoc(doc(firestore, "plans", deletingPlan.id));
         toast({ title: "Plano Excluído!", description: "O plano foi removido com sucesso." });
         setDeletingPlan(null);
-    } catch (error) {
-        toast({ title: "Erro!", description: "Não foi possível remover o plano.", variant: "destructive" });
+    } catch (error: any) {
+        toast({ title: "Erro de Permissão!", description: error.message || "Você não tem permissão para realizar esta ação.", variant: "destructive" });
     } finally {
         setIsSaving(false);
     }
   };
 
   const handleFieldChange = async (planId: string, field: keyof Plan, value: string | number) => {
-    if (!canEdit) return;
+    if (!isAdmin) return;
     try {
         await updateDoc(doc(firestore, "plans", planId), { [field]: Number(value) });
         toast({ title: "Campo Atualizado", description: `O campo foi salvo com sucesso.` });
-    } catch (error) {
-        toast({ title: "Erro ao Salvar", description: `Não foi possível atualizar o campo.`, variant: "destructive" });
+    } catch (error: any) {
+        toast({ title: "Erro de Permissão", description: error.message || `Não foi possível atualizar o campo.`, variant: "destructive" });
     }
   };
 
   const handleSaveSettings = async (field: 'registrationFee' | 'extraInvitePrice', value: string | number) => {
-    if (!canEdit) return;
+    if (!isAdmin) return;
     const numericValue = Number(value);
      if (isNaN(numericValue) || numericValue < 0) {
         toast({ title: "Valor Inválido", description: "Por favor, insira um número válido.", variant: "destructive"});
@@ -194,14 +131,14 @@ export default function AdminPage() {
     try {
         await setDoc(doc(firestore, 'systemSettings', 'config'), { [field]: numericValue }, { merge: true });
         toast({ title: "Configuração Salva", description: "O novo valor foi salvo com sucesso." });
-    } catch (error) {
-        toast({ title: "Erro ao Salvar", description: "Não foi possível salvar o novo valor.", variant: "destructive" });
+    } catch (error: any) {
+        toast({ title: "Erro de Permissão", description: error.message || "Não foi possível salvar o novo valor.", variant: "destructive" });
     }
   }
 
   // --- Poll Handlers ---
    const handleCreatePoll = async (data: any) => {
-    if (!canEdit) return;
+    if (!isAdmin) return;
     setIsSaving(true);
     try {
       const newPollRef = doc(collection(firestore, 'polls'));
@@ -217,15 +154,15 @@ export default function AdminPage() {
       });
       toast({ title: "Votação Criada!", description: "A nova votação foi criada com sucesso." });
       setIsPollCreateModalOpen(false);
-    } catch (error) {
-      toast({ title: "Erro!", description: "Não foi possível criar a votação.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Erro!", description: error.message || "Não foi possível criar a votação.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
   };
 
    const handleUpdatePoll = async (data: any) => {
-    if (!editingPoll || !canEdit) return;
+    if (!editingPoll || !isAdmin) return;
     setIsSaving(true);
     try {
         const optionsAsStringArray = data.options.map((opt: { value: string }) => opt.value);
@@ -235,23 +172,23 @@ export default function AdminPage() {
         });
         toast({ title: "Votação Atualizada!", description: "A votação foi alterada com sucesso." });
         setEditingPoll(null);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erro ao atualizar votação:", error);
-        toast({ title: "Erro!", description: "Não foi possível atualizar a votação.", variant: "destructive" });
+        toast({ title: "Erro!", description: error.message || "Não foi possível atualizar a votação.", variant: "destructive" });
     } finally {
         setIsSaving(false);
     }
   };
 
   const handleDeletePoll = async () => {
-    if (!deletingPoll || !canEdit) return;
+    if (!deletingPoll || !isAdmin) return;
     setIsSaving(true);
     try {
         await deleteDoc(doc(firestore, "polls", deletingPoll.id));
         toast({ title: "Votação Excluída!", description: "A votação foi removida com sucesso." });
         setDeletingPoll(null);
-    } catch (error) {
-        toast({ title: "Erro!", description: "Não foi possível remover a votação.", variant: "destructive" });
+    } catch (error: any) {
+        toast({ title: "Erro!", description: error.message || "Não foi possível remover a votação.", variant: "destructive" });
     } finally {
         setIsSaving(false);
     }
@@ -259,16 +196,22 @@ export default function AdminPage() {
   
     // --- Notice (for Poll Results) Handlers ---
     const handleOpenSendResultsModal = useCallback((poll: Poll) => {
-        setVotesPollId(poll.id);
-        setLoadingVotes(true);
-
-        const resultsMap = new Map<string, number>();
-        poll.options.forEach(opt => resultsMap.set(opt, 0));
+        setIsSaving(true); // Usa o estado 'isSaving' como 'loading'
 
         const votesForPollQuery = query(collection(firestore, `polls/${poll.id}/votes`));
+        
+        // Usamos um onSnapshot para garantir que pegamos todos os votos, mesmo que demorem a carregar.
         const unsubscribe = onSnapshot(votesForPollQuery, (snapshot) => {
-            snapshot.forEach(doc => {
-                const vote = doc.data() as Vote;
+            const votesData = snapshot.docs.map(doc => doc.data() as PollVote);
+            
+            const resultsMap = new Map<string, number>();
+            // Garante que todas as opções estejam no mapa, mesmo que com 0 votos.
+            poll.options.forEach(opt => {
+                const optionKey = typeof opt === 'object' && opt.value ? opt.value : opt;
+                resultsMap.set(optionKey, 0)
+            });
+
+            votesData.forEach(vote => {
                 if (resultsMap.has(vote.selectedOption)) {
                     const currentWeight = resultsMap.get(vote.selectedOption)!;
                     resultsMap.set(vote.selectedOption, currentWeight + vote.votingWeight);
@@ -284,18 +227,21 @@ export default function AdminPage() {
                 title: `Resultado: ${poll.title}`,
                 description: descriptionText,
             });
+
             setIsNoticeModalOpen(true);
-            setLoadingVotes(false);
-            unsubscribe(); 
+            setIsSaving(false);
+            unsubscribe(); // Remove o listener após obter os dados
         }, (error) => {
             console.error("Erro ao buscar votos:", error);
-            setLoadingVotes(false);
+            toast({ title: "Erro ao Apurar", description: "Não foi possível carregar os resultados da votação.", variant: "destructive" });
+            setIsSaving(false);
             unsubscribe();
         });
-    }, [firestore]);
+    }, [firestore, toast]);
 
 
   const handleSendNotice = async (data: NoticeFormValues) => {
+    if (!isAdmin) return;
     setIsSaving(true);
     try {
         const newNoticeRef = doc(collection(firestore, "notices"));
@@ -308,8 +254,8 @@ export default function AdminPage() {
         });
         toast({ title: "Aviso Publicado!", description: "O resultado da votação foi enviado a todos." });
         setIsNoticeModalOpen(false);
-    } catch (error) {
-        toast({ title: "Erro!", description: "Não foi possível enviar o aviso.", variant: "destructive" });
+    } catch (error: any) {
+        toast({ title: "Erro!", description: error.message || "Não foi possível enviar o aviso.", variant: "destructive" });
     } finally {
         setIsSaving(false);
     }
@@ -344,20 +290,20 @@ export default function AdminPage() {
             <div className="flex justify-between items-center">
                 <span className="font-bold text-lg">{plan.name}</span>
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !isAdmin}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!isAdmin}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!isAdmin}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Preço (R$):</span><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Semanal:</span><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Mensal:</span><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Corujão:</span><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Convites:</span><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
-            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Peso de Voto:</span><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-24 text-center" disabled={!canEdit}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Preço (R$):</span><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 text-center" disabled={!isAdmin}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Semanal:</span><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-24 text-center" disabled={!isAdmin}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Mensal:</span><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-24 text-center" disabled={!isAdmin}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Corujão:</span><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-24 text-center" disabled={!isAdmin}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Cota Convites:</span><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-24 text-center" disabled={!isAdmin}/></div>
+            <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Peso de Voto:</span><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-24 text-center" disabled={!isAdmin}/></div>
         </div>
     ));
   }
@@ -399,19 +345,19 @@ export default function AdminPage() {
      return plans.map(plan => (
         <TableRow key={plan.id}>
             <TableCell className="font-bold">{plan.name}</TableCell>
-            <TableCell><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 mx-auto text-center" disabled={!canEdit}/></TableCell>
-            <TableCell><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-            <TableCell><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-            <TableCell><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-            <TableCell><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
-            <TableCell><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-20 mx-auto text-center" disabled={!canEdit}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.price} onBlur={(e) => handleFieldChange(plan.id, 'price', e.target.value)} className="w-24 mx-auto text-center" disabled={!isAdmin}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.weeklyQuota} onBlur={(e) => handleFieldChange(plan.id, 'weeklyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!isAdmin}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.monthlyQuota} onBlur={(e) => handleFieldChange(plan.id, 'monthlyQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!isAdmin}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.corujaoQuota || 0} onBlur={(e) => handleFieldChange(plan.id, 'corujaoQuota', e.target.value)} className="w-20 mx-auto text-center" disabled={!isAdmin}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.invites} onBlur={(e) => handleFieldChange(plan.id, 'invites', e.target.value)} className="w-20 mx-auto text-center" disabled={!isAdmin}/></TableCell>
+            <TableCell><Input type="number" defaultValue={plan.votingWeight} onBlur={(e) => handleFieldChange(plan.id, 'votingWeight', e.target.value)} className="w-20 mx-auto text-center" disabled={!isAdmin}/></TableCell>
             <TableCell className="text-right">
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !canEdit}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSaving || !isAdmin}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!canEdit}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setEditingPlan(plan)} disabled={!isAdmin}><Pencil className="mr-2 h-4 w-4" />Editar Nome</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!canEdit}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeletingPlan(plan)} disabled={!isAdmin}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </TableCell>
@@ -436,7 +382,7 @@ export default function AdminPage() {
             <TableCell className="text-right">
                 <PollActions 
                     poll={poll} 
-                    canManage={canEdit} 
+                    canManage={isAdmin} 
                     onSendResults={handleOpenSendResultsModal}
                     onDelete={() => setDeletingPoll(poll)}
                     onEdit={() => openEditPollModal(poll)}
@@ -449,7 +395,7 @@ export default function AdminPage() {
   return (
     <div className="grid gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Administração do Sistema</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Sistema</h1>
         <p className="text-muted-foreground">Gerencie os planos de associação e as regras de negócio da plataforma.</p>
       </div>
       
@@ -460,17 +406,23 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
                         <Dialog open={isPlanCreateModalOpen} onOpenChange={setIsPlanCreateModalOpen}>
-                            <DialogTrigger asChild><Button disabled={isSaving || !canEdit}><PlusCircle className="mr-2 h-4 w-4" />Novo Plano</Button></DialogTrigger>
-                            <DialogContent><DialogHeader><DialogTitle>Criar Novo Plano</DialogTitle><DialogDescription>Defina o nome do novo plano. Os outros valores podem ser editados na tabela.</DialogDescription></DialogHeader><PlanForm onSave={handleCreatePlan} onCancel={() => setIsPlanCreateModalOpen(false)} /></DialogContent>
+                            <DialogTrigger asChild><Button disabled={isSaving || !isAdmin}><PlusCircle className="mr-2 h-4 w-4" />Novo Plano</Button></DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Criar Novo Plano</DialogTitle>
+                                    <DialogDescription>Defina o nome do novo plano. Os outros valores podem ser editados na tabela.</DialogDescription>
+                                </DialogHeader>
+                                <PlanForm onSave={(data) => handleUpdatePlan({ ...editingPlan, ...data })} onCancel={() => setIsPlanCreateModalOpen(false)} />
+                            </DialogContent>
                         </Dialog>
                     </div>
-                     <CardDescription>Defina os preços e limites para cada plano. {!canEdit && "(Apenas visualização)"}</CardDescription>
+                     <CardDescription>Defina os preços e limites para cada plano. {!isAdmin && "(Apenas visualização)"}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 md:p-6">
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <div className={cn(!canEdit ? 'cursor-not-allowed' : '')}>
+                                <div className={cn(!isAdmin ? 'cursor-not-allowed' : '')}>
                                     {/* Desktop Table */}
                                     <div className="border rounded-md hidden md:block">
                                         <Table>
@@ -497,7 +449,7 @@ export default function AdminPage() {
                                     </div>
                                 </div>
                             </TooltipTrigger>
-                            {!canEdit && (<TooltipContent><p>Você não tem permissão para editar os planos.</p></TooltipContent>)}
+                            {!isAdmin && (<TooltipContent><p>Você não tem permissão para editar os planos.</p></TooltipContent>)}
                         </Tooltip>
                     </TooltipProvider>
                 </CardContent>
@@ -507,7 +459,7 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
                          <Dialog open={isPollCreateModalOpen} onOpenChange={setIsPollCreateModalOpen}>
-                            <DialogTrigger asChild><Button onClick={openCreatePollModal} disabled={isSaving || !canEdit || loadingActiveUsers}><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
+                            <DialogTrigger asChild><Button onClick={openCreatePollModal} disabled={isSaving || !isAdmin || loadingActiveUsers}><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
                             <DialogContent className="sm:max-w-2xl">
                                 <DialogHeader>
                                     <DialogTitle>{editingPoll ? 'Editar Votação' : 'Criar Nova Votação'}</DialogTitle>
@@ -540,12 +492,12 @@ export default function AdminPage() {
                         <>
                             <div className="space-y-2">
                                 <label htmlFor="registration-fee" className="text-sm font-medium">Taxa de Inscrição (Joia)</label>
-                                <Input id="registration-fee" type="number" value={registrationFee} onChange={(e) => setRegistrationFee(e.target.value)} onBlur={() => handleSaveSettings('registrationFee', registrationFee)} className="text-center" disabled={!canEdit} placeholder="0.00"/>
+                                <Input id="registration-fee" type="number" value={registrationFee} onChange={(e) => setRegistrationFee(e.target.value)} onBlur={() => handleSaveSettings('registrationFee', registrationFee)} className="text-center" disabled={!isAdmin} placeholder="0.00"/>
                                 <p className="text-xs text-muted-foreground">Valor único cobrado na primeira associação.</p>
                             </div>
                              <div className="space-y-2">
                                 <label htmlFor="extra-invite-price" className="text-sm font-medium">Preço do Convite Extra</label>
-                                <Input id="extra-invite-price" type="number" value={extraInvitePrice} onChange={(e) => setExtraInvitePrice(e.target.value)} onBlur={() => handleSaveSettings('extraInvitePrice', extraInvitePrice)} className="text-center" disabled={!canEdit} placeholder="0.00"/>
+                                <Input id="extra-invite-price" type="number" value={extraInvitePrice} onChange={(e) => setExtraInvitePrice(e.target.value)} onBlur={() => handleSaveSettings('extraInvitePrice', extraInvitePrice)} className="text-center" disabled={!isAdmin} placeholder="0.00"/>
                                 <p className="text-xs text-muted-foreground">Valor cobrado por cada convidado que exceder a cota gratuita do plano.</p>
                             </div>
                         </>
@@ -555,27 +507,15 @@ export default function AdminPage() {
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Eye className="h-5 w-5" /> Visualização das Regras de Acesso</CardTitle>
-            <CardDescription>Entenda quais páginas cada nível de usuário pode acessar.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-        {Object.entries(accessRules).map(([role, rule]) => (
-            <div key={role} className="p-4 rounded-lg border bg-muted/50">
-            <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{role}</h4>
-            <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
-            <div className="flex flex-wrap gap-2">
-                {rule.pages.map(page => (<span key={page} className="text-xs font-medium bg-muted px-2 py-1 rounded-md">{page}</span>))}
-            </div>
-            </div>
-        ))}
-        </CardContent>
-    </Card>
-
       {/* --- Modais --- */}
       <Dialog open={!!editingPlan} onOpenChange={(isOpen) => !isOpen && setEditingPlan(null)}>
-        <DialogContent><DialogHeader><DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle><DialogDescription>Altere o nome do plano. Os outros valores são gerenciados na tabela principal.</DialogDescription></DialogHeader><PlanForm onSave={handleUpdatePlan} onCancel={() => setEditingPlan(null)} defaultValues={editingPlan!}/></DialogContent>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle>
+            <DialogDescription>Altere o nome do plano. Os outros valores são gerenciados na tabela principal.</DialogDescription>
+          </DialogHeader>
+            <PlanForm onSave={(data) => handleUpdatePlan({ ...editingPlan, ...data })} onCancel={() => setEditingPlan(null)} defaultValues={editingPlan!}/>
+          </DialogContent>
       </Dialog>
       
       <AlertDialog open={!!deletingPlan} onOpenChange={(isOpen) => !isOpen && setDeletingPlan(null)}>
