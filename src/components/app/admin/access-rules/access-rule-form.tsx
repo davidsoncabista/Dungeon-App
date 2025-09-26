@@ -19,11 +19,33 @@ import { DialogFooter } from "@/components/ui/dialog"
 import type { AccessRule } from "@/lib/types/accessRule"
 import { Textarea } from "@/components/ui/textarea"
 import { PlusCircle, Trash2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const appRoutes = [
+    { label: 'Dashboard', value: '/' },
+    { label: 'Minhas Reservas', value: '/my-bookings' },
+    { label: 'Agenda Online', value: '/online-schedule' },
+    { label: 'Salas', value: '/rooms' },
+    { label: 'Mural de Avisos', value: '/notices' },
+    { label: 'Votação', value: '/voting' },
+    { label: 'Estatísticas', value: '/statistics' },
+    { label: 'Cobranças / Matrícula', value: '/billing' },
+    { label: 'Mensagens', value: '/messages' },
+    { label: 'Usuários', value: '/users' },
+    { label: 'Meu Perfil', value: '/profile' },
+    { label: '--- Admin ---', value: 'disabled', disabled: true },
+    { label: 'Admin: Visão Geral', value: '/admin' },
+    { label: 'Admin: Regras de Acesso', value: '/admin/access-rules' },
+    { label: 'Admin: Financeiro', value: '/admin/finance' },
+    { label: 'Admin: Mensagens', value: '/admin/messages' },
+    { label: 'Admin: Sistema', value: '/admin/system' },
+];
+
 
 const AccessRuleFormSchema = z.object({
   id: z.string().min(3, "O ID deve ter pelo menos 3 caracteres.").regex(/^[A-Z][a-zA-Z]*$/, "O ID deve começar com letra maiúscula e conter apenas letras (PascalCase)."),
   description: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres."),
-  pages: z.array(z.object({ value: z.string().min(1, "O nome da página não pode ser vazio.") })).min(1, "É necessária pelo menos uma página."),
+  pages: z.array(z.string().min(1, "É necessário selecionar uma página.")).min(1, "É necessária pelo menos uma página."),
 });
 
 type FormValues = z.infer<typeof AccessRuleFormSchema>;
@@ -41,7 +63,7 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
     defaultValues: {
       id: defaultValues?.id || "",
       description: defaultValues?.description || "",
-      pages: defaultValues?.pages?.map(p => ({ value: p })) || [{ value: "" }],
+      pages: defaultValues?.pages || [""],
     },
   });
 
@@ -51,10 +73,7 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
   });
 
   const onSubmit = (data: FormValues) => {
-    onSave({
-      ...data,
-      pages: data.pages.map(p => p.value),
-    });
+    onSave(data);
   };
 
   return (
@@ -94,12 +113,23 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
               <FormField
                 key={field.id}
                 control={form.control}
-                name={`pages.${index}.value`}
+                name={`pages.${index}`}
                 render={({ field }) => (
                   <FormItem className="flex items-center gap-2">
-                    <FormControl>
-                      <Input {...field} placeholder="Ex: /admin/dashboard" />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma página..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {appRoutes.map(route => (
+                                <SelectItem key={route.value} value={route.value} disabled={route.disabled}>
+                                    {route.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -109,7 +139,7 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
               />
             ))}
           </div>
-           <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
+           <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append("")}>
             <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Página
           </Button>
           <FormMessage>{form.formState.errors.pages?.root?.message}</FormMessage>

@@ -4,7 +4,6 @@ import * as functions from "firebase-functions";
 import { setDate, subMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MercadoPagoConfig, Preference } from "mercadopago";
-import { z } from "zod";
 
 // Inicializa o Firebase Admin SDK
 admin.initializeApp();
