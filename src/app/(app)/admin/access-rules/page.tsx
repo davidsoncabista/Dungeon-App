@@ -6,11 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Eye, Lock } from "lucide-react"
 import { useState } from "react"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, orderBy, doc } from "firebase/firestore"
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { app, auth } from "@/lib/firebase"
+import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"
+import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
-import { useAuthState } from "react-firebase-hooks/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { AccessRule } from "@/lib/types/accessRule";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -21,9 +19,7 @@ import { Badge } from "@/components/ui/badge"
 
 export default function AccessRulesPage() {
   const { toast } = useToast();
-  const [user] = useAuthState(auth);
   const firestore = getFirestore(app);
-  const functions = getFunctions(app, 'southamerica-east1');
 
   // --- Data Fetching ---
   const [rules, loadingRules, errorRules] = useCollectionData<AccessRule>(
@@ -37,23 +33,26 @@ export default function AccessRulesPage() {
   const [deletingRule, setDeletingRule] = useState<AccessRule | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- Handlers ---
+  // --- Handlers (Refatorado para usar Firestore SDK diretamente) ---
   const handleSave = async (data: AccessRule) => {
     setIsSubmitting(true);
     try {
-        const functionName = editingRule ? 'updateRule' : 'createRule';
-        const ruleFunction = httpsCallable(functions, functionName);
-        const result = await ruleFunction(data) as { data: { success: boolean, message: string } };
+        const { id, ...ruleData } = data;
+        const ruleRef = doc(firestore, "accessRules", id);
 
-        if (result.data.success) {
-            toast({ title: "Sucesso!", description: result.data.message });
-            setIsFormModalOpen(false);
-            setEditingRule(null);
+        if (editingRule) {
+            await updateDoc(ruleRef, ruleData);
+            toast({ title: "Sucesso!", description: `Regra "${id}" atualizada com sucesso.` });
         } else {
-            throw new Error(result.data.message || "Ocorreu um erro desconhecido.");
+            await setDoc(ruleRef, ruleData);
+            toast({ title: "Sucesso!", description: `Regra "${id}" criada com sucesso.` });
         }
+        
+        setIsFormModalOpen(false);
+        setEditingRule(null);
     } catch (error: any) {
-        toast({ title: "Erro!", description: error.message || "Não foi possível salvar a regra.", variant: "destructive" });
+        console.error("Erro ao salvar regra:", error);
+        toast({ title: "Erro de Permissão!", description: error.message || "Você não tem permissão para realizar esta ação. Verifique se suas permissões de admin estão atualizadas.", variant: "destructive" });
     } finally {
         setIsSubmitting(false);
     }
@@ -63,16 +62,17 @@ export default function AccessRulesPage() {
     if (!deletingRule) return;
     setIsSubmitting(true);
     try {
-        const deleteFunction = httpsCallable(functions, 'deleteRule');
-        await deleteFunction({ id: deletingRule.id });
+        await deleteDoc(doc(firestore, "accessRules", deletingRule.id));
         toast({ title: "Regra Excluída!", description: "A regra foi removida com sucesso." });
         setDeletingRule(null);
     } catch (error: any) {
-        toast({ title: "Erro!", description: error.message || "Não foi possível remover a regra.", variant: "destructive" });
+        console.error("Erro ao remover regra:", error);
+        toast({ title: "Erro de Permissão!", description: error.message || "Você não tem permissão para remover a regra.", variant: "destructive" });
     } finally {
         setIsSubmitting(false);
     }
   };
+
 
   const openEditModal = (rule: AccessRule) => {
     setEditingRule(rule);
@@ -106,7 +106,7 @@ export default function AccessRulesPage() {
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
                     <h4 className="font-bold text-destructive">Erro ao carregar regras</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. ({errorRules.message})</p>
+                    <p className="text-sm text-destructive/80">Você não tem permissão para visualizar estes dados. ({errorRules.message})</p>
                 </div>
             </div>
         </div>
