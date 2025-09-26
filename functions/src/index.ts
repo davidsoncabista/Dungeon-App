@@ -376,44 +376,6 @@ export const sendUserMessage = functions
 
 
 // --- FUNÇÕES DE VOTAÇÃO ---
-const checkAdmin = (context: functions.https.CallableContext) => {
-    if (!context.auth || context.auth.token.role !== 'Administrador') {
-        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem realizar esta ação.");
-    }
-};
-
-export const startPoll = functions
-  .region("southamerica-east1")
-  .https.onCall(async (data, context) => {
-    checkAdmin(context);
-    const { pollId } = data;
-    if (!pollId) throw new functions.https.HttpsError("invalid-argument", "ID da votação é obrigatório.");
-
-    try {
-        await db.collection('polls').doc(pollId).update({ status: "Aberta" });
-        return { success: true, message: "Votação iniciada com sucesso." };
-    } catch (error) {
-        console.error("Erro ao iniciar votação:", error);
-        throw new functions.https.HttpsError("internal", "Erro ao iniciar votação.");
-    }
-});
-
-export const endPoll = functions
-  .region("southamerica-east1")
-  .https.onCall(async (data, context) => {
-    checkAdmin(context);
-    const { pollId } = data;
-    if (!pollId) throw new functions.https.HttpsError("invalid-argument", "ID da votação é obrigatório.");
-
-    try {
-        await db.collection('polls').doc(pollId).update({ status: "Fechada", closedAt: admin.firestore.FieldValue.serverTimestamp() });
-        return { success: true, message: "Votação encerrada com sucesso." };
-    } catch (error) {
-        console.error("Erro ao encerrar votação:", error);
-        throw new functions.https.HttpsError("internal", "Erro ao encerrar votação.");
-    }
-});
-
 export const castVote = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {

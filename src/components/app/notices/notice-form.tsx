@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { DialogFooter } from "@/components/ui/dialog"
 import type { Notice } from "@/lib/types/notice"
+import { useEffect } from "react"
 
 const noticeFormSchema = z.object({
   title: z.string().min(3, { message: "O título é obrigatório." }),
@@ -24,15 +25,16 @@ const noticeFormSchema = z.object({
   link: z.string().url({ message: "Por favor, insira uma URL válida." }).optional().or(z.literal('')),
 });
 
-type NoticeFormValues = z.infer<typeof noticeFormSchema>;
+export type NoticeFormValues = z.infer<typeof noticeFormSchema>;
 
 interface NoticeFormProps {
     onSave: (data: NoticeFormValues) => void;
     onCancel: () => void;
-    defaultValues?: Partial<Notice>;
+    defaultValues?: Partial<NoticeFormValues>;
+    isSubmitting: boolean;
 }
 
-export function NoticeForm({ onSave, onCancel, defaultValues }: NoticeFormProps) {
+export function NoticeForm({ onSave, onCancel, defaultValues, isSubmitting }: NoticeFormProps) {
   const form = useForm<NoticeFormValues>({
     resolver: zodResolver(noticeFormSchema),
     defaultValues: {
@@ -42,7 +44,13 @@ export function NoticeForm({ onSave, onCancel, defaultValues }: NoticeFormProps)
     },
   });
 
-  const isEditMode = !!defaultValues;
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
+
+  const isEditMode = !!defaultValues?.title;
 
   return (
     <Form {...form}>
@@ -94,8 +102,8 @@ export function NoticeForm({ onSave, onCancel, defaultValues }: NoticeFormProps)
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Salvando..." : (isEditMode ? "Salvar Alterações" : "Publicar Aviso")}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Salvando..." : (isEditMode ? "Salvar Alterações" : "Publicar Aviso")}
           </Button>
         </DialogFooter>
       </form>

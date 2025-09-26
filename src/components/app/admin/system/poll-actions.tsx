@@ -3,41 +3,42 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { app, auth } from "@/lib/firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { app } from "@/lib/firebase";
 import type { Poll } from "@/lib/types/poll";
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Play, Square, Trash2, BarChart3, Loader2 } from "lucide-react";
+import { MoreHorizontal, Play, Square, Trash2, BarChart3, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PollResultsDialog } from "./poll-results-dialog";
 
 interface PollActionsProps {
     poll: Poll;
     canManage: boolean;
+    onSendResults: (poll: Poll) => void;
 }
 
-export function PollActions({ poll, canManage }: PollActionsProps) {
+export function PollActions({ poll, canManage, onSendResults }: PollActionsProps) {
     const { toast } = useToast();
-    const functions = getFunctions(app, 'southamerica-east1');
+    const firestore = getFirestore(app);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isResultsDialogOpen, setIsResultsDialogOpen] = useState(false);
 
-    const handleAction = async (actionName: 'startPoll' | 'endPoll' | 'deletePoll', pollId: string) => {
+    const handleStatusChange = async (newStatus: "Aberta" | "Fechada") => {
         setIsSubmitting(true);
         try {
-            const func = httpsCallable(functions, actionName);
-            await func({ pollId });
-            toast({ title: "Sucesso!", description: `Ação executada com sucesso.` });
+            await updateDoc(doc(firestore, "polls", poll.id), { 
+                status: newStatus,
+                ...(newStatus === 'Fechada' && { closedAt: new Date() }) // Adiciona timestamp no fechamento
+            });
+            toast({ title: "Sucesso!", description: `Votação ${newStatus.toLowerCase()} com sucesso.` });
         } catch (error: any) {
-            console.error(`Erro ao executar ${actionName}:`, error);
-            toast({ title: "Erro!", description: error.message || "Não foi possível completar a ação.", variant: "destructive" });
+            console.error(`Erro ao mudar status:`, error);
+            toast({ title: "Erro de Permissão!", description: error.message || "Você não tem permissão para realizar esta ação.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
-            setIsDeleteDialogOpen(false);
         }
     };
     
@@ -57,14 +58,18 @@ export function PollActions({ poll, canManage }: PollActionsProps) {
                         <DropdownMenuItem onSelect={() => setIsResultsDialogOpen(true)}>
                             <BarChart3 className="mr-2 h-4 w-4" /> Ver Resultados
                         </DropdownMenuItem>
-                        {poll.status === 'Fechada' && (
-                             <DropdownMenuItem onSelect={() => handleAction('startPoll', poll.id)} disabled={isSubmitting}>
+                        {poll.status === 'Fechada' ? (
+                             <DropdownMenuItem onSelect={() => handleStatusChange('Aberta')} disabled={isSubmitting}>
                                 <Play className="mr-2 h-4 w-4" /> Iniciar Votação
                             </DropdownMenuItem>
-                        )}
-                         {poll.status === 'Aberta' && (
-                             <DropdownMenuItem onSelect={() => handleAction('endPoll', poll.id)} disabled={isSubmitting}>
+                        ) : (
+                             <DropdownMenuItem onSelect={() => handleStatusChange('Fechada')} disabled={isSubmitting}>
                                 <Square className="mr-2 h-4 w-4" /> Encerrar Votação
+                            </DropdownMenuItem>
+                        )}
+                        {poll.status === 'Fechada' && (
+                             <DropdownMenuItem onSelect={() => onSendResults(poll)}>
+                                <Send className="mr-2 h-4 w-4" /> Enviar Resultados
                             </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -83,7 +88,7 @@ export function PollActions({ poll, canManage }: PollActionsProps) {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleAction('deletePoll', poll.id)} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={() => { /* A exclusão agora é feita pelo system/page */ }} className="bg-destructive hover:bg-destructive/90">
                             Sim, excluir
                         </AlertDialogAction>
                     </AlertDialogFooter>

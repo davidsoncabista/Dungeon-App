@@ -15,7 +15,7 @@ import { useAuthState } from "react-firebase-hooks/auth"
 import type { User } from "@/lib/types/user"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { NoticeForm } from "@/components/app/notices/notice-form"
+import { NoticeForm, type NoticeFormValues } from "@/components/app/notices/notice-form"
 import { useToast } from "@/hooks/use-toast"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -25,9 +25,10 @@ export default function NoticesPage() {
   const [user, loadingAuth] = useAuthState(auth);
   const firestore = getFirestore(app);
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
   const [deletingNotice, setDeletingNotice] = useState<Notice | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Firestore Data ---
   const usersRef = collection(firestore, 'users');
@@ -40,40 +41,36 @@ export default function NoticesPage() {
   const noticesQuery = query(noticesRef, orderBy("createdAt", "desc"));
   const [notices, loadingNotices, errorNotices] = useCollectionData<Notice>(noticesQuery, { idField: 'id' });
   
-  const handleCreate = async (data: Omit<Notice, 'id' | 'uid' | 'createdAt' | 'readBy'>) => {
+  const handleSave = async (data: NoticeFormValues) => {
+    setIsSubmitting(true);
     try {
-        const newNoticeRef = doc(noticesRef);
-        const newNoticeId = newNoticeRef.id;
-        
-        await setDoc(newNoticeRef, {
-            ...data,
-            id: newNoticeId,
-            uid: newNoticeId,
-            createdAt: serverTimestamp(),
-            readBy: []
-        });
-        toast({ title: "Aviso Publicado!", description: "O novo aviso já está visível para todos." });
-        setIsCreateModalOpen(false);
-    } catch (error) {
-        console.error("Erro ao criar aviso:", error);
-        toast({ title: "Erro!", description: "Não foi possível criar o aviso.", variant: "destructive" });
-    }
-  }
-
-  const handleUpdate = async (data: Partial<Omit<Notice, 'id' | 'uid' | 'createdAt'>>) => {
-    if (!editingNotice) return;
-    try {
-        await updateDoc(doc(firestore, "notices", editingNotice.id), data);
-        toast({ title: "Aviso Atualizado!", description: "O aviso foi modificado com sucesso." });
+        if (editingNotice) { // Atualização
+            await updateDoc(doc(firestore, "notices", editingNotice.id), data as any);
+            toast({ title: "Aviso Atualizado!", description: "O aviso foi modificado com sucesso." });
+        } else { // Criação
+            const newNoticeRef = doc(noticesRef);
+            await setDoc(newNoticeRef, {
+                ...data,
+                id: newNoticeRef.id,
+                uid: newNoticeRef.id,
+                createdAt: serverTimestamp(),
+                readBy: []
+            });
+            toast({ title: "Aviso Publicado!", description: "O novo aviso já está visível para todos." });
+        }
+        setIsModalOpen(false);
         setEditingNotice(null);
     } catch (error) {
-        console.error("Erro ao atualizar aviso:", error);
-        toast({ title: "Erro!", description: "Não foi possível atualizar o aviso.", variant: "destructive" });
+        console.error("Erro ao salvar aviso:", error);
+        toast({ title: "Erro!", description: "Não foi possível salvar o aviso.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
   const handleDelete = async () => {
     if (!deletingNotice) return;
+    setIsSubmitting(true);
     try {
         await deleteDoc(doc(firestore, "notices", deletingNotice.id));
         toast({ title: "Aviso Excluído!", description: "O aviso foi removido com sucesso." });
@@ -81,7 +78,19 @@ export default function NoticesPage() {
     } catch (error) {
         console.error("Erro ao excluir aviso:", error);
         toast({ title: "Erro!", description: "Não foi possível excluir o aviso.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
+  }
+
+  const openCreateModal = () => {
+    setEditingNotice(null);
+    setIsModalOpen(true);
+  }
+
+  const openEditModal = (notice: Notice) => {
+    setEditingNotice(notice);
+    setIsModalOpen(true);
   }
 
   const renderContent = () => {
@@ -146,7 +155,7 @@ export default function NoticesPage() {
                         <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setEditingNotice(notice)}>
+                        <DropdownMenuItem onSelect={() => openEditModal(notice)}>
                             <Pencil className="mr-2 h-4 w-4" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => setDeletingNotice(notice)} className="text-destructive focus:text-destructive">
@@ -198,20 +207,25 @@ export default function NoticesPage() {
             <p className="text-muted-foreground">Fique por dentro das últimas notícias e comunicados da associação.</p>
           </div>
           {canManage && (
-            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                    <Button>
+                    <Button onClick={openCreateModal}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Novo Aviso
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Criar Novo Aviso</DialogTitle>
+                        <DialogTitle>{editingNotice ? "Editar Aviso" : "Criar Novo Aviso"}</DialogTitle>
                         <DialogDescription>
-                            Publique uma nova mensagem que será exibida para todos os membros no mural e no login.
+                            {editingNotice ? "Altere os detalhes do aviso." : "Publique uma nova mensagem que será exibida para todos os membros no mural e no login."}
                         </DialogDescription>
                     </DialogHeader>
-                    <NoticeForm onSave={handleCreate} onCancel={() => setIsCreateModalOpen(false)} />
+                    <NoticeForm 
+                        onSave={handleSave} 
+                        onCancel={() => { setIsModalOpen(false); setEditingNotice(null); }}
+                        defaultValues={editingNotice ? { title: editingNotice.title, description: editingNotice.description, link: editingNotice.link } : undefined}
+                        isSubmitting={isSubmitting}
+                    />
                 </DialogContent>
             </Dialog>
           )}
@@ -221,37 +235,23 @@ export default function NoticesPage() {
         {renderContent()}
       </div>
 
-       {/* Edit Dialog */}
-       <Dialog open={!!editingNotice} onOpenChange={(isOpen) => !isOpen && setEditingNotice(null)}>
-           <DialogContent>
-               <DialogHeader>
-                   <DialogTitle>Editar Aviso</DialogTitle>
-               </DialogHeader>
-               <NoticeForm 
-                    onSave={handleUpdate} 
-                    onCancel={() => setEditingNotice(null)} 
-                    defaultValues={editingNotice!}
-               />
-           </DialogContent>
-       </Dialog>
-
-        {/* Delete Dialog */}
-        <AlertDialog open={!!deletingNotice} onOpenChange={(isOpen) => !isOpen && setDeletingNotice(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Esta ação é irreversível e excluirá o aviso permanentemente.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDeletingNotice(null)}>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Sim, excluir
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deletingNotice} onOpenChange={(isOpen) => !isOpen && setDeletingNotice(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Esta ação é irreversível e excluirá o aviso permanentemente.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setDeletingNotice(null)}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Sim, excluir
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   )

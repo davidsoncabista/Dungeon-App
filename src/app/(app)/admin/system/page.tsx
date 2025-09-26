@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit, Vote, BarChart3, BadgeCheck, Square, Play } from "lucide-react"
-import { useState, useEffect, useMemo } from "react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Shield, Eye, Lock, FileDigit, Vote, BarChart3, BadgeCheck, Square, Play, Send } from "lucide-react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import type { Plan } from "@/lib/types/plan"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -20,13 +20,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { AdminRole, User as AppUser } from "@/lib/types/user";
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { Poll } from "@/lib/types/poll"
+import type { Poll, Vote } from "@/lib/types/poll"
 import { PollForm } from "@/components/app/admin/system/poll-form"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { PollActions } from "@/components/app/admin/system/poll-actions"
 import { cn } from "@/lib/utils"
+import { NoticeForm, type NoticeFormValues } from "@/components/app/notices/notice-form"
 
 
 // Objeto que serve como documentação viva das regras de acesso do sistema.
@@ -90,10 +91,26 @@ export default function AdminPage() {
 
   const [isPollCreateModalOpen, setIsPollCreateModalOpen] = useState(false);
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
+  const [deletingPoll, setDeletingPoll] = useState<Poll | null>(null);
+
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [noticeDefaultValues, setNoticeDefaultValues] = useState<Partial<NoticeFormValues> | undefined>(undefined);
 
   const [isSaving, setIsSaving] = useState(false);
   const [registrationFee, setRegistrationFee] = useState<string | number>('');
   const [extraInvitePrice, setExtraInvitePrice] = useState<string | number>('');
+
+  // --- Fetch votes for a specific poll when needed ---
+  const [votesForResults, setVotesForResults] = useState<Vote[]>([]);
+  const [loadingVotes, setLoadingVotes] = useState(false);
+  const [votesPollId, setVotesPollId] = useState<string | null>(null);
+  const [votes] = useCollectionData<Vote>(votesPollId ? query(collection(firestore, `polls/${votesPollId}/votes`)) : null, { idField: 'id' });
+  useEffect(() => {
+    if (votes) {
+      setVotesForResults(votes);
+      setLoadingVotes(false);
+    }
+  }, [votes]);
 
 
   useEffect(() => {
@@ -202,6 +219,79 @@ export default function AdminPage() {
       setIsSaving(false);
     }
   };
+
+  const handleDeletePoll = async () => {
+    if (!deletingPoll || !canEdit) return;
+    setIsSaving(true);
+    try {
+        await deleteDoc(doc(firestore, "polls", deletingPoll.id));
+        toast({ title: "Votação Excluída!", description: "A votação foi removida com sucesso." });
+        setDeletingPoll(null);
+    } catch (error) {
+        toast({ title: "Erro!", description: "Não foi possível remover a votação.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
+  };
+  
+    // --- Notice (for Poll Results) Handlers ---
+    const handleOpenSendResultsModal = useCallback((poll: Poll) => {
+        setVotesPollId(poll.id);
+        setLoadingVotes(true);
+
+        const resultsMap = new Map<string, number>();
+        poll.options.forEach(opt => resultsMap.set(opt, 0));
+
+        // Use a Firestore query to get votes for this poll
+        const votesForPollQuery = query(collection(firestore, `polls/${poll.id}/votes`));
+        const unsubscribe = onSnapshot(votesForPollQuery, (snapshot) => {
+            snapshot.forEach(doc => {
+                const vote = doc.data() as Vote;
+                if (resultsMap.has(vote.selectedOption)) {
+                    const currentWeight = resultsMap.get(vote.selectedOption)!;
+                    resultsMap.set(vote.selectedOption, currentWeight + vote.votingWeight);
+                }
+            });
+
+            let descriptionText = `Resultado da Votação: "${poll.title}"\n\n`;
+            resultsMap.forEach((weight, option) => {
+                descriptionText += `- ${option}: ${weight} voto(s)\n`;
+            });
+            
+            setNoticeDefaultValues({
+                title: `Resultado: ${poll.title}`,
+                description: descriptionText,
+            });
+            setIsNoticeModalOpen(true);
+            setLoadingVotes(false);
+            unsubscribe(); // Unsubscribe after getting the data
+        }, (error) => {
+            console.error("Erro ao buscar votos:", error);
+            setLoadingVotes(false);
+            unsubscribe();
+        });
+    }, [firestore]);
+
+
+  const handleSendNotice = async (data: NoticeFormValues) => {
+    setIsSaving(true);
+    try {
+        const newNoticeRef = doc(collection(firestore, "notices"));
+        await setDoc(newNoticeRef, {
+            ...data,
+            id: newNoticeRef.id,
+            uid: newNoticeRef.id,
+            createdAt: serverTimestamp(),
+            readBy: []
+        });
+        toast({ title: "Aviso Publicado!", description: "O resultado da votação foi enviado a todos." });
+        setIsNoticeModalOpen(false);
+    } catch (error) {
+        toast({ title: "Erro!", description: "Não foi possível enviar o aviso.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
+  }
   
   // --- Render Functions ---
   const renderPlansMobileContent = () => {
@@ -312,7 +402,19 @@ export default function AdminPage() {
             </TableCell>
             <TableCell className="hidden sm:table-cell">{poll.createdAt ? format(poll.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''}</TableCell>
             <TableCell className="text-right">
-                <PollActions poll={poll} canManage={canEdit} />
+                 <AlertDialog open={deletingPoll?.id === poll.id} onOpenChange={(isOpen) => !isOpen && setDeletingPoll(null)}>
+                    <PollActions poll={poll} canManage={canEdit} onSendResults={handleOpenSendResultsModal} />
+                     <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>Esta ação é irreversível e excluirá a votação permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeletingPoll(null)}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeletePoll} className="bg-destructive hover:bg-destructive/90">Sim, excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </TableCell>
         </TableRow>
     ));
@@ -434,15 +536,31 @@ export default function AdminPage() {
         </CardContent>
     </Card>
 
-      {/* Edit Plan Modal */}
+      {/* --- Modais --- */}
       <Dialog open={!!editingPlan} onOpenChange={(isOpen) => !isOpen && setEditingPlan(null)}>
         <DialogContent><DialogHeader><DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle><DialogDescription>Altere o nome do plano. Os outros valores são gerenciados na tabela principal.</DialogDescription></DialogHeader><PlanForm onSave={handleUpdatePlan} onCancel={() => setEditingPlan(null)} defaultValues={editingPlan!}/></DialogContent>
       </Dialog>
       
-      {/* Delete Plan Confirmation Dialog */}
       <AlertDialog open={!!deletingPlan} onOpenChange={(isOpen) => !isOpen && setDeletingPlan(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Você tem certeza?</AlertDialogTitle><AlertDialogDescription>Esta ação é irreversível. O plano "{deletingPlan?.name}" será permanentemente removido.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setDeletingPlan(null)}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeletePlan} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Sim, excluir plano</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isNoticeModalOpen} onOpenChange={setIsNoticeModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Enviar Resultado da Votação como Aviso</DialogTitle>
+                <DialogDescription>
+                    Revise o texto e envie para notificar todos os membros.
+                </DialogDescription>
+            </DialogHeader>
+            <NoticeForm 
+                onSave={handleSendNotice} 
+                onCancel={() => setIsNoticeModalOpen(false)} 
+                defaultValues={noticeDefaultValues}
+                isSubmitting={isSaving}
+            />
+        </DialogContent>
+    </Dialog>
 
     </div>
   )
