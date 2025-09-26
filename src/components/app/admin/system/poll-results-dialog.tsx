@@ -22,10 +22,16 @@ export function PollResultsDialog({ poll, isOpen, onOpenChange }: PollResultsDia
     const votesQuery = query(collection(firestore, `polls/${poll.id}/votes`));
     const [votes, loadingVotes] = useCollectionData<Vote>(votesQuery, { idField: 'id' });
 
+    const getOptionValue = (option: any): string => {
+        return typeof option === 'string' ? option : option.value;
+    };
+    
     const pollResults = useMemo(() => {
         if (!votes) return [];
         const resultsMap = new Map<string, { count: number, weight: number }>();
-        poll.options.forEach(opt => resultsMap.set(opt, { count: 0, weight: 0 }));
+        const stringOptions = poll.options.map(getOptionValue);
+
+        stringOptions.forEach(opt => resultsMap.set(opt, { count: 0, weight: 0 }));
 
         votes.forEach(vote => {
             if (resultsMap.has(vote.selectedOption)) {

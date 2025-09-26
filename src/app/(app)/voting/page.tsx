@@ -42,12 +42,20 @@ export default function VotingPage() {
     // --- Memoized Values ---
     const hasVoted = useMemo(() => votes?.some(v => v.userId === user?.uid), [votes, user]);
 
+    const getOptionValue = (option: any): string => {
+        return typeof option === 'string' ? option : option.value;
+    };
+    
     const pollResults = useMemo(() => {
         if (!activePoll || !votes) return [];
-        const totalWeight = votes.reduce((sum, v) => sum + v.votingWeight, 0);
-        if (totalWeight === 0) return activePoll.options.map(opt => ({ option: opt, percentage: 0 }));
+
+        // Garante que todas as opções sejam strings para consistência
+        const stringOptions = activePoll.options.map(getOptionValue);
         
-        return activePoll.options.map(option => {
+        const totalWeight = votes.reduce((sum, v) => sum + v.votingWeight, 0);
+        if (totalWeight === 0) return stringOptions.map(opt => ({ option: opt, percentage: 0 }));
+        
+        return stringOptions.map(option => {
             const optionVotesWeight = votes
                 .filter(v => v.selectedOption === option)
                 .reduce((sum, v) => sum + v.votingWeight, 0);
@@ -93,9 +101,6 @@ export default function VotingPage() {
         );
     }
     
-    // Note: A verificação de elegibilidade já é feita na query do Firestore e na regra do menu,
-    // então não precisamos de uma tela de "Acesso Negado" aqui.
-
     return (
         <div className="max-w-3xl mx-auto">
             <h1 className="text-3xl font-bold tracking-tight font-headline mb-2">{activePoll.title}</h1>
@@ -137,12 +142,15 @@ export default function VotingPage() {
                     <CardContent>
                          <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ""}>
                             <div className="space-y-2">
-                               {activePoll.options.map((option, index) => (
-                                    <Label key={`${option}-${index}`} htmlFor={option} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
-                                        <RadioGroupItem value={option} id={option} />
-                                        <span className="font-semibold">{option}</span>
-                                    </Label>
-                               ))}
+                               {activePoll.options.map((option: any, index) => {
+                                   const optionValue = getOptionValue(option);
+                                   return (
+                                        <Label key={`${optionValue}-${index}`} htmlFor={optionValue} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
+                                            <RadioGroupItem value={optionValue} id={optionValue} />
+                                            <span className="font-semibold">{optionValue}</span>
+                                        </Label>
+                                   )
+                               })}
                             </div>
                         </RadioGroup>
                     </CardContent>
@@ -157,5 +165,3 @@ export default function VotingPage() {
         </div>
     )
 }
-
-    
