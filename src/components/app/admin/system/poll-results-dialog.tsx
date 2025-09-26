@@ -26,8 +26,8 @@ export function PollResultsDialog({ poll, isOpen, onOpenChange }: PollResultsDia
         return typeof option === 'string' ? option : option.value;
     };
     
-    const pollResults = useMemo(() => {
-        if (!votes) return [];
+    const { pollResults, totalVotes } = useMemo(() => {
+        if (!votes) return { pollResults: [], totalVotes: 0 };
         const resultsMap = new Map<string, { count: number, weight: number }>();
         const stringOptions = poll.options.map(getOptionValue);
 
@@ -43,15 +43,16 @@ export function PollResultsDialog({ poll, isOpen, onOpenChange }: PollResultsDia
             }
         });
         
-        return Array.from(resultsMap.entries()).map(([option, data]) => ({
+        const finalResults = Array.from(resultsMap.entries()).map(([option, data]) => ({
             name: option.length > 15 ? `${option.substring(0, 15)}...` : option,
             fullOption: option,
             votos: data.weight,
         }));
+        
+        const total = votes.reduce((sum, v) => sum + v.votingWeight, 0);
 
+        return { pollResults: finalResults, totalVotes: total };
     }, [votes, poll.options]);
-
-    const totalVotes = useMemo(() => votes?.reduce((sum, v) => sum + v.votingWeight, 0) || 0, [votes]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -80,6 +81,7 @@ export function PollResultsDialog({ poll, isOpen, onOpenChange }: PollResultsDia
                                             fontSize={12}
                                             tickLine={false}
                                             axisLine={false}
+                                            width={80}
                                         />
                                         <Tooltip
                                             cursor={{ fill: 'transparent' }}

@@ -1,19 +1,18 @@
 
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, where, doc } from "firebase/firestore"
+import { getFirestore, collection, query, where } from "firebase/firestore"
 import { auth, app } from "@/lib/firebase"
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-import type { User } from "@/lib/types/user"
 import type { Poll, Vote } from "@/lib/types/poll"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ShieldAlert, Vote as VoteIcon, ThumbsUp, BarChart3, Loader2 } from "lucide-react"
+import { Vote as VoteIcon, ThumbsUp, BarChart3, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -40,7 +39,10 @@ export default function VotingPage() {
     const [votes, loadingVotes] = useCollectionData<Vote>(votesQuery, { idField: 'id' });
 
     // --- Memoized Values ---
-    const hasVoted = useMemo(() => votes?.some(v => v.userId === user?.uid), [votes, user]);
+    const hasVoted = useMemo(() => {
+        if (!votes || !user) return false;
+        return votes.some(v => v.id === user.uid);
+    }, [votes, user]);
 
     const getOptionValue = (option: any): string => {
         return typeof option === 'string' ? option : option.value;
@@ -49,7 +51,6 @@ export default function VotingPage() {
     const pollResults = useMemo(() => {
         if (!activePoll || !votes) return [];
 
-        // Garante que todas as opções sejam strings para consistência
         const stringOptions = activePoll.options.map(getOptionValue);
         
         const totalWeight = votes.reduce((sum, v) => sum + v.votingWeight, 0);
@@ -76,14 +77,17 @@ export default function VotingPage() {
             toast({ title: "Voto Registrado!", description: "Seu voto foi computado com sucesso. Obrigado por participar!" });
         } catch (error: any) {
             console.error("Erro ao registrar voto:", error);
-            toast({ title: "Erro!", description: error.message || "Não foi possível registrar seu voto.", variant: "destructive" });
+            // O erro 'already-exists' é tratado pela UI reativa, então não mostramos toast para ele.
+            if (error.code !== 'functions/already-exists') {
+              toast({ title: "Erro!", description: error.message || "Não foi possível registrar seu voto.", variant: "destructive" });
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
     
     // --- Render Logic ---
-    const isLoading = loadingAuth || loadingPolls || loadingVotes;
+    const isLoading = loadingAuth || loadingPolls;
 
     if (isLoading) {
         return <Skeleton className="h-96 w-full max-w-3xl mx-auto" />;
@@ -101,6 +105,10 @@ export default function VotingPage() {
         );
     }
     
+    if (loadingVotes && !votes) {
+        return <Skeleton className="h-96 w-full max-w-3xl mx-auto" />;
+    }
+
     return (
         <div className="max-w-3xl mx-auto">
             <h1 className="text-3xl font-bold tracking-tight font-headline mb-2">{activePoll.title}</h1>
@@ -113,7 +121,7 @@ export default function VotingPage() {
                         <CardDescription>O resultado atual da votação. Seu voto já foi computado.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {pollResults.map(result => (
+                        {loadingVotes ? <p>Calculando resultados...</p> : pollResults.map(result => (
                              <div key={result.option} className="space-y-1">
                                 <div className="flex justify-between items-baseline">
                                     <span className="font-medium">{result.option}</span>
@@ -142,11 +150,12 @@ export default function VotingPage() {
                     <CardContent>
                          <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ""}>
                             <div className="space-y-2">
-                               {activePoll.options.map((option: any, index) => {
+                               {activePoll.options.map((option, index) => {
                                    const optionValue = getOptionValue(option);
+                                   const uniqueKey = `${optionValue}-${index}`;
                                    return (
-                                        <Label key={`${optionValue}-${index}`} htmlFor={optionValue} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
-                                            <RadioGroupItem value={optionValue} id={optionValue} />
+                                        <Label key={uniqueKey} htmlFor={uniqueKey} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
+                                            <RadioGroupItem value={optionValue} id={uniqueKey} />
                                             <span className="font-semibold">{optionValue}</span>
                                         </Label>
                                    )
