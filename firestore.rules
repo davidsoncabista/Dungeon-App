@@ -1,121 +1,109 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // --- FUNÇÕES DE HELPER ---
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    // --- FUNÇÕES DE HELPER COM CUSTOM CLAIMS ---
+    function isSignedIn() {
+      return request.auth != null;
     }
     
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // As funções de papel usam agora o Custom Claim 'role'
     function isAdmin() {
-      return request.auth.token.admin == true;
+      return isSignedIn() && request.auth.token.admin == true;
     }
     
     function isEditorOrHigher() {
-      return request.auth.token.role in ['Administrador', 'Editor'];
+      return isSignedIn() && (request.auth.token.role in ['Administrador', 'Editor']);
     }
 
     function isRevisorOrHigher() {
-        return request.auth.token.role in ['Administrador', 'Editor', 'Revisor'];
+      return isSignedIn() && (request.auth.token.role in ['Administrador', 'Editor', 'Revisor']);
     }
 
     function isMember() {
-      // Verifica se o usuário tem um 'role' e não é apenas um 'Visitante' sem plano.
-      return request.auth.token.role != null && request.auth.token.role != 'Visitante';
+      // Verifica se o usuário tem um 'role' e não é apenas um 'Visitante' ou sem papel.
+      return isSignedIn() && request.auth.token.role != null && request.auth.token.role != 'Visitante';
     }
-
+    
     // --- REGRAS DAS COLEÇÕES ---
 
     // USERS: 
-    // Leitura: Qualquer usuário autenticado pode ler qualquer perfil.
-    // Escrita: Um usuário só pode editar seu próprio perfil. Admins podem editar qualquer perfil.
+    // Separa a leitura de um único documento e a listagem.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow update: if isOwner(userId) || isAdmin();
-      allow create, delete: if isAdmin();
+      allow get: if isOwner(userId) || isRevisorOrHigher();
+      allow list: if isRevisorOrHigher();
+      allow update: if isOwner(userId) || isEditorOrHigher();
+      allow create: if isAdmin(); // Apenas admins podem criar perfis (via Cloud Function recomendada).
+      allow delete: if isAdmin();
     }
 
     // ROOMS:
-    // Leitura: Qualquer usuário autenticado pode ver as salas.
-    // Escrita: Apenas Editores e Administradores podem criar, editar ou apagar salas.
     match /rooms/{roomId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
       allow write: if isEditorOrHigher();
     }
     
     // PLANS & SYSTEM SETTINGS:
-    // Leitura: Qualquer usuário autenticado pode ler as configurações e planos.
-    // Escrita: Apenas Administradores podem alterar as regras do sistema.
     match /plans/{planId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
-     match /systemSettings/{docId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
+    match /systemSettings/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     
     // NOTICES:
-    // Leitura: Todos os usuários autenticados podem ler os avisos.
-    // Escrita: Apenas Administradores podem criar, editar ou apagar avisos.
     match /notices/{noticeId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // BOOKINGS:
-    // Leitura: Um usuário pode ler uma reserva se for um dos participantes. Admins/Editores/Revisores podem ler todas.
-    // Criação: Um usuário autenticado e membro ativo pode criar uma reserva.
-    // Atualização: O organizador da reserva, um Admin ou Editor pode atualizar. Participantes podem se remover (mas não podem editar outros campos).
-    // Exclusão: O organizador, um Admin ou Editor podem excluir.
     match /bookings/{bookingId} {
-      allow read: if request.auth.uid in resource.data.participants || isRevisorOrHigher();
-      allow create: if isMember();
-      allow update: if request.auth.uid == resource.data.organizerId || isEditorOrHigher() 
-                    || (request.auth.uid in resource.data.participants && !(request.auth.uid in request.resource.data.participants)); // Permite sair da reserva
-      allow delete: if request.auth.uid == resource.data.organizerId || isEditorOrHigher();
+      // Leitura: O participante, o organizador ou um Revisor (ou superior) pode ler.
+      allow read: if request.auth.uid in resource.data.participants || isOwner(resource.data.organizerId) || isRevisorOrHigher();
+      // Criação: Um membro pode criar se for o organizador.
+      allow create: if isMember() && isOwner(request.resource.data.organizerId);
+      // Atualização: Organizador ou cargo superior pode atualizar.
+      // Participantes podem se remover, verificando se a lista diminuiu.
+      allow update: if (isOwner(resource.data.organizerId) || isEditorOrHigher()) 
+                    || (request.auth.uid in resource.data.participants && !(request.auth.uid in request.resource.data.participants));
+      // Exclusão: Organizador ou cargo superior.
+      allow delete: if isOwner(resource.data.organizerId) || isEditorOrHigher();
     }
     
     // TRANSACTIONS:
-    // Leitura: Usuário pode ler suas próprias transações. Admins podem ler todas.
-    // Criação/Atualização: Apenas o backend (Admins via painel) pode criar/alterar transações.
     match /transactions/{transactionId} {
-        allow read: if isOwner(resource.data.userId) || isAdmin();
-        allow write: if isAdmin();
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow write: if isAdmin();
     }
 
     // USER MESSAGES:
-    // Leitura: Apenas o destinatário pode ler suas mensagens.
-    // Escrita: Não é permitida diretamente pelo cliente (apenas via Cloud Function 'sendUserMessage').
     match /userMessages/{messageId} {
-        allow read, update: if isOwner(resource.data.recipientId);
-        allow create, delete: if false; 
+      allow read, update: if isOwner(resource.data.recipientId);
+      allow create, delete: if isAdmin();
     }
 
     // POLLS (VOTAÇÕES):
-    // Leitura: Qualquer usuário autenticado pode ler. A lógica de quem vê o quê fica no front-end.
-    // Escrita: Apenas administradores podem criar, iniciar, encerrar ou deletar votações.
     match /polls/{pollId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
       
-      // VOTES (SUB-COLEÇÃO)
-      // Leitura: Apenas administradores podem ler todos os votos.
-      // Criação: Um usuário pode criar seu próprio voto (verificar elegibilidade na Cloud Function `castVote`).
       match /votes/{voteId} {
-        allow read: if isAdmin();
+        allow read: if isAdmin(); // Apenas admins podem ler todos os votos para garantir anonimato.
         allow create: if isOwner(voteId);
         allow write: if false; // Votos não podem ser alterados ou excluídos.
       }
     }
     
-     // ACCESS RULES (Regras de Acesso)
-    // Leitura: Todos os admins podem ler as regras.
-    // Escrita: Apenas administradores podem criar, editar ou apagar as regras.
+    // ACCESS RULES (Regras de Acesso)
     match /accessRules/{ruleId} {
-        allow read: if isRevisorOrHigher();
-        allow write: if isAdmin();
+        allow read, write: if isAdmin();
     }
   }
 }
