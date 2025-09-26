@@ -137,8 +137,8 @@ export default function VotingPage() {
                     <CardContent>
                          <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ""}>
                             <div className="space-y-2">
-                               {activePoll.options.map(option => (
-                                    <Label key={option} htmlFor={option} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
+                               {activePoll.options.map((option, index) => (
+                                    <Label key={`${option}-${index}`} htmlFor={option} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
                                         <RadioGroupItem value={option} id={option} />
                                         <span className="font-semibold">{option}</span>
                                     </Label>
@@ -157,3 +157,5 @@ export default function VotingPage() {
         </div>
     )
 }
+
+    

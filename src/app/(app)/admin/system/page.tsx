@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { PlanForm } from "@/components/app/admin/plan-form"
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp } from "firebase/firestore"
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, query, orderBy, where, serverTimestamp, onSnapshot } from "firebase/firestore"
 import { app, auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -205,8 +205,12 @@ export default function AdminPage() {
     setIsSaving(true);
     try {
       const newPollRef = doc(collection(firestore, 'polls'));
+      // Transforma o array de objetos em um array de strings
+      const optionsAsStringArray = data.options.map((opt: { value: string }) => opt.value);
+      
       await setDoc(newPollRef, {
         ...data,
+        options: optionsAsStringArray, // Salva o array de strings
         id: newPollRef.id,
         status: 'Fechada',
         createdAt: serverTimestamp(),
@@ -217,6 +221,25 @@ export default function AdminPage() {
       toast({ title: "Erro!", description: "Não foi possível criar a votação.", variant: "destructive" });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+   const handleUpdatePoll = async (data: any) => {
+    if (!editingPoll || !canEdit) return;
+    setIsSaving(true);
+    try {
+        const optionsAsStringArray = data.options.map((opt: { value: string }) => opt.value);
+        await updateDoc(doc(firestore, "polls", editingPoll.id), {
+            ...data,
+            options: optionsAsStringArray
+        });
+        toast({ title: "Votação Atualizada!", description: "A votação foi alterada com sucesso." });
+        setEditingPoll(null);
+    } catch (error) {
+        console.error("Erro ao atualizar votação:", error);
+        toast({ title: "Erro!", description: "Não foi possível atualizar a votação.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -242,7 +265,6 @@ export default function AdminPage() {
         const resultsMap = new Map<string, number>();
         poll.options.forEach(opt => resultsMap.set(opt, 0));
 
-        // Use a Firestore query to get votes for this poll
         const votesForPollQuery = query(collection(firestore, `polls/${poll.id}/votes`));
         const unsubscribe = onSnapshot(votesForPollQuery, (snapshot) => {
             snapshot.forEach(doc => {
@@ -264,7 +286,7 @@ export default function AdminPage() {
             });
             setIsNoticeModalOpen(true);
             setLoadingVotes(false);
-            unsubscribe(); // Unsubscribe after getting the data
+            unsubscribe(); 
         }, (error) => {
             console.error("Erro ao buscar votos:", error);
             setLoadingVotes(false);
@@ -291,6 +313,16 @@ export default function AdminPage() {
     } finally {
         setIsSaving(false);
     }
+  }
+
+  const openEditPollModal = (poll: Poll) => {
+    setEditingPoll(poll);
+    setIsPollCreateModalOpen(true);
+  }
+
+  const openCreatePollModal = () => {
+    setEditingPoll(null);
+    setIsPollCreateModalOpen(true);
   }
   
   // --- Render Functions ---
@@ -402,19 +434,13 @@ export default function AdminPage() {
             </TableCell>
             <TableCell className="hidden sm:table-cell">{poll.createdAt ? format(poll.createdAt.toDate(), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ''}</TableCell>
             <TableCell className="text-right">
-                 <AlertDialog open={deletingPoll?.id === poll.id} onOpenChange={(isOpen) => !isOpen && setDeletingPoll(null)}>
-                    <PollActions poll={poll} canManage={canEdit} onSendResults={handleOpenSendResultsModal} />
-                     <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta ação é irreversível e excluirá a votação permanentemente.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setDeletingPoll(null)}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeletePoll} className="bg-destructive hover:bg-destructive/90">Sim, excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <PollActions 
+                    poll={poll} 
+                    canManage={canEdit} 
+                    onSendResults={handleOpenSendResultsModal}
+                    onDelete={() => setDeletingPoll(poll)}
+                    onEdit={() => openEditPollModal(poll)}
+                />
             </TableCell>
         </TableRow>
     ));
@@ -481,8 +507,19 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
                          <Dialog open={isPollCreateModalOpen} onOpenChange={setIsPollCreateModalOpen}>
-                            <DialogTrigger asChild><Button disabled={isSaving || !canEdit || loadingActiveUsers}><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
-                            <DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle>Criar Nova Votação</DialogTitle><DialogDescription>Preencha os detalhes e selecione os membros elegíveis.</DialogDescription></DialogHeader><PollForm onSave={handleCreatePoll} onCancel={() => setIsPollCreateModalOpen(false)} activeUsers={activeUsers || []} /></DialogContent>
+                            <DialogTrigger asChild><Button onClick={openCreatePollModal} disabled={isSaving || !canEdit || loadingActiveUsers}><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
+                            <DialogContent className="sm:max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>{editingPoll ? 'Editar Votação' : 'Criar Nova Votação'}</DialogTitle>
+                                    <DialogDescription>Preencha os detalhes e selecione os membros elegíveis.</DialogDescription>
+                                </DialogHeader>
+                                <PollForm 
+                                    onSave={editingPoll ? handleUpdatePoll : handleCreatePoll} 
+                                    onCancel={() => { setIsPollCreateModalOpen(false); setEditingPoll(null); }} 
+                                    activeUsers={activeUsers || []} 
+                                    defaultValues={editingPoll ?? undefined}
+                                />
+                            </DialogContent>
                         </Dialog>
                     </div>
                     <CardDescription>Crie e gerencie as votações da associação.</CardDescription>
@@ -545,6 +582,19 @@ export default function AdminPage() {
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Você tem certeza?</AlertDialogTitle><AlertDialogDescription>Esta ação é irreversível. O plano "{deletingPlan?.name}" será permanentemente removido.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setDeletingPlan(null)}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeletePlan} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Sim, excluir plano</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
 
+        <AlertDialog open={!!deletingPoll} onOpenChange={(isOpen) => !isOpen && setDeletingPoll(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>Esta ação é irreversível e excluirá a votação permanentemente.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeletingPoll(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeletePoll} className="bg-destructive hover:bg-destructive/90">Sim, excluir</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
       <Dialog open={isNoticeModalOpen} onOpenChange={setIsNoticeModalOpen}>
         <DialogContent>
             <DialogHeader>
@@ -565,3 +615,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
+    
