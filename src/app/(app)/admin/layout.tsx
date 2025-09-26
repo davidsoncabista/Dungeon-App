@@ -28,6 +28,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
       { href: "/admin/messages", label: "Mensagens", icon: MessageSquare, roles: ["Administrador"] },
       { href: "/admin/access-rules", label: "Regras de Acesso", icon: Eye, roles: ["Administrador"] },
+      { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     ];
     
     return (
