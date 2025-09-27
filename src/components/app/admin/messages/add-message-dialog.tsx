@@ -86,7 +86,7 @@ export function AddMessageDialog({ users, loadingUsers, onSave, isOpen, setIsOpe
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {users.filter(u => u.role !== 'Administrador').map(user => (
+                                        {users.map(user => (
                                             <SelectItem key={user.uid} value={user.uid}>{user.name}</SelectItem>
                                         ))}
                                     </SelectContent>
