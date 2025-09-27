@@ -322,6 +322,127 @@ export const checkOverduePayments = functions
   });
 
 
+// --- FUNÇÃO DE ENVIAR MENSAGEM ---
+export const sendUserMessage = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    // 1. Verificação de autenticação e permissão
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+    // CORREÇÃO: Verifica o custom claim 'admin' (booleano) em vez de 'role' (string).
+    if (context.auth.token.admin !== true) {
+        throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem enviar mensagens.");
+    }
+
+    const { recipientId, title, content, category } = data;
+    
+    // 2. Validação dos dados
+    if (!recipientId || !title || !content || !category) {
+        throw new functions.https.HttpsError("invalid-argument", "Todos os campos são obrigatórios.");
+    }
+
+    try {
+        const senderId = context.auth.uid;
+        const senderDoc = await db.collection('users').doc(senderId).get();
+        const senderName = senderDoc.data()?.name || 'Administração';
+
+        const recipientDoc = await db.collection('users').doc(recipientId).get();
+        const recipientName = recipientDoc.data()?.name || 'Destinatário Desconhecido';
+
+        const newMessageRef = db.collection("userMessages").doc();
+        
+        // 3. Criação do documento da mensagem
+        await newMessageRef.set({
+            id: newMessageRef.id,
+            recipientId: recipientId,
+            recipientName: recipientName, // Denormalizado para facilitar a exibição
+            senderId: senderId,
+            senderName: senderName,
+            title: title,
+            content: content,
+            category: category,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false,
+        });
+
+        console.log(`[Messages] Mensagem enviada de ${senderName} (${senderId}) para ${recipientName} (${recipientId}).`);
+        return { success: true, messageId: newMessageRef.id };
+
+    } catch (error) {
+        console.error("Erro ao enviar mensagem direta:", error);
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro inesperado ao enviar a mensagem.");
+    }
+});
+
+
+// --- FUNÇÕES DE VOTAÇÃO ---
+export const castVote = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+
+    const { pollId, selectedOption } = data;
+    const userId = context.auth.uid;
+
+    if (!pollId || !selectedOption) {
+        throw new functions.https.HttpsError("invalid-argument", "Todos os campos são obrigatórios.");
+    }
+
+    const pollRef = db.collection('polls').doc(pollId);
+    const voteRef = pollRef.collection('votes').doc(userId); // Usa UID como ID do voto para garantir unicidade
+
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+            throw new functions.https.HttpsError("not-found", "Perfil de usuário não encontrado.");
+        }
+        const userCategory = userDoc.data()?.category;
+        
+        const plansSnapshot = await db.collection('plans').where('name', '==', userCategory).limit(1).get();
+        if (plansSnapshot.empty) {
+            throw new functions.https.HttpsError("not-found", "Plano de associação do usuário não encontrado.");
+        }
+        const votingWeight = plansSnapshot.docs[0].data().votingWeight || 1;
+
+        return await db.runTransaction(async (transaction) => {
+            const pollDoc = await transaction.get(pollRef);
+            if (!pollDoc.exists || pollDoc.data()?.status !== 'Aberta') {
+                throw new functions.https.HttpsError("failed-precondition", "Esta votação não está aberta.");
+            }
+
+            const pollData = pollDoc.data();
+            if (!pollData?.eligibleVoters.includes(userId)) {
+                throw new functions.https.HttpsError("permission-denied", "Você não é elegível para votar nesta enquete.");
+            }
+            
+            const userVoteDoc = await transaction.get(voteRef);
+            if (userVoteDoc.exists) {
+                 throw new functions.https.HttpsError("already-exists", "Você já votou nesta enquete.");
+            }
+            
+            transaction.set(voteRef, {
+                pollId: pollId,
+                userId: userId,
+                selectedOption: selectedOption,
+                votingWeight: votingWeight,
+                votedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            return { success: true, message: "Voto registrado com sucesso." };
+        });
+    } catch (error: any) {
+        console.error("Erro ao registrar voto:", error);
+        if (error.code) {
+            throw error;
+        }
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro ao registrar seu voto.");
+    }
+});
+
+
 // --- FUNÇÕES DE PAGAMENTO ---
 export const createMercadoPagoPayment = functions
  .region("southamerica-east1")
@@ -549,4 +670,5 @@ export const mercadoPagoWebhook = functions
    response.status(200).send("OK");
  });
 
+    
     
