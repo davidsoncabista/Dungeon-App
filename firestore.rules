@@ -10,33 +10,45 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    // Função para ler o documento do usuário autenticado
     function getUserData(uid) {
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
+    // Função isAdmin corrigida: agora lê o 'role' diretamente do documento do usuário no Firestore.
     function isAdmin() {
-      // Verifica o Custom Claim 'admin' (booleano) no token de autenticação.
-      return isSignedIn() && request.auth.token.admin == true;
+      return isSignedIn() && getUserData(request.auth.uid).role == 'Administrador';
     }
     function isEditorOrAdmin() {
-      return isSignedIn() && (request.auth.token.role == 'Editor' || request.auth.token.admin == true);
+      return isSignedIn() && getUserData(request.auth.uid).role in ['Administrador', 'Editor'];
     }
     function isRevisorOrHigher() {
-      return isSignedIn() && (request.auth.token.role in ['Revisor', 'Editor'] || request.auth.token.admin == true);
+      return isSignedIn() && getUserData(request.auth.uid).role in ['Administrador', 'Editor', 'Revisor'];
     }
 
     // --- Regras por Coleção ---
 
     // REGRAS DE ACESSO (Permissões customizadas)
+    // Apenas administradores podem ler e escrever as definições de papéis.
     match /accessRules/{ruleId} {
       allow read, write: if isAdmin();
     }
 
     // USUÁRIOS
     match /users/{userId} {
+      // Leitura de um único documento (get): O próprio usuário ou um Revisor (ou superior) pode ler.
       allow get: if isOwner(userId) || isRevisorOrHigher();
+      
+      // Leitura de múltiplos documentos (list/query): Apenas Revisor (ou superior) pode fazer.
       allow list: if isRevisorOrHigher();
+      
+      // Atualização: O próprio usuário ou um Admin/Editor pode atualizar um perfil.
       allow update: if isOwner(userId) || isEditorOrAdmin();
-      allow create: if true; // Controlado pela Cloud Function 'createUserDocument'
+
+      // Criação: A criação de documentos de usuário é controlada pela Cloud Function 'createUserDocument'.
+      // Esta regra permite que a função (que bypassa regras) crie o documento.
+      allow create: if true;
+
+      // Exclusão: Apenas administradores podem excluir usuários.
       allow delete: if isAdmin();
     }
 
@@ -49,6 +61,7 @@ service cloud.firestore {
     // RESERVAS
     match /bookings/{bookingId} {
       allow read: if isSignedIn();
+      // Verificação de status 'Ativo' agora usa a função getUserData()
       allow create: if isSignedIn() && getUserData(request.auth.uid).status == 'Ativo' && isOwner(request.resource.data.organizerId);
       allow update: if (isOwner(resource.data.organizerId) || isEditorOrAdmin()) || (isOwner(request.auth.uid) && request.auth.uid in resource.data.participants);
       allow delete: if isOwner(resource.data.organizerId) || isEditorOrAdmin();
@@ -61,21 +74,29 @@ service cloud.firestore {
     }
     
     // --- REGRAS PARA MENSAGENS DIRETAS DE USUÁRIOS ---
-    match /userMessages/{messageId} {
-      allow get: if isOwner(resource.data.recipientId) || isAdmin();
-      allow list: if request.query.recipientId == request.auth.uid || isAdmin();
-      
-      // CREATE: Apenas administradores (via custom claim) podem criar novas mensagens.
-      allow create: if isAdmin();
+match /userMessages/{messageId} {
+  // GET: Permite que o destinatário leia sua própria mensagem.
+  //      Permite que um Administrador leia qualquer mensagem (para moderação/histórico).
+  allow get: if isOwner(resource.data.recipientId) || isAdmin();
 
-      // UPDATE: O destinatário pode apenas marcar a mensagem como lida.
-      allow update: if isOwner(resource.data.recipientId)
-                    && request.resource.data.read == true
-                    && resource.data.read == false
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+  // LIST: Permite que o destinatário liste suas próprias mensagens.
+  //       Permite que Administradores listem todas as mensagens.
+  //       (O frontend deverá filtrar para exibir apenas as relevantes).
+  allow list: if request.query.recipientId == request.auth.uid || isAdmin();
 
-      allow delete: if false;
-    }
+  // CREATE: Apenas Administradores podem criar (enviar) novas mensagens.
+  allow create: if isAdmin();
+
+  // UPDATE: O destinatário pode apenas marcar a mensagem como lida ('read' de false para true).
+  //         Ele não pode alterar nenhum outro campo.
+  allow update: if isOwner(resource.data.recipientId)
+                && request.resource.data.read == true
+                && resource.data.read == false
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+
+  // DELETE: Ninguém pode apagar mensagens.
+  allow delete: if false;
+}
     
     // VOTAÇÕES
     match /polls/{pollId} {
@@ -103,8 +124,7 @@ service cloud.firestore {
     // TRANSAÇÕES FINANCEIRAS
     match /transactions/{transactionId} {
         allow read: if isOwner(resource.data.userId) || isAdmin();
-        allow write: if isAdmin(); // Admins podem criar cobranças avulsas
-        allow create: if isAdmin();
+        allow write: if isAdmin();
     }
   }
 }
