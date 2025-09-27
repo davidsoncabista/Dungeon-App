@@ -254,7 +254,7 @@ export default function RoomsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle> de Jogo</CardTitle>
+          <CardTitle>Salas de Jogo</CardTitle>
           <CardDescription>Uma lista de todas as salas disponíveis na associação.</CardDescription>
         </CardHeader>
         <CardContent>
