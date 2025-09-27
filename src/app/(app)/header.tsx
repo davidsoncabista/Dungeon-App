@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, DollarSign, MessageSquare, Vote, Eye } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User as FirebaseUser } from "firebase/auth"
@@ -48,7 +48,6 @@ const visitorNavItems = [
 const adminNavItems = [
     { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
-    { href: "/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador"] },
 ]
 
