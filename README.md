@@ -168,7 +168,7 @@ Este projeto foi construído utilizando um stack de tecnologias modernas e escal
 Para publicar as alterações no Firebase (App Hosting e Functions), utilize o comando:
 ```bash
 firebase deploy
-
+```
 Certifique-se de estar autenticado na CLI do Firebase (`firebase login`).
 
 ## Equipe do Projeto
