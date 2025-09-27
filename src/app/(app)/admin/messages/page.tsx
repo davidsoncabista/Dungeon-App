@@ -2,11 +2,12 @@
 "use client"
 
 import { useState } from "react"
+import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, orderBy } from "firebase/firestore"
+import { getFirestore, collection, query, orderBy, doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { app } from "@/lib/firebase"
+import { auth, app } from "@/lib/firebase"
 import type { UserMessage } from "@/lib/types/userMessage";
 import type { User } from "@/lib/types/user";
 
@@ -17,12 +18,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { MessageSquare, ShieldAlert } from "lucide-react"
 import { AddMessageDialog } from "@/components/app/admin/messages/add-message-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { getFunctions, httpsCallable } from "firebase/functions"
 
 export default function MessagesAdminPage() {
     const firestore = getFirestore(app);
-    const functions = getFunctions(app, 'southamerica-east1');
     const { toast } = useToast();
+    const [user] = useAuthState(auth);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // --- Data Fetching ---
@@ -32,23 +32,45 @@ export default function MessagesAdminPage() {
         { idField: 'id' }
     );
     const usersRef = collection(firestore, 'users');
-    const [users, loadingUsers] = useCollectionData<User>(usersRef, { idField: 'id' });
+    const [users, loadingUsers] = useCollectionData<User>(query(usersRef, orderBy("name")), { idField: 'id' });
 
     const handleSendMessage = async (data: any) => {
+        if (!user) {
+            toast({ title: "Erro", description: "Você precisa estar autenticado.", variant: "destructive" });
+            return;
+        }
+
         try {
-            const sendMessageFunction = httpsCallable(functions, 'sendUserMessage');
-            await sendMessageFunction(data);
+            const senderDoc = users?.find(u => u.uid === user.uid);
+            const recipientDoc = users?.find(u => u.uid === data.recipientId);
+
+            if (!senderDoc || !recipientDoc) {
+                 toast({ title: "Erro", description: "Usuário remetente ou destinatário não encontrado.", variant: "destructive" });
+                 return;
+            }
+
+            const newMessageRef = doc(collection(firestore, "userMessages"));
+            
+            await setDoc(newMessageRef, {
+                id: newMessageRef.id,
+                ...data,
+                senderId: user.uid,
+                senderName: senderDoc.name,
+                recipientName: recipientDoc.name,
+                createdAt: serverTimestamp(),
+                read: false,
+            });
             
             toast({
                 title: "Mensagem Enviada!",
-                description: `A mensagem foi enviada para o usuário selecionado.`
+                description: `A mensagem foi enviada para ${recipientDoc.name}.`
             });
             setIsAddModalOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao enviar mensagem:", error);
             toast({
-                title: "Erro",
-                description: "Não foi possível enviar a mensagem. Verifique suas permissões.",
+                title: "Erro de Permissão",
+                description: error.message || "Não foi possível enviar a mensagem. Verifique se você tem permissão de administrador.",
                 variant: "destructive"
             });
         }
