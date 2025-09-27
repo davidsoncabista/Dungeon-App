@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.2 - 2025-09-27 18:30:00 - davidson.dev.br
+
+- **feat(landing): Redesenha a landing page para refletir as novas funcionalidades do app**
+  - Este commit implementa uma refatoração completa da landing page para alinhar a comunicação com o estado atual e as novas capacidades do Dungeon App.
+  - **Destaques da Atualização:**
+    - **Seções de Funcionalidades Modernizadas:** As seções foram atualizadas para destacar recursos mais relevantes como "Agenda Multivisualização", "Comunicação Centralizada" e "Sistema de Votação".
+    - **Conteúdo Focado em Benefícios:** O texto foi reescrito para ser mais claro e direto, explicando os benefícios tanto para associados quanto para administradores.
+    - **UI/UX Aprimorada:** O visual foi modernizado para melhorar a experiência do visitante e guiá-lo de forma mais eficaz para a ação de login.
+
 ## v1.3.1 - 2025-09-22 10:30:00 - davidson.dev.br
 
 - **feat(ui): Adiciona exibição do nível de acesso do usuário no perfil**

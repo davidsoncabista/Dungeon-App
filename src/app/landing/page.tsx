@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dices, ShieldCheck, Calendar, Users, Award } from "lucide-react";
+import { Dices, ShieldCheck, Calendar, Users, Award, Vote, MessageSquare, Eye } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -8,23 +8,23 @@ import { Badge } from "@/components/ui/badge";
 const features = [
   {
     icon: <Calendar className="h-10 w-10 text-primary" />,
-    title: "Agenda Inteligente",
-    description: "Visualize a disponibilidade de todas as salas em uma timeline de 24h e faça suas reservas com apenas alguns cliques.",
+    title: "Agenda Multivisualização",
+    description: "Visualize a disponibilidade das salas em calendário mensal ou timeline diária/semanal e faça suas reservas com facilidade.",
   },
   {
-    icon: <Users className="h-10 w-10 text-primary" />,
-    title: "Gerencie Seus Convidados",
-    description: "Adicione membros da associação ou convidados externos às suas sessões de forma simples e prática.",
+    icon: <MessageSquare className="h-10 w-10 text-primary" />,
+    title: "Comunicação Centralizada",
+    description: "Receba avisos importantes no mural e mensagens diretas da administração em sua caixa de entrada privada.",
   },
   {
-    icon: <Award className="h-10 w-10 text-primary" />,
-    title: "Sistema de Cotas Justo",
-    description: "Nossas regras de agendamento garantem que todos os associados, de Players a Masters, tenham oportunidades iguais de jogo.",
+    icon: <Vote className="h-10 w-10 text-primary" />,
+    title: "Sistema de Votação",
+    description: "Participe de forma ativa nas decisões da associação através de um sistema de votação democrático e transparente.",
   },
     {
     icon: <ShieldCheck className="h-10 w-10 text-primary" />,
-    title: "Painel de Controle Completo",
-    description: "Administradores têm acesso a ferramentas poderosas para gerenciar usuários, salas, reservas e finanças.",
+    title: "Gestão Administrativa",
+    description: "Ferramentas completas para gerenciar membros, finanças, regras de acesso, comunicações e muito mais.",
     },
 ];
 
@@ -52,7 +52,7 @@ export default function LandingPage() {
               O seu portal para o universo do RPG.
             </h1>
             <p className="max-w-prose text-muted-foreground md:text-xl">
-              Gerencie suas reservas, convide seus amigos e acompanhe a disponibilidade das salas. Tudo em um só lugar, projetado para a nossa comunidade.
+              Gerencie suas reservas, participe das decisões e conecte-se com a comunidade. Tudo em um só lugar, projetado para nossos membros.
             </p>
             <Button asChild size="lg">
               <Link href="/login">Comece a Aventura</Link>
@@ -74,7 +74,7 @@ export default function LandingPage() {
         <section className="bg-muted/50 py-20 md:py-28">
             <div className="container">
                 <div className="text-center space-y-4 mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold font-headline">Funcionalidades Pensadas para Você</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline">Um Ecossistema Completo para a Guilda</h2>
                     <p className="max-w-3xl mx-auto text-muted-foreground md:text-lg">
                         Criamos uma plataforma robusta para simplificar a vida dos nossos associados e administradores.
                     </p>
@@ -98,7 +98,7 @@ export default function LandingPage() {
 
       <footer className="border-t">
         <div className="container flex items-center justify-between h-20">
-            <p className="text-sm text-muted-foreground">© 2024 Associação Dungeon Belém. Todos os direitos reservados.</p>
+            <p className="text-sm text-muted-foreground">© 2025 Associação Dungeon Belém. Todos os direitos reservados.</p>
             <p className="text-sm text-muted-foreground">Desenvolvido pela comunidade para a comunidade.</p>
         </div>
       </footer>
