@@ -37,7 +37,6 @@ import type { Plan } from "@/lib/types/plan"
 import { Skeleton } from "../ui/skeleton"
 import { ScrollArea } from "../ui/scroll-area"
 import { Checkbox } from "../ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Calendar as CalendarPicker } from "../ui/calendar"
 
@@ -374,7 +373,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                 }}
                                 fromDate={new Date()}
                                 toDate={addDays(new Date(), 14)}
-                                disabled={(date) => isBefore(date, new Date()) && !cn(date, new Date())}
+                                disabled={(date) => isBefore(date, new Date()) && format(date, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd')}
                                 initialFocus
                                 locale={ptBR}
                             />
@@ -620,3 +619,5 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     </Form>
   )
 }
+
+    
