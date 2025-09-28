@@ -60,12 +60,13 @@ export default function LandingPage() {
           </div>
           <div className="flex justify-center">
             <Image 
-                src="https://picsum.photos/seed/landing-hero/600/500" 
-                width={600} 
-                height={500} 
-                alt="Um grupo de aventureiros jogando RPG de mesa em uma sala temática."
+                src="https://images.unsplash.com/photo-1614767629805-3bbcf6e26c7d?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                width={740} 
+                height={494} 
+                alt="Um castelo de fantasia em um penhasco com uma cachoeira."
                 className="rounded-xl shadow-2xl"
-                data-ai-hint="rpg adventure party"
+                data-ai-hint="fantasy castle landscape"
+                priority
             />
           </div>
         </section>
