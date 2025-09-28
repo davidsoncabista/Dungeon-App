@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
-import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
+import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getBookingDurationAndEnd, FIXED_SLOTS } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -373,7 +373,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                                 }}
                                 fromDate={new Date()}
                                 toDate={addDays(new Date(), 14)}
-                                disabled={(date) => isBefore(date, new Date()) && format(date, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd')}
+                                disabled={(date) => isBefore(date, startOfDay(new Date()))}
                                 initialFocus
                                 locale={ptBR}
                             />
@@ -619,5 +619,3 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     </Form>
   )
 }
-
-    
