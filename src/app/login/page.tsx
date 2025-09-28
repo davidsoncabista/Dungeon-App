@@ -83,10 +83,11 @@ export default function LoginPage() {
             <div className="mb-4 flex justify-center">
               <Image 
                 src="/logo.svg" 
-                width={162}
+                width={170}
                 height={170}
                 alt="Logo da Associação Dungeon Belém"
                 className="rounded-xl"
+                priority
               />
             </div>
             <CardTitle className="font-headline text-4xl">Dungeon App</CardTitle>
