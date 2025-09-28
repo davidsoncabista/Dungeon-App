@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="162" height="170" viewBox="0 0 162 170" fill="none">
+    <path d="M53.167 11.237C61.42 1.056 75.438-2.68 86.832 2.39L144.91 28.533C156.305 33.603 162 44.98 158.11 55.858L126.88 143.61C122.99 154.49 110.15 160.038 98.755 154.968L40.677 128.825C29.282 123.755 23.692 112.378 27.582 101.5L58.812 13.748" stroke="hsl(var(--primary))" stroke-width="4" />
+    <path d="M125.79 31.95L59.901 12.062M131.543 43.18L65.654 23.29M137.026 54.46L71.137 34.572M28.67 101.442L95.114 121.503M33.882 89.94L100.326 110M39.366 78.66L105.81 98.72M57.723 15.01L125.233 32.22M58.752 13.75L27.58 101.52M85.493 8.35L86.832 2.39L144.91 28.533L158.111 55.858L126.88 143.61L98.755 154.968L40.677 128.825L27.582 101.5L58.812 13.748" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M57.723 15.01L85.493 8.35L95.114 121.502L65.654 23.292L59.901 12.062L57.723 15.01Z" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M125.23 32.22L131.54 43.18L71.137 34.57L65.654 23.29L59.901 12.06L85.493 8.35L95.114 121.5L100.33 110L33.883 89.94L27.582 101.52L40.677 128.82L98.755 154.97L126.88 143.61L158.11 55.86L144.91 28.53L86.832 2.39L58.812 13.75L27.582 101.52" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M57.723 15.01L125.233 32.22M95.114 121.502L100.326 110M95.114 121.502L65.654 23.292" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M100.326 110L33.882 89.94" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M125.233 32.22L131.543 43.18L71.137 34.572L65.654 23.292" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M131.543 43.18L137.026 54.46" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M33.882 89.94L39.366 78.66" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M100.326 110L105.81 98.72" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M95.114 121.5L105.81 98.72M39.366 78.66L95.114 121.5" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M105.81 98.72L95.114 121.5" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M71.137 34.572L95.114 121.502" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M137.026 54.46L95.114 121.502" stroke="hsl(var(--primary))" stroke-width="4"/>
+    <path d="M95.114 121.502L28.67 101.442" stroke="hsl(var(--primary))" stroke-width="4"/>
+</svg>
