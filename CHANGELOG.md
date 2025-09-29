@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.3.5 - 2025-09-30 10:00:00 - davidson.dev.br
+
+- **fix(bookings): Garante que convidados vejam suas reservas na lista**
+  - Este commit corrige um bug crítico que impedia usuários na lista de `guests` (convidados) de visualizarem as reservas para as quais foram convidados na página "Minhas Reservas".
+  - O problema ocorria porque a consulta ao Firestore buscava reservas apenas onde o UID do usuário constava no campo `participants`, ignorando completamente o campo `guests`. Devido a uma limitação do Firestore que impede consultas do tipo `OR` em dois campos `array-contains` diferentes, a solução foi refatorar a lógica de busca de dados.
+  - Agora, o componente realiza duas consultas paralelas e independentes:
+    1. Uma busca por reservas onde o usuário está na lista `participants`.
+    2. Uma busca por reservas onde o usuário está na lista `guests`.
+  - Os resultados de ambas as consultas são então mesclados e deduplicados na interface, garantindo que todos os usuários (membros e convidados) tenham uma visão completa de todos os seus agendamentos, alinhando o comportamento do aplicativo com as regras de negócio.
+
 ## v1.3.4 - 2025-09-29 21:00:00 - davidson.dev.br
 
 - **feat(auth): Promove usuário para Membro com a role correta após pagamento**

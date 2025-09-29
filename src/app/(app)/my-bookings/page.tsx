@@ -32,10 +32,36 @@ export default function MyBookingsPage() {
 
   // --- Data Fetching ---
   const bookingsRef = collection(firestore, 'bookings');
-  const bookingsQuery = user 
+  
+  // Busca 1: Reservas como participante
+  const participantBookingsQuery = user 
     ? query(bookingsRef, where('participants', 'array-contains', user.uid), orderBy('date', 'desc'))
     : null;
-  const [bookings, loadingBookings, errorBookings] = useCollectionData<Booking>(bookingsQuery, { idField: 'id' });
+  const [participantBookings, loadingParticipantBookings, errorParticipantBookings] = useCollectionData<Booking>(participantBookingsQuery, { idField: 'id' });
+
+  // Busca 2: Reservas como convidado (guest)
+  const guestBookingsQuery = user
+    ? query(bookingsRef, where('guests', 'array-contains', user.uid))
+    : null;
+  const [guestBookings, loadingGuestBookings, errorGuestBookings] = useCollectionData<Booking>(guestBookingsQuery, { idField: 'id' });
+  
+  // Combina e deduplica os resultados
+  const bookings = useMemo(() => {
+    if (!participantBookings && !guestBookings) return [];
+    
+    const allBookings = [
+      ...(participantBookings || []),
+      ...(guestBookings || [])
+    ];
+    
+    // Remove duplicatas usando um Map pelo ID da reserva
+    const uniqueBookings = Array.from(new Map(allBookings.map(b => [b.id, b])).values());
+    
+    return uniqueBookings;
+  }, [participantBookings, guestBookings]);
+  
+  const loadingBookings = loadingParticipantBookings || loadingGuestBookings;
+  const errorBookings = errorParticipantBookings || errorGuestBookings;
 
   const usersRef = collection(firestore, 'users');
   const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
