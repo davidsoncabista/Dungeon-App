@@ -4,84 +4,128 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- FUNÇÕES AUXILIARES GLOBAIS ---
+    // Funções reutilizáveis para simplificar a escrita das regras.
+
+    // Verifica se a requisição vem de um utilizador autenticado.
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Verifica se o ID do utilizador autenticado corresponde a um ID de utilizador específico.
+    // Essencial para permitir que um utilizador modifique apenas os seus próprios documentos.
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
     
+    // Obtém o documento completo do utilizador que está a fazer a requisição.
+    // Esta função é crucial para verificar dados como 'role', 'status' ou 'category'.
     function getRequestingUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     // --- FUNÇÕES DE VERIFICAÇÃO DE PAPEL (ROLE) ---
-    // [CORREÇÃO]: Estas funções agora obtêm os dados do utilizador internamente
-    // para evitar o uso da declaração 'let' que estava a causar erros de sintaxe.
+    // Verificam o papel ('role') do utilizador para conceder permissões administrativas.
+
+    // Verifica se o utilizador tem o papel de 'Administrador'.
     function isAdmin() {
       return isSignedIn() && getRequestingUserData().role == 'Administrador';
     }
 
+    // Verifica se o utilizador tem o papel de 'Editor' ou 'Administrador'.
     function isEditorOrAdmin() {
       return isSignedIn() && getRequestingUserData().role in ['Administrador', 'Editor'];
     }
 
+    // Verifica se o utilizador tem o papel de 'Revisor' ou superior.
     function isRevisorOrHigher() {
       return isSignedIn() && getRequestingUserData().role in ['Administrador', 'Editor', 'Revisor'];
     }
     
     // --- FUNÇÃO-CHAVE DE ACESSO À APLICAÇÃO ---
-    function canReadAppData() {
+    // Define se um utilizador tem permissão para REALIZAR AÇÕES (como reservar).
+    function canPerformActions() {
       let userData = getRequestingUserData();
+      // A condição exige que o utilizador tenha o status 'Ativo' e não seja da categoria 'Visitante'.
       return isSignedIn() && userData.status == 'Ativo' && userData.category != 'Visitante';
     }
 
     // --- REGRAS POR COLEÇÃO ---
-    // [CORREÇÃO]: Removido o uso de 'let' e atualizadas as chamadas de função.
 
+    // Coleção de Utilizadores [REATORIZADO]
     match /users/{userId} {
-      allow read: if isSignedIn() && (isOwner(userId) || isRevisorOrHigher() || canReadAppData());
+      // PERMISSÃO DE LEITURA (read):
+      // Flexibilizada para que qualquer utilizador autenticado possa ler os perfis.
+      // Isto é necessário para que a agenda possa mostrar os detalhes dos participantes
+      // e para que novos utilizadores não sejam bloqueados.
+      allow read: if isSignedIn();
+      
+      // PERMISSÃO DE ESCRITA (write - criar e atualizar):
+      // Um utilizador só pode editar o seu próprio perfil, ou um admin/editor pode fazê-lo.
       allow write: if isSignedIn() && (isOwner(userId) || isEditorOrAdmin());
+      
+      // PERMISSÃO DE EXCLUSÃO (delete):
+      // Apenas Administradores podem excluir perfis de utilizador.
       allow delete: if isSignedIn() && isAdmin();
     }
 
+    // Coleção de Salas [REATORIZADO]
     match /rooms/{roomId} {
-      allow read: if isSignedIn() && canReadAppData();
+      // PERMISSÃO DE LEITURA (read): Flexibilizada para que todos os utilizadores autenticados
+      // possam ver as salas disponíveis na agenda.
+      allow read: if isSignedIn();
+      // Apenas Editores ou superiores podem criar, editar ou remover salas.
       allow write: if isSignedIn() && isEditorOrAdmin();
     }
 
+    // Coleção de Reservas [REATORIZADO]
     match /bookings/{bookingId} {
-      allow read: if isSignedIn() && canReadAppData();
-      allow create: if isSignedIn() && canReadAppData() && isOwner(request.resource.data.organizerId);
-      allow update: if isSignedIn() && canReadAppData() && (isOwner(resource.data.organizerId) || isEditorOrAdmin() || (isOwner(request.auth.uid) && request.auth.uid in resource.data.participants));
-      allow delete: if isSignedIn() && canReadAppData() && (isOwner(resource.data.organizerId) || isEditorOrAdmin());
+      // PERMISSÃO DE LEITURA (read): Flexibilizada para que todos os utilizadores autenticados
+      // possam ver a agenda de reservas.
+      allow read: if isSignedIn();
+      
+      // PERMISSÃO DE CRIAÇÃO (create):
+      // Apenas utilizadores com perfil completo e status "Ativo" podem criar reservas.
+      allow create: if isSignedIn() && canPerformActions() && isOwner(request.resource.data.organizerId);
+      
+      // PERMISSÃO DE ATUALIZAÇÃO (update):
+      // Apenas utilizadores ativos podem atualizar reservas.
+      allow update: if isSignedIn() && canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin() || (isOwner(request.auth.uid) && request.auth.uid in resource.data.participants));
+      
+      // PERMISSÃO DE EXCLUSÃO (delete):
+      // Apenas utilizadores ativos podem excluir reservas.
+      allow delete: if isSignedIn() && canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin());
     }
 
+    // Coleção de Mensagens Diretas
     match /userMessages/{messageId} {
-        allow get: if isSignedIn() && (isOwner(resource.data.recipientId) || isAdmin());
-        allow list: if isSignedIn() && (request.query.where[0][2] == request.auth.uid || isAdmin());
-        allow create: if isSignedIn() && isAdmin();
-        allow update: if isOwner(resource.data.recipientId)
-                      && request.resource.data.read == true
-                      && resource.data.read == false
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-        allow delete: if false;
+        // PERMISSÃO SIMPLIFICADA:
+        // Qualquer utilizador autenticado pode ler e escrever mensagens.
+        // A lógica de quem vê ou envia o quê fica a cargo do frontend.
+        allow read, write: if isSignedIn();
     }
 
+    // Coleção de Regras de Acesso (para gestão de papéis)
     match /accessRules/{ruleId} {
+      // Apenas Admins podem ver e modificar as definições de papéis.
       allow read, write: if isSignedIn() && isAdmin();
     }
 
+    // Mural de Avisos
     match /notices/{noticeId} {
+      // LEITURA (read): Qualquer pessoa pode ler os avisos.
       allow read: if true;
-      allow write: if isSignedIn() && isAdmin();
+      // ESCRITA (write): Qualquer utilizador autenticado pode interagir com os avisos.
+      allow write: if isSignedIn();
     }
     
+    // Votações
     match /polls/{pollId} {
+      // Qualquer utilizador autenticado pode ver as votações.
       allow read: if isSignedIn();
+      // Apenas Admins podem criar ou gerir as votações.
       allow write: if isAdmin();
       
+      // Sub-coleção de Votos
       match /votes/{voteId} {
         allow create, read: if isOwner(voteId);
         allow list: if isAdmin();
@@ -89,16 +133,19 @@ service cloud.firestore {
       }
     }
     
+    // Configurações do Sistema
     match /systemSettings/config {
         allow read: if isSignedIn();
         allow write: if isAdmin();
     }
     
+    // Planos de Associação
     match /plans/{planId} {
         allow read: if isSignedIn();
         allow write: if isAdmin();
     }
     
+    // Transações Financeiras
     match /transactions/{transactionId} {
         allow read: if isOwner(resource.data.userId) || isAdmin();
         allow write: if isAdmin();
