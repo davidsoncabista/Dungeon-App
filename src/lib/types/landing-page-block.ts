@@ -16,6 +16,7 @@ interface BaseBlock {
   type: BlockType; // O tipo do bloco, que determina sua estrutura de conteúdo e renderização.
   order: number; // A ordem em que o bloco aparece na página.
   enabled: boolean; // Se o bloco deve ou não ser renderizado.
+  content: any; // O conteúdo específico do bloco.
 }
 
 /**
