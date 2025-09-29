@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { LandingPageBlock, BlockType } from "@/lib/types/landing-page-block"
 import { useState, useEffect } from "react"
 import { PlusCircle, Trash2 } from "lucide-react"
+import { MarkdownEditor } from "./markdown-editor"
 
 // --- Schemas ---
 const heroContentSchema = z.object({
@@ -46,9 +47,14 @@ const featureListContentSchema = z.object({
   layout: z.enum(['2-cols', '3-cols', '4-cols'], { required_error: "É necessário selecionar um layout." }),
 });
 
+const markdownContentSchema = z.object({
+    markdown: z.string().min(1, "O conteúdo é obrigatório."),
+});
+
 const formSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal('hero'), content: heroContentSchema }),
   z.object({ type: z.literal('featureList'), content: featureListContentSchema }),
+  z.object({ type: z.literal('markdown'), content: markdownContentSchema }),
 ]);
 
 type FormValues = z.infer<typeof formSchema>;
@@ -69,6 +75,10 @@ const defaultFeatureListContent = {
     subtitle: "",
     features: [{ icon: "", title: "", description: "" }],
     layout: '3-cols' as const,
+};
+
+const defaultMarkdownContent = {
+    markdown: "# Título\n\nEscreva seu conteúdo aqui...",
 };
 
 
@@ -107,6 +117,8 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
         form.reset({ type, content: defaultHeroContent });
     } else if (type === 'featureList') {
         form.reset({ type, content: defaultFeatureListContent });
+    } else if (type === 'markdown') {
+        form.reset({ type, content: defaultMarkdownContent });
     }
   };
   
@@ -126,6 +138,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                 <SelectContent>
                   <SelectItem value="hero">Hero</SelectItem>
                   <SelectItem value="featureList">Lista de Features</SelectItem>
+                  <SelectItem value="markdown">Bloco de Texto (Markdown)</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -170,6 +183,28 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
           </div>
         )}
         
+        {selectedType === 'markdown' && (
+             <div className="space-y-4 p-4 border rounded-md">
+                <h3 className="font-semibold text-lg">Conteúdo (Markdown)</h3>
+                 <FormField
+                    control={form.control}
+                    name="content.markdown"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Editor</FormLabel>
+                            <FormControl>
+                                <MarkdownEditor value={field.value} onChange={field.onChange} />
+                            </FormControl>
+                             <FormDescription>
+                                Utilize a barra de ferramentas ou escreva diretamente em Markdown.
+                             </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        )}
+
         <DialogFooter className="sticky bottom-0 bg-background pt-4">
           <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
           <Button type="submit" disabled={isSubmitting}>

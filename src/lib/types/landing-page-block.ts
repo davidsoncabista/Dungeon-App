@@ -6,7 +6,7 @@
 /**
  * Representa os tipos de blocos de conteúdo que podem ser renderizados na landing page.
  */
-export type BlockType = 'hero' | 'featureList';
+export type BlockType = 'hero' | 'featureList' | 'markdown';
 
 /**
  * Interface base para todos os blocos de conteúdo.
@@ -51,6 +51,14 @@ export interface FeatureListBlockContent {
   layout: '2-cols' | '3-cols' | '4-cols'; // Controle de layout para a grade.
 }
 
+/**
+ * Conteúdo para o bloco 'Markdown', que renderiza texto formatado.
+ */
+export interface MarkdownBlockContent {
+  markdown: string;
+}
+
+
 // --- Tipos de Blocos Discernidos ---
 
 export interface HeroBlock extends BaseBlock {
@@ -63,8 +71,14 @@ export interface FeatureListBlock extends BaseBlock {
   content: FeatureListBlockContent;
 }
 
+export interface MarkdownBlock extends BaseBlock {
+  type: 'markdown';
+  content: MarkdownBlockContent;
+}
+
+
 /**
  * Um tipo união que representa qualquer um dos possíveis blocos de conteúdo.
  * Isso permite o tratamento polimórfico dos blocos na lógica de renderização.
  */
-export type LandingPageBlock = HeroBlock | FeatureListBlock;
+export type LandingPageBlock = HeroBlock | FeatureListBlock | MarkdownBlock;

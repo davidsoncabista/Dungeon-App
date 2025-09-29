@@ -11,9 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import type { LandingPageBlock, HeroBlock, FeatureListBlock } from "@/lib/types/landing-page-block";
+import type { LandingPageBlock, HeroBlock, FeatureListBlock, MarkdownBlock } from "@/lib/types/landing-page-block";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
 
 // --- Dynamic Components ---
 
@@ -81,6 +84,18 @@ const FeatureListSection = ({ block }: { block: FeatureListBlock }) => {
     )
 };
 
+const MarkdownSection = ({ block }: { block: MarkdownBlock }) => (
+    <section className="py-20 md:py-28">
+        <div className="container">
+            <div className="prose dark:prose-invert max-w-4xl mx-auto">
+                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {block.content.markdown}
+                </ReactMarkdown>
+            </div>
+        </div>
+    </section>
+);
+
 
 const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
   switch (block.type) {
@@ -88,6 +103,8 @@ const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
       return <HeroSection block={block as HeroBlock} />;
     case 'featureList':
       return <FeatureListSection block={block as FeatureListBlock} />;
+    case 'markdown':
+      return <MarkdownSection block={block as MarkdownBlock} />;
     default:
       return null;
   }
