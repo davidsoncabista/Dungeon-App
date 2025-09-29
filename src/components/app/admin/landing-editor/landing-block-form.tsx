@@ -53,6 +53,25 @@ const formSchema = z.discriminatedUnion("type", [
 
 type FormValues = z.infer<typeof formSchema>;
 
+
+const defaultHeroContent = {
+    badge: "",
+    title: "",
+    subtitle: "",
+    buttonText: "",
+    buttonLink: "http://",
+    imageUrl: "https://",
+    imageAlt: "",
+};
+
+const defaultFeatureListContent = {
+    title: "",
+    subtitle: "",
+    features: [{ icon: "", title: "", description: "" }],
+    layout: '3-cols' as const,
+};
+
+
 interface LandingBlockFormProps {
     onSave: (data: Partial<LandingPageBlock>) => void;
     onCancel: () => void;
@@ -82,9 +101,13 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
 
   const handleTypeChange = (type: BlockType) => {
     setSelectedType(type);
-    form.setValue("type", type);
-    // Reset content when type changes to avoid validation errors
-     form.reset({ ...form.getValues(), content: undefined });
+    
+    // Reset form with new default values for the selected type
+    if (type === 'hero') {
+        form.reset({ type, content: defaultHeroContent });
+    } else if (type === 'featureList') {
+        form.reset({ type, content: defaultFeatureListContent });
+    }
   };
   
   return (
