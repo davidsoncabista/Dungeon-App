@@ -1,0 +1,9 @@
+diff --git a/node_modules/firebase/auth/dist/esm/index.esm.js b/node_modules/firebase/auth/dist/esm/index.esm.js
+index 542f785..b998a88 100644
+--- a/node_modules/firebase/auth/dist/esm/index.esm.js
++++ b/node_modules/firebase/auth/dist/esm/index.esm.js
+@@ -1,4 +1,4 @@
+-export * from '@firebase/auth';
++export * from '@firebase/auth/dist/esm/index.js';
+ 
+ //# sourceMappingURL=index.esm.js.map
