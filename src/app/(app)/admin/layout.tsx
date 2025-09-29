@@ -56,4 +56,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                 return null;
                             })}
                         </nav>
-                    </Card
+                    </CardContent>
+                 </Card>
+            </div>
+            <div className="md:col-span-3">
+                {children}
+            </div>
+        </div>
+    )
+}
