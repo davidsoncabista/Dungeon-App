@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Pie, PieChart, Tooltip } from "recharts"
-import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX } from "lucide-react"
+import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX, ShieldAlert } from "lucide-react"
 import type { UserCategory, User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
@@ -52,9 +52,9 @@ export default function StatisticsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // --- Firestore Data ---
-  const [users, loadingUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
-  const [bookings, loadingBookings] = useCollectionData<Booking>(query(collection(firestore, 'bookings')), { idField: 'id' });
-  const [rooms, loadingRooms] = useCollectionData<Room>(query(collection(firestore, 'rooms')), { idField: 'id' });
+  const [users, loadingUsers, errorUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
+  const [bookings, loadingBookings, errorBookings] = useCollectionData<Booking>(query(collection(firestore, 'bookings')), { idField: 'id' });
+  const [rooms, loadingRooms, errorRooms] = useCollectionData<Room>(query(collection(firestore, 'rooms')), { idField: 'id' });
 
   // --- Memoized Data Processing ---
   const { 
@@ -150,6 +150,7 @@ export default function StatisticsPage() {
   }, [bookings, rooms, users, sortKey, sortOrder]);
   
   const isLoading = loadingUsers || loadingBookings || loadingRooms;
+  const hasError = errorUsers || errorBookings || errorRooms;
   
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -176,6 +177,22 @@ export default function StatisticsPage() {
         ))}
     </ul>
   );
+  
+  if (hasError) {
+      return (
+        <Card className="bg-destructive/10 border-destructive">
+            <CardHeader>
+                <div className="flex items-center gap-4">
+                    <ShieldAlert className="h-8 w-8 text-destructive" />
+                    <div>
+                        <CardTitle className="text-destructive">Erro de Permissão</CardTitle>
+                        <CardDescription className="text-destructive/80">Você não tem permissão para visualizar as estatísticas. Contate um administrador.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+        </Card>
+      )
+  }
 
   return (
     <div className="grid gap-8">

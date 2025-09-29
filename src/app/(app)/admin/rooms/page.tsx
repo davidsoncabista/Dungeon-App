@@ -206,8 +206,8 @@ export default function RoomsPage() {
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
-                    <h4 className="font-bold text-destructive">Erro ao carregar salas</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados. Verifique suas regras de segurança do Firestore. ({errorRooms.message})</p>
+                    <h4 className="font-bold text-destructive">Erro de Permissão</h4>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados das salas. Verifique suas permissões de acesso.</p>
                 </div>
             </div>
           </TableCell>

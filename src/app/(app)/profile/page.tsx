@@ -21,7 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react"
+import { CalendarIcon, Info, Loader2, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -143,7 +143,6 @@ export default function ProfilePage() {
 
 
   const firestore = getFirestore(app);
-  const functions = getFunctions(app, 'southamerica-east1');
   const userDocRef = user ? doc(firestore, "users", user.uid) : null;
   const [appUser, loadingUser, userError] = useDocumentData<User>(userDocRef);
 
@@ -288,7 +287,6 @@ export default function ProfilePage() {
                         <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
                         <CardContent className="flex flex-col items-center gap-4">
                              <Skeleton className="h-32 w-32 rounded-full" />
-                             <Skeleton className="h-10 w-32" />
                         </CardContent>
                     </Card>
                 </div>
@@ -298,7 +296,19 @@ export default function ProfilePage() {
   }
 
   if (!user || userError) {
-    return <p>Erro ao carregar seu perfil. Por favor, tente novamente.</p>
+    return (
+        <Card className="bg-destructive/10 border-destructive">
+            <CardHeader>
+                <div className="flex items-center gap-4">
+                    <ShieldAlert className="h-8 w-8 text-destructive" />
+                    <div>
+                        <CardTitle className="text-destructive">Erro ao Carregar Perfil</CardTitle>
+                        <CardDescription className="text-destructive/80">Não foi possível buscar os dados do seu perfil. Verifique suas permissões ou tente novamente mais tarde.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+        </Card>
+    )
   }
 
 

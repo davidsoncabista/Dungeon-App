@@ -148,8 +148,9 @@ export default function MyBookingsPage() {
 
   }, [userPlan, bookings, user]);
 
+  const anyError = errorBookings || errorUser || errorPlans;
 
-  const renderTable = (bookingList: Booking[], isLoading: boolean, error?: Error, isEmptyMessage?: string) => {
+  const renderTable = (bookingList: Booking[], isLoading: boolean, isEmptyMessage?: string) => {
      if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
@@ -162,15 +163,15 @@ export default function MyBookingsPage() {
       ));
     }
     
-    if (error) {
+    if (anyError) {
        return (
         <TableRow>
           <TableCell colSpan={5}>
             <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
-                    <h4 className="font-bold text-destructive">Erro ao carregar reservas</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar seus agendamentos. ({error.message})</p>
+                    <h4 className="font-bold text-destructive">Erro de Permissão</h4>
+                    <p className="text-sm text-destructive/80">Você não tem permissão para ver estes dados.</p>
                 </div>
             </div>
           </TableCell>
@@ -219,6 +220,8 @@ export default function MyBookingsPage() {
                 <Skeleton className="h-16 w-32" />
                 <Skeleton className="h-16 w-32" />
                 </div>
+            ) : anyError ? (
+                 <div className="p-4 text-sm text-destructive">Não foi possível carregar os dados de cotas.</div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
                 <div className="flex flex-col items-center justify-center p-4">
@@ -279,7 +282,7 @@ export default function MyBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {renderTable(upcomingBookings, isLoading, errorBookings, isVisitor ? "Associe-se para poder criar e gerenciar suas reservas." : "Você não tem nenhuma reserva futura.")}
+              {renderTable(upcomingBookings, isLoading, isVisitor ? "Associe-se para poder criar e gerenciar suas reservas." : "Você não tem nenhuma reserva futura.")}
             </TableBody>
           </Table>
         </CardContent>
@@ -310,7 +313,7 @@ export default function MyBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-                {renderTable(pastBookings, isLoading, errorBookings, "Seu histórico de reservas está vazio.")}
+                {renderTable(pastBookings, isLoading, "Seu histórico de reservas está vazio.")}
             </TableBody>
           </Table>
         </CardContent>
