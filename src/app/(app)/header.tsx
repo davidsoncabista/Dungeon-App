@@ -67,11 +67,11 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   const userCategory = currentUserData?.category || 'Visitante';
 
   // --- Buscas para notificações e votações ---
-  const messagesQuery = user ? query(collection(firestore, 'userMessages'), where('recipientId', '==', user.uid), where('read', '==', false)) : null;
+  const messagesQuery = user && user.uid ? query(collection(firestore, 'userMessages'), where('recipientId', '==', user.uid), where('read', '==', false)) : null;
   const [unreadMessages] = useCollectionData<UserMessage>(messagesQuery);
   const unreadCount = unreadMessages?.length || 0;
 
-  const pollsQuery = user ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
+  const pollsQuery = user && user.uid ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
   const [activePolls] = useCollectionData<Poll>(pollsQuery);
   const isVotingActive = (activePolls?.length || 0) > 0;
 
