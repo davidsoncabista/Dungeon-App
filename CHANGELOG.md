@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.7 - 2025-10-01 11:00:00 - davidson.dev.br
+
+- **refactor(finance): Remove a exibição do UID do usuário nos detalhes da transação**
+  - Este commit melhora a privacidade e a clareza da interface ao remover o ID do usuário (UID) da tela de detalhes da transação, tanto na visão do membro quanto na do administrador.
+  - A exibição do nome do usuário já é suficiente para identificação, e o UID é uma informação técnica desnecessária para a interface, tornando-a mais limpa.
+
 ## v1.3.6 - 2025-10-01 10:00:00 - davidson.dev.br
 
 - **feat(bookings): Adiciona barra de pesquisa ao histórico de reservas**
@@ -287,4 +293,5 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
+
 

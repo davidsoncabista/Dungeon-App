@@ -45,7 +45,7 @@ export function TransactionDetailsDialog({ transaction, children }: { transactio
                      <DetailRow
                         icon={<User className="h-4 w-4" />}
                         label="Usuário"
-                        value={`${transaction.userName} (${transaction.userId})`}
+                        value={transaction.userName}
                     />
                     <DetailRow
                         icon={<DollarSign className="h-4 w-4" />}
