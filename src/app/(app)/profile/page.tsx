@@ -236,14 +236,6 @@ export default function ProfilePage() {
       });
     }
   };
-  
-  const handleUpdateAvatar = () => {
-    toast({
-        title: "Em breve!",
-        description: "A funcionalidade de upload de imagem será implementada em breve.",
-        variant: "default",
-      })
-  }
 
   const handleRefreshClaims = async () => {
     setIsRefreshingClaims(true);
@@ -634,7 +626,6 @@ export default function ProfilePage() {
                           <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar'} data-ai-hint="person" />
                           <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      <Button variant="outline" onClick={handleUpdateAvatar}>Alterar Foto</Button>
                       <p className="text-xs text-muted-foreground text-center">Sua foto é sincronizada com a conta Google.</p>
                   </CardContent>
               </Card>
