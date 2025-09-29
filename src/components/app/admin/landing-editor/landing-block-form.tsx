@@ -22,6 +22,7 @@ import type { LandingPageBlock, BlockType } from "@/lib/types/landing-page-block
 import { useState, useEffect } from "react"
 import { PlusCircle, Trash2 } from "lucide-react"
 import { MarkdownEditor } from "./markdown-editor"
+import { HTMLEditor } from "./html-editor"
 
 // --- Schemas ---
 const heroContentSchema = z.object({
@@ -51,10 +52,15 @@ const markdownContentSchema = z.object({
     markdown: z.string().min(1, "O conteúdo é obrigatório."),
 });
 
+const htmlContentSchema = z.object({
+    html: z.string().min(1, "O conteúdo HTML é obrigatório."),
+});
+
 const formSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal('hero'), content: heroContentSchema }),
   z.object({ type: z.literal('featureList'), content: featureListContentSchema }),
   z.object({ type: z.literal('markdown'), content: markdownContentSchema }),
+  z.object({ type: z.literal('html'), content: htmlContentSchema }),
 ]);
 
 type FormValues = z.infer<typeof formSchema>;
@@ -79,6 +85,10 @@ const defaultFeatureListContent = {
 
 const defaultMarkdownContent = {
     markdown: "# Título\n\nEscreva seu conteúdo aqui...",
+};
+
+const defaultHTMLContent = {
+    html: "<!-- Escreva seu código HTML aqui -->\n<div class=\"text-center\">\n  <h2 class=\"text-2xl font-bold\">Seu Título</h2>\n  <p>Seu parágrafo.</p>\n</div>",
 };
 
 
@@ -119,6 +129,8 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
         form.reset({ type, content: defaultFeatureListContent });
     } else if (type === 'markdown') {
         form.reset({ type, content: defaultMarkdownContent });
+    } else if (type === 'html') {
+        form.reset({ type, content: defaultHTMLContent });
     }
   };
   
@@ -139,6 +151,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                   <SelectItem value="hero">Hero</SelectItem>
                   <SelectItem value="featureList">Lista de Features</SelectItem>
                   <SelectItem value="markdown">Bloco de Texto (Markdown)</SelectItem>
+                  <SelectItem value="html">Bloco de HTML</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -197,6 +210,28 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                             </FormControl>
                              <FormDescription>
                                 Utilize a barra de ferramentas ou escreva diretamente em Markdown.
+                             </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        )}
+        
+        {selectedType === 'html' && (
+             <div className="space-y-4 p-4 border rounded-md">
+                <h3 className="font-semibold text-lg">Conteúdo (HTML)</h3>
+                 <FormField
+                    control={form.control}
+                    name="content.html"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Editor de HTML</FormLabel>
+                            <FormControl>
+                                <HTMLEditor value={field.value} onChange={field.onChange} />
+                            </FormControl>
+                             <FormDescription>
+                                Insira seu código HTML. Cuidado: conteúdo malformado pode quebrar a página.
                              </FormDescription>
                             <FormMessage />
                         </FormItem>

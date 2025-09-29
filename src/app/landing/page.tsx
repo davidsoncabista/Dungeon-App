@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import type { LandingPageBlock, HeroBlock, FeatureListBlock, MarkdownBlock } from "@/lib/types/landing-page-block";
+import type { LandingPageBlock, HeroBlock, FeatureListBlock, MarkdownBlock, HTMLBlock } from "@/lib/types/landing-page-block";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -96,6 +96,14 @@ const MarkdownSection = ({ block }: { block: MarkdownBlock }) => (
     </section>
 );
 
+const HTMLSection = ({ block }: { block: HTMLBlock }) => (
+    <section className="py-20 md:py-28">
+        <div className="container">
+             <div dangerouslySetInnerHTML={{ __html: block.content.html }} />
+        </div>
+    </section>
+);
+
 
 const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
   switch (block.type) {
@@ -105,6 +113,8 @@ const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
       return <FeatureListSection block={block as FeatureListBlock} />;
     case 'markdown':
       return <MarkdownSection block={block as MarkdownBlock} />;
+    case 'html':
+      return <HTMLSection block={block as HTMLBlock} />;
     default:
       return null;
   }
