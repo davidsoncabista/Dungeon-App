@@ -38,7 +38,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     <CardContent className="p-4">
                         <nav className="flex flex-col gap-2">
                             {sideNavItems.map(item => {
-                                // Apenas admins podem ver os itens do menu lateral de admin
                                 if (currentUserRole && item.roles.includes(currentUserRole)) {
                                     return (
                                         <Button
@@ -57,12 +56,4 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                 return null;
                             })}
                         </nav>
-                    </CardContent>
-                 </Card>
-            </div>
-            <div className="md:col-span-3">
-                {children}
-            </div>
-        </div>
-    )
-}
+                    </Card

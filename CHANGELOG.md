@@ -256,3 +256,12 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
+
+```
+- **fix(auth): Aprimora o sistema de proteção de rotas**
+  - Refatorada a lógica de controle de acesso no `AppLayout` para garantir que usuários sem permissão sejam redirecionados de forma mais robusta e inteligente.
+  - A verificação agora centraliza as regras de status (`Pendente`, `Bloqueado`) e de roles (`Administrador`, `Editor`, etc.), impedindo o carregamento de páginas indevidas e melhorando a experiência do usuário.
+  - Ajustado o `AdminLayout` para exibir corretamente os itens de navegação (como "Salas" para Editores) de acordo com as permissões de cada nível de acesso.
+```
+- src/app/(app)/admin/layout.tsx
+- src/app/(app)/layout.tsx
