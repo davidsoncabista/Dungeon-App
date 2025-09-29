@@ -2,7 +2,17 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Foco Atual (Sprint 9)
+## Foco Atual (Sprint 10)
+
+### Foco: [A definir]
+
+- [ ] **[Próxima funcionalidade a ser implementada]**
+  - [ ] Tarefa 1
+  - [ ] Tarefa 2
+
+---
+
+## Concluído: Sprint 9
 
 ### Foco: Comunicação Direta e Refatoração da Área de Admin
 
