@@ -83,8 +83,8 @@ export default function LoginPage() {
             <div className="mb-4 flex justify-center">
               <Image 
                 src="/logo.svg" 
-                width={170}
-                height={170}
+                width={128}
+                height={128}
                 alt="Logo da Associação Dungeon Belém"
                 className="rounded-xl"
                 priority

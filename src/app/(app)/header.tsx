@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye } from "lucide-react"
@@ -28,6 +29,7 @@ import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { ThemeToggle } from "@/components/theme-toggle"
+import Image from "next/image"
 
 // Navegação principal para membros ativos
 const navItems = [
@@ -128,7 +130,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
           href="/online-schedule"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <Dices className="h-8 w-8 text-primary" />
+          <Image src="/logo.svg" alt="Dungeon App Logo" width={40} height={40} className="rounded-md" />
           <span className="sr-only">Dungeon App</span>
         </Link>
         {allVisibleItems.map((item) => (
@@ -166,7 +168,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
               href="/online-schedule"
               className="flex items-center gap-2 text-lg font-semibold mb-4"
             >
-              <Dices className="h-6 w-6 text-primary" />
+              <Image src="/logo.svg" alt="Dungeon App Logo" width={32} height={32} className="rounded-md" />
               <span className="">Dungeon App</span>
             </Link>
             {allVisibleItems.map((item) => (
