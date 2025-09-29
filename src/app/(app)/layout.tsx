@@ -15,7 +15,7 @@ import { WelcomeModal } from "@/components/app/welcome-modal";
 import { NoticeModal } from "@/components/app/notice-modal";
 
 const adminRoutes: Record<string, string[]> = {
-    'Administrador': ['/admin/system', '/admin/finance', '/admin/messages', '/admin/access-rules', '/admin/rooms', '/statistics', '/users'],
+    'Administrador': ['/admin/system', '/admin/finance', '/admin/messages', '/admin/access-rules', '/admin/landing-editor', '/admin/rooms', '/statistics', '/users'],
     'Editor': ['/admin/rooms', '/statistics', '/users'],
     'Revisor': ['/statistics', '/users'],
     'Membro': [],
