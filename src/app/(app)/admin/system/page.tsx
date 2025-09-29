@@ -56,7 +56,6 @@ export default function AdminPage() {
   const [settings, loadingSettings] = useDocumentData(doc(firestore, 'systemSettings', 'config'));
   
   const currentUser = appUser?.[0];
-  const canEdit = currentUser?.role === 'Administrador' || currentUser?.role === 'Editor';
   const isAdmin = currentUser?.role === 'Administrador';
 
   // --- Component State ---
@@ -83,6 +82,25 @@ export default function AdminPage() {
   }, [settings]);
 
   // --- Plan Handlers ---
+   const handleCreatePlan = async (data: any) => {
+    if (!isAdmin) return;
+    setIsSaving(true);
+    try {
+      const newPlanRef = doc(collection(firestore, 'plans'));
+      await setDoc(newPlanRef, {
+        ...data,
+        id: newPlanRef.id,
+      });
+      toast({ title: "Plano Criado!", description: `O plano ${data.name} foi criado com sucesso.` });
+      setIsPlanCreateModalOpen(false);
+    } catch (error: any) {
+       toast({ title: "Erro de Permissão!", description: error.message || "Você não tem permissão para realizar esta ação.", variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+
   const handleUpdatePlan = async (data: Partial<Plan>) => {
     if (!editingPlan || !isAdmin) return;
     setIsSaving(true);
@@ -412,7 +430,7 @@ export default function AdminPage() {
                                     <DialogTitle>Criar Novo Plano</DialogTitle>
                                     <DialogDescription>Defina o nome do novo plano. Os outros valores podem ser editados na tabela.</DialogDescription>
                                 </DialogHeader>
-                                <PlanForm onSave={(data) => handleUpdatePlan({ ...editingPlan, ...data })} onCancel={() => setIsPlanCreateModalOpen(false)} />
+                                <PlanForm onSave={handleCreatePlan} onCancel={() => setIsPlanCreateModalOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>
@@ -555,5 +573,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    

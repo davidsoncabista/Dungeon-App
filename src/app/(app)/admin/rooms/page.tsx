@@ -48,9 +48,9 @@ function RoomTableRow({ room, canEdit }: { room: Room, canEdit: boolean }) {
       await updateDoc(roomRef, data);
       toast({ title: "Sala Atualizada!", description: "As informações da sala foram salvas." });
       setIsEditDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao atualizar sala:", error);
-      toast({ title: "Erro!", description: "Não foi possível salvar as alterações.", variant: "destructive" });
+      toast({ title: "Erro de Permissão!", description: error.message, variant: "destructive" });
     }
   };
 
@@ -58,9 +58,9 @@ function RoomTableRow({ room, canEdit }: { room: Room, canEdit: boolean }) {
     try {
       await deleteDoc(doc(firestore, "rooms", room.id));
       toast({ title: "Sala Excluída!", description: `A sala ${room.name} foi removida.` });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir sala:", error);
-      toast({ title: "Erro!", description: "Não foi possível excluir a sala.", variant: "destructive" });
+      toast({ title: "Erro de Permissão!", description: error.message, variant: "destructive" });
     }
   };
 
@@ -104,12 +104,12 @@ function RoomTableRow({ room, canEdit }: { room: Room, canEdit: boolean }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}><Pencil className="mr-2 h-4 w-4" />Editar Sala</DropdownMenuItem>
-                </DialogTrigger>
+                <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)} disabled={!canEdit}>
+                  <Pencil className="mr-2 h-4 w-4" />Editar Sala
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={!canEdit}>
                         <Trash2 className="mr-2 h-4 w-4" />Excluir Sala
                     </DropdownMenuItem>
                 </AlertDialogTrigger>
@@ -180,9 +180,9 @@ export default function RoomsPage() {
 
       toast({ title: "Sala Criada!", description: `A sala "${data.name}" foi adicionada com sucesso.` });
       setIsCreateModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao criar sala:", err);
-      toast({ title: "Erro!", description: "Não foi possível criar a nova sala.", variant: "destructive" });
+      toast({ title: "Erro de Permissão!", description: err.message || "Não foi possível criar a nova sala.", variant: "destructive" });
     }
   };
 
@@ -207,7 +207,7 @@ export default function RoomsPage() {
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
                     <h4 className="font-bold text-destructive">Erro de Permissão</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados das salas. Verifique suas permissões de acesso.</p>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados das salas. Verifique suas permissões de acesso. ({errorRooms.message})</p>
                 </div>
             </div>
           </TableCell>

@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -40,35 +39,46 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && (isOwner(userId) || isEditorOrAdmin());
-      allow delete: if isSignedIn() && isAdmin();
+      allow create: if isAdmin();
+      allow update: if isOwner(userId) || isEditorOrAdmin();
+      allow delete: if isAdmin();
     }
 
     match /rooms/{roomId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && isEditorOrAdmin();
+      allow create, update: if isEditorOrAdmin();
+      allow delete: if isEditorOrAdmin();
     }
 
     match /bookings/{bookingId} {
-      // REGRA CORRIGIDA: Permite a leitura se o usuário for o organizador, um participante, ou um admin/editor.
-      allow read: if isSignedIn() && (isEditorOrAdmin() || request.auth.uid == resource.data.organizerId || request.auth.uid in resource.data.participants || request.auth.uid in resource.data.guests);
-      
+      allow read: if isSignedIn(); // Simplificado para permitir que a lógica de app decida
       allow create: if isSignedIn() && canPerformActions() && isOwner(request.resource.data.organizerId);
-      allow update: if isSignedIn() && canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin() || (isOwner(request.auth.uid) && request.auth.uid in resource.data.participants));
+      allow update(newData) {
+        let isParticipantLeaving = request.auth.uid in resource.data.participants && !(request.auth.uid in newData.participants);
+        return isSignedIn() && (
+          (canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin())) ||
+          (isParticipantLeaving)
+        );
+      }
       allow delete: if isSignedIn() && canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin());
     }
 
     match /userMessages/{messageId} {
-        allow read, write: if isSignedIn();
+        allow read: if isOwner(resource.data.recipientId) || isAdmin();
+        allow list: if isAdmin(); // Admin pode listar todas
+        allow create: if isAdmin(); // Apenas Admin pode enviar
+        allow update: if isOwner(resource.data.recipientId); // Usuário pode marcar como lida
+        allow delete: if false; // Ninguém pode deletar
     }
-
+    
     match /accessRules/{ruleId} {
-      allow read, write: if isSignedIn() && isAdmin();
+      allow read: if isRevisorOrHigher();
+      allow write: if isAdmin();
     }
 
     match /notices/{noticeId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
     
     match /polls/{pollId} {
@@ -93,8 +103,13 @@ service cloud.firestore {
     }
     
     match /transactions/{transactionId} {
-        allow read: if isOwner(resource.data.userId) || isAdmin();
+        allow read: if isOwner(resource.data.userId) || isRevisorOrHigher();
         allow write: if isAdmin();
+    }
+
+    match /landingPageBlocks/{blockId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
