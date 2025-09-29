@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, DollarSign, MessageSquare, Eye, Users, BarChart3, DoorOpen } from "lucide-react";
+import { ShieldCheck, DollarSign, MessageSquare, Eye, Users, BarChart3, DoorOpen, LayoutTemplate } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { auth, app } from "@/lib/firebase";
@@ -28,6 +28,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
       { href: "/admin/messages", label: "Mensagens", icon: MessageSquare, roles: ["Administrador"] },
       { href: "/admin/access-rules", label: "Regras de Acesso", icon: Eye, roles: ["Administrador"] },
+      { href: "/admin/landing-editor", label: "Editor da Landing", icon: LayoutTemplate, roles: ["Administrador"] },
       { href: "/admin/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     ];
     
