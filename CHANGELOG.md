@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.3 - 2025-09-29 20:00:00 - davidson.dev.br
+
+- **feat(auth): Adiciona nível de acesso "Convidado" para novos usuários**
+  - Este commit introduz um novo nível de acesso (`role`) chamado "Convidado", que passa a ser o padrão para todos os novos usuários que se registram no sistema.
+  - A mudança diferencia claramente um usuário em seu primeiro acesso de um ex-membro que possa estar retornando (que manteria o `role` de "Membro"), melhorando a clareza no gerenciamento de usuários.
+  - O backend (Cloud Function `createUserDocument`) foi atualizado para atribuir o novo `role`.
+  - A interface de gerenciamento de usuários agora reconhece e exibe o nível "Convidado", com um badge distintivo.
+
 ## v1.3.2 - 2025-09-27 18:30:00 - davidson.dev.br
 
 - **feat(landing): Redesenha a landing page para refletir as novas funcionalidades do app**

@@ -26,7 +26,7 @@ export const createUserDocument = functions
       avatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
       category: "Visitante",
       status: "Pendente",
-      role: "Membro",
+      role: "Convidado",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       cpf: null,
       phone: null,
@@ -57,7 +57,7 @@ export const setAdminClaim = functions
 
     const newRole = newData.role;
     const auth = admin.auth();
-    let claims = {};
+    let claims: { [key: string]: any } = { admin: false, role: 'Membro' }; // Default claims
 
     switch(newRole) {
         case 'Administrador':
@@ -69,9 +69,6 @@ export const setAdminClaim = functions
         case 'Revisor':
           claims = { admin: false, role: 'Revisor' };
           break;
-        default:
-           claims = { admin: false, role: 'Membro' };
-           break;
     }
 
     try {

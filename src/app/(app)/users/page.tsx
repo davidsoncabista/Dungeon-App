@@ -43,6 +43,8 @@ const roleBadgeClass: Record<AdminRole, string> = {
     Editor: "bg-role-editor text-role-editor-foreground",
     Revisor: "bg-role-revisor text-role-revisor-foreground",
     Membro: "hidden", // Não mostra badge para 'Membro'
+    Visitante: "bg-muted text-muted-foreground",
+    Convidado: "bg-blue-200 text-blue-800",
 }
 
 type SortKey = 'name' | 'category';
@@ -146,7 +148,8 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
                             <SelectValue placeholder="Selecione um nível" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="Membro">Membro (Sem acesso especial)</SelectItem>
+                            <SelectItem value="Convidado">Convidado (Novo Usuário)</SelectItem>
+                            <SelectItem value="Membro">Membro (Ex-Associado)</SelectItem>
                             <SelectItem value="Revisor">Revisor</SelectItem>
                             <SelectItem value="Editor">Editor</SelectItem>
                             <SelectItem value="Administrador">Administrador</SelectItem>
