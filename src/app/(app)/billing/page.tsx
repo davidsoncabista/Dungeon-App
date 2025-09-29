@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Dices, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye, CheckCircle } from "lucide-react";
+import { Check, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
@@ -25,6 +25,7 @@ import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
+import Image from "next/image";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -136,7 +137,7 @@ const SubscribeView = () => {
     return (
         <>
         <div className="flex flex-col items-center justify-center min-h-full text-center p-4">
-            <Dices className="h-16 w-16 text-primary mb-4" />
+            <Image src="/logo.svg" alt="Dungeon App Logo" width={80} height={80} className="rounded-md mb-4" />
             <h1 className="text-4xl font-bold tracking-tight font-headline">Seja bem-vindo, novo aventureiro!</h1>
             <p className="text-muted-foreground mt-2 max-w-2xl">Para começar a reservar salas e participar de eventos, você precisa se tornar um membro associado. Escolha um dos nossos planos abaixo.</p>
             
@@ -439,7 +440,7 @@ export default function BillingPage() {
     const usersRef = collection(firestore, 'users');
     
     const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
-    const [appUser, loadingUser] = useCollectionData<User>(userQuery);
+    const [appUser, loadingUser, errorUser] = useCollectionData<User>(userQuery, { idField: 'id' });
     const currentUser = appUser?.[0];
 
     const isLoading = loadingAuth || loadingUser;
@@ -455,6 +456,24 @@ export default function BillingPage() {
                     <Skeleton className="h-64 w-full" />
                     <Skeleton className="h-64 w-full" />
                 </div>
+            </div>
+        )
+    }
+    
+    if (errorUser) {
+        return (
+            <div className="p-4">
+                <Card className="bg-destructive/10 border-destructive">
+                    <CardHeader>
+                        <div className="flex items-center gap-4">
+                            <ShieldAlert className="h-8 w-8 text-destructive" />
+                            <div>
+                                <CardTitle className="text-destructive">Erro ao Carregar Perfil</CardTitle>
+                                <CardDescription className="text-destructive/80">Não foi possível buscar seus dados. Tente novamente mais tarde.</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                </Card>
             </div>
         )
     }

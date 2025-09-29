@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button"
 import type { UserStatus, UserCategory } from "@/lib/types/user"
 import Link from "next/link"
-import { Dices, User, FileText, CalendarCheck2, PartyPopper } from "lucide-react"
+import { User, FileText, CalendarCheck2, PartyPopper } from "lucide-react"
+import Image from "next/image"
 
 interface WelcomeModalProps {
   isOpen: boolean;
