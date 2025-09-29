@@ -43,11 +43,7 @@ const featureListContentSchema = z.object({
   title: z.string().min(1, "Obrigatório"),
   subtitle: z.string().min(1, "Obrigatório"),
   features: z.array(featureItemSchema).min(1, "Pelo menos um item é necessário"),
-  layout: z.enum(['2-cols', '3-cols', '4-cols']),
-});
-
-const baseSchema = z.object({
-  type: z.enum(['hero', 'featureList']), // Expandir quando houver mais tipos
+  layout: z.enum(['2-cols', '3-cols', '4-cols'], { required_error: "É necessário selecionar um layout." }),
 });
 
 const formSchema = z.discriminatedUnion("type", [
@@ -87,6 +83,8 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
   const handleTypeChange = (type: BlockType) => {
     setSelectedType(type);
     form.setValue("type", type);
+    // Reset content when type changes to avoid validation errors
+     form.reset({ ...form.getValues(), content: undefined });
   };
   
   return (

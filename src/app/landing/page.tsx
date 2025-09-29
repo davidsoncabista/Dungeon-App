@@ -1,48 +1,131 @@
+
+"use client"
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldCheck, Calendar, Vote, MessageSquare } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCollectionData } from "react-firebase-hooks/firestore";
+import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+import type { LandingPageBlock, HeroBlock, FeatureListBlock } from "@/lib/types/landing-page-block";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-const features = [
-  {
-    icon: <Calendar className="h-10 w-10 text-primary" />,
-    title: "Agenda Multivisualização",
-    description: "Visualize a disponibilidade das salas em calendário mensal ou timeline diária/semanal e faça suas reservas com facilidade.",
-  },
-  {
-    icon: <MessageSquare className="h-10 w-10 text-primary" />,
-    title: "Comunicação Centralizada",
-    description: "Receba avisos importantes no mural e mensagens diretas da administração em sua caixa de entrada privada.",
-  },
-  {
-    icon: <Vote className="h-10 w-10 text-primary" />,
-    title: "Sistema de Votação",
-    description: "Participe de forma ativa nas decisões da associação através de um sistema de votação democrático e transparente.",
-  },
-    {
-    icon: <ShieldCheck className="h-10 w-10 text-primary" />,
-    title: "Gestão Administrativa",
-    description: "Ferramentas completas para gerenciar membros, finanças, regras de acesso, comunicações e muito mais.",
-    },
-];
+// --- Dynamic Components ---
+
+const HeroSection = ({ block }: { block: HeroBlock }) => (
+  <section className="container grid lg:grid-cols-2 gap-12 items-center py-20 md:py-32">
+    <div className="space-y-6">
+      <Badge variant="outline" className="py-1 px-3">{block.content.badge}</Badge>
+      <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline">
+        {block.content.title}
+      </h1>
+      <p className="max-w-prose text-muted-foreground md:text-xl">
+        {block.content.subtitle}
+      </p>
+      <Button asChild size="lg">
+        <Link href={block.content.buttonLink}>{block.content.buttonText}</Link>
+      </Button>
+    </div>
+    <div className="flex justify-center">
+      <Image
+        src={block.content.imageUrl}
+        width={740}
+        height={494}
+        alt={block.content.imageAlt}
+        className="rounded-xl shadow-2xl"
+        priority
+      />
+    </div>
+  </section>
+);
+
+const FeatureListSection = ({ block }: { block: FeatureListBlock }) => {
+    const layoutClasses = {
+        '2-cols': 'md:grid-cols-2',
+        '3-cols': 'md:grid-cols-3',
+        '4-cols': 'md:grid-cols-2 lg:grid-cols-4',
+    };
+
+    return (
+        <section className="bg-muted/50 py-20 md:py-28">
+            <div className="container">
+                <div className="text-center space-y-4 mb-12">
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline">{block.content.title}</h2>
+                    <p className="max-w-3xl mx-auto text-muted-foreground md:text-lg">
+                        {block.content.subtitle}
+                    </p>
+                </div>
+                <div className={cn("grid gap-8", layoutClasses[block.content.layout])}>
+                    {block.content.features.map((feature, index) => {
+                         const Icon = (LucideIcons as any)[feature.icon] || LucideIcons.HelpCircle;
+                         return (
+                            <Card key={index} className="text-center p-6 flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow">
+                                <CardHeader className="p-0 mb-4">
+                                    <Icon className="h-10 w-10 text-primary" />
+                                </CardHeader>
+                                <CardContent className="p-0 flex flex-col items-center">
+                                    <CardTitle className="text-xl mb-2 font-headline">{feature.title}</CardTitle>
+                                    <p className="text-muted-foreground text-sm">{feature.description}</p>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
+                </div>
+            </div>
+        </section>
+    )
+};
+
+
+const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
+  switch (block.type) {
+    case 'hero':
+      return <HeroSection block={block as HeroBlock} />;
+    case 'featureList':
+      return <FeatureListSection block={block as FeatureListBlock} />;
+    default:
+      return null;
+  }
+};
+
 
 export default function LandingPage() {
+  const firestore = getFirestore(app);
+  const blocksRef = collection(firestore, 'landingPageBlocks');
+  const blocksQuery = query(blocksRef, where("enabled", "==", true), orderBy('order'));
+  const [blocks, loadingBlocks, errorBlocks] = useCollectionData<LandingPageBlock>(blocksQuery, { idField: 'id' });
+
+
+  const renderSkeletons = () => (
+    <>
+      <section className="container grid lg:grid-cols-2 gap-12 items-center py-20 md:py-32">
+        <div className="space-y-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-24 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-32" /></div>
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </section>
+      <section className="bg-muted/50 py-20 md:py-28">
+        <div className="container"><div className="text-center space-y-4 mb-12"><Skeleton className="h-12 w-1/2 mx-auto" /><Skeleton className="h-6 w-3/4 mx-auto" /></div><div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"><Skeleton className="h-64 w-full" /><Skeleton className="h-64 w-full" /><Skeleton className="h-64 w-full" /><Skeleton className="h-64 w-full" /></div></div>
+      </section>
+    </>
+  )
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/landing" className="flex items-center gap-2">
-          <Image 
-                  src="/logo.svg" 
-                  width={75}
-                  height={75}
-                  alt="Logo da Associação Dungeon Belém"
-                  className="rounded-xl"
-                  priority
-                />
+            <Image 
+              src="/logo.svg" 
+              width={75}
+              height={75}
+              alt="Logo da Associação Dungeon Belém"
+              className="rounded-xl"
+              priority
+            />
             <span className="font-bold text-lg font-headline">Dungeon App</span>
           </Link>
           <Button asChild>
@@ -52,108 +135,59 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        {/* Seção Hero */}
-        <section className="container grid lg:grid-cols-2 gap-12 items-center py-20 md:py-32">
-          <div className="space-y-6">
-            <Badge variant="outline" className="py-1 px-3">O App Oficial da Associação Dungeon Belém</Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter font-headline">
-              O seu portal para o universo do RPG.
-            </h1>
-            <p className="max-w-prose text-muted-foreground md:text-xl">
-              Gerencie suas reservas, participe das decisões e conecte-se com a comunidade. Tudo em um só lugar, projetado para nossos membros.
-            </p>
-            <Button asChild size="lg">
-              <Link href="/login">Comece a Aventura</Link>
-            </Button>
-          </div>
-          <div className="flex justify-center">
-            <Image 
-                src="https://images.unsplash.com/photo-1614767629805-3bbcf6e26c7d?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
-                width={740} 
-                height={494} 
-                alt="Um castelo de fantasia em um penhasco com uma cachoeira."
-                className="rounded-xl shadow-2xl"
-                data-ai-hint="fantasy castle landscape"
-                priority
-            />
-          </div>
-        </section>
-
-        {/* Seção de Features */}
-        <section className="bg-muted/50 py-20 md:py-28">
-            <div className="container">
-                <div className="text-center space-y-4 mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold font-headline">Um Ecossistema Completo para a Guilda</h2>
-                    <p className="max-w-3xl mx-auto text-muted-foreground md:text-lg">
-                        Criamos uma plataforma robusta para simplificar a vida dos nossos associados e administradores.
-                    </p>
-                </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {features.map((feature, index) => (
-                        <Card key={index} className="text-center p-6 flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow">
-                            <CardHeader className="p-0 mb-4">
-                                {feature.icon}
-                            </CardHeader>
-                            <CardContent className="p-0 flex flex-col items-center">
-                                <CardTitle className="text-xl mb-2 font-headline">{feature.title}</CardTitle>
-                                <p className="text-muted-foreground text-sm">{feature.description}</p>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+        {loadingBlocks && renderSkeletons()}
+        {!loadingBlocks && blocks?.map(block => <BlockRenderer key={block.id} block={block} />)}
+        {!loadingBlocks && (!blocks || blocks.length === 0) && (
+            <div className="container py-32 text-center text-muted-foreground">
+                <p>Nenhum conteúdo para a landing page foi configurado ainda.</p>
             </div>
-        </section>
+        )}
       </main>
 
       <footer className="border-t">
-  <div className="container flex items-center justify-between h-20">
-    <p className="text-sm text-muted-foreground">
-      © 2025 Associação Dungeon Belém.
-    </p>
-
-    {/* Grupo de Créditos à Direita */}
-    <div className="text-sm text-muted-foreground text-right space-y-1">
-      <p>
-        Feito em Belém-PA, em colaboração com uma comunidade incrível.
-      </p>
-      <div className="flex items-center justify-end space-x-2">
-        <p>
-          Desenvolvido por <a 
-            href="https://davidson.dev.br" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="underline hover:text-primary"
-          >
-            davidson.dev.br
-          </a>
-        </p>
-        
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="link" size="sm" className="text-xs text-muted-foreground p-0 h-auto">| Ver colaboradores</Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 text-left text-sm">
-            <div className="p-2">
-                <p className="mb-2"><strong>Davidson Santos Conceição:</strong><br /><span className="text-xs text-muted-foreground">Project Lead & DevOps Engineer</span></p>
-                <hr className="my-2" />
-                <p className="text-xs text-muted-foreground mb-2">Com agradecimentos à comunidade e colaboradores que apoiaram o projeto:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                    <li>Heydrigh Leão Ribeiro</li>
-                    <li>Caio de Oliveira Bastos</li>
-                    <li>Thyago Costa (@thyagobib)</li>
-                    <li>Luiz Pedro Reis Pinheiro (@luizprp)</li>
-                    <li>Hermann Duarte Ribeiro Filho</li>
-                    <li>Thiago de Castro Araújo</li>
-                    <li>Bruno Rafael Viana Oliveira (@brunorvo)</li>
-                    <li>Iasmin Oneide Figueira de Castro Leal (@koda_master)</li>
-                </ul>
+        <div className="container flex items-center justify-between h-20">
+          <p className="text-sm text-muted-foreground">
+            © 2025 Associação Dungeon Belém.
+          </p>
+          <div className="text-sm text-muted-foreground text-right space-y-1">
+            <p>Feito em Belém-PA, em colaboração com uma comunidade incrível.</p>
+            <div className="flex items-center justify-end space-x-2">
+              <p>
+                Desenvolvido por <a 
+                  href="https://davidson.dev.br" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="underline hover:text-primary"
+                >
+                  davidson.dev.br
+                </a>
+              </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="link" size="sm" className="text-xs text-muted-foreground p-0 h-auto">| Ver colaboradores</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 text-left text-sm">
+                  <div className="p-2">
+                      <p className="mb-2"><strong>Davidson Santos Conceição:</strong><br /><span className="text-xs text-muted-foreground">Project Lead & DevOps Engineer</span></p>
+                      <hr className="my-2" />
+                      <p className="text-xs text-muted-foreground mb-2">Com agradecimentos à comunidade e colaboradores que apoiaram o projeto:</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                          <li>Heydrigh Leão Ribeiro</li>
+                          <li>Caio de Oliveira Bastos</li>
+                          <li>Thyago Costa (@thyagobib)</li>
+                          <li>Luiz Pedro Reis Pinheiro (@luizprp)</li>
+                          <li>Hermann Duarte Ribeiro Filho</li>
+                          <li>Thiago de Castro Araújo</li>
+                          <li>Bruno Rafael Viana Oliveira (@brunorvo)</li>
+                          <li>Iasmin Oneide Figueira de Castro Leal (@koda_master)</li>
+                      </ul>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-    </div>
-  </div>
-</footer>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

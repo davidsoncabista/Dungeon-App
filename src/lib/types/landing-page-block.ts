@@ -6,7 +6,7 @@
 /**
  * Representa os tipos de blocos de conteúdo que podem ser renderizados na landing page.
  */
-export type BlockType = 'hero' | 'featureList' | 'callToAction' | 'testimonial';
+export type BlockType = 'hero' | 'featureList';
 
 /**
  * Interface base para todos os blocos de conteúdo.
@@ -51,15 +51,6 @@ export interface FeatureListBlockContent {
   layout: '2-cols' | '3-cols' | '4-cols'; // Controle de layout para a grade.
 }
 
-/**
- * Conteúdo para um bloco 'Call to Action' (Chamada para Ação).
- */
-export interface CallToActionBlockContent {
-  title: string;
-  buttonText: string;
-  buttonLink: string;
-}
-
 // --- Tipos de Blocos Discernidos ---
 
 export interface HeroBlock extends BaseBlock {
@@ -72,13 +63,8 @@ export interface FeatureListBlock extends BaseBlock {
   content: FeatureListBlockContent;
 }
 
-export interface CallToActionBlock extends BaseBlock {
-  type: 'callToAction';
-  content: CallToActionBlockContent;
-}
-
 /**
  * Um tipo união que representa qualquer um dos possíveis blocos de conteúdo.
  * Isso permite o tratamento polimórfico dos blocos na lógica de renderização.
  */
-export type LandingPageBlock = HeroBlock | FeatureListBlock | CallToActionBlock;
+export type LandingPageBlock = HeroBlock | FeatureListBlock;
