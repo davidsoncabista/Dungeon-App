@@ -71,7 +71,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const firestore = getFirestore(app);
 
   const [currentUserData, userLoading, userError] = useCollectionData<User>(
-    user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) as any : null
+    user && user.uid ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null
   );
   
   const currentUser = currentUserData?.[0];

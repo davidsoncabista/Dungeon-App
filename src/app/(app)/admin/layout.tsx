@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const [user] = useAuthState(auth);
     const firestore = getFirestore(app);
 
-    const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+    const userQuery = user && user.uid ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
     const [appUser] = useCollectionData<User>(userQuery);
     const currentUserRole = appUser?.[0]?.role;
 
