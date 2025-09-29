@@ -373,7 +373,8 @@ export default function UsersPage() {
         const lowercasedTerm = searchTerm.toLowerCase();
         filtered = filtered.filter(u => 
             u.name.toLowerCase().includes(lowercasedTerm) || 
-            u.email.toLowerCase().includes(lowercasedTerm)
+            u.email.toLowerCase().includes(lowercasedTerm) ||
+            (u.nickname && u.nickname.toLowerCase().includes(lowercasedTerm))
         );
     }
     
@@ -449,7 +450,7 @@ export default function UsersPage() {
         <CardContent>
           <div className="mb-4">
              <Input 
-                placeholder="Buscar por nome ou e-mail..." 
+                placeholder="Buscar por nome, e-mail ou apelido..." 
                 value={searchTerm} 
                 onChange={e => setSearchTerm(e.target.value)}
              />

@@ -127,7 +127,7 @@ export function PollForm({ onSave, onCancel, defaultValues, activeUsers }: PollF
                     <FormLabel>Votantes Elegíveis</FormLabel>
                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Buscar por nome ou email..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        <Input placeholder="Buscar por nome, email ou apelido..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
                     <ScrollArea className="h-40 rounded-md border">
                          <div className="p-4 space-y-2">
@@ -172,5 +172,3 @@ export function PollForm({ onSave, onCancel, defaultValues, activeUsers }: PollF
     </Form>
   )
 }
-
-    
