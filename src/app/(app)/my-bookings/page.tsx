@@ -17,8 +17,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookingRow } from "@/components/app/my-bookings/booking-row"
-import { BookMarked, ShieldAlert, TrendingUp, Users, Moon, ArrowUpDown } from "lucide-react"
+import { BookMarked, ShieldAlert, TrendingUp, Users, Moon, ArrowUpDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 type SortKey = "date" | "participants";
 
@@ -28,6 +29,7 @@ export default function MyBookingsPage() {
   
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useState('');
 
 
   // --- Data Fetching ---
@@ -41,7 +43,7 @@ export default function MyBookingsPage() {
 
   // Busca 2: Reservas como convidado (guest)
   const guestBookingsQuery = user
-    ? query(bookingsRef, where('guests', 'array-contains', user.uid))
+    ? query(bookingsRef, where('guests', 'array-contains', user.uid), orderBy('date', 'desc'))
     : null;
   const [guestBookings, loadingGuestBookings, errorGuestBookings] = useCollectionData<Booking>(guestBookingsQuery, { idField: 'id' });
   
@@ -75,7 +77,11 @@ export default function MyBookingsPage() {
 
   // --- Logic for Upcoming and Past Bookings ---
   const { upcomingBookings, pastBookings } = useMemo(() => {
-    const allBookings = (bookings || []).reduce(
+    const filteredBookings = (bookings || []).filter(b => 
+        b.title && b.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const allBookings = filteredBookings.reduce(
         (acc, booking) => {
           const bookingDate = parseISO(`${booking.date}T${booking.endTime}`);
           if (isPast(bookingDate)) {
@@ -105,7 +111,7 @@ export default function MyBookingsPage() {
 
     return allBookings;
 
-  }, [bookings, sortKey, sortOrder]);
+  }, [bookings, sortKey, sortOrder, searchTerm]);
   
   
   const handleSort = (key: SortKey) => {
@@ -206,9 +212,13 @@ export default function MyBookingsPage() {
     }
     
     if (bookingList.length === 0) {
+        const finalMessage = searchTerm 
+            ? "Nenhuma reserva encontrada com este título."
+            : isEmptyMessage;
+
         return (
             <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">{isEmptyMessage}</TableCell>
+                <TableCell colSpan={5} className="h-24 text-center">{finalMessage}</TableCell>
             </TableRow>
         )
     }
@@ -225,6 +235,16 @@ export default function MyBookingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">Minhas Reservas</h1>
         <p className="text-muted-foreground">Acompanhe seus agendamentos e seu histórico de jogos.</p>
+      </div>
+      
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          placeholder="Buscar reserva por título..."
+          className="pl-9"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
       </div>
 
        {!isVisitor && (

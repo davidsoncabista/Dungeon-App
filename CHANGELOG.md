@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.6 - 2025-10-01 10:00:00 - davidson.dev.br
+
+- **feat(bookings): Adiciona barra de pesquisa ao histórico de reservas**
+  - Este commit introduz um campo de pesquisa na página "Minhas Reservas", melhorando a usabilidade para usuários com um grande volume de agendamentos.
+  - A nova funcionalidade permite que os usuários filtrem rapidamente suas listas de "Próximas Reservas" e "Histórico de Reservas" digitando o título da sessão, o que agiliza a busca por um agendamento específico. A filtragem é realizada no lado do cliente para uma resposta instantânea.
+
 ## v1.3.5 - 2025-09-30 10:00:00 - davidson.dev.br
 
 - **fix(bookings): Garante que convidados vejam suas reservas na lista**
@@ -281,3 +287,4 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
+
