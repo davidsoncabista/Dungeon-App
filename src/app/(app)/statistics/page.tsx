@@ -4,8 +4,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Pie, PieChart, Tooltip } from "recharts"
-import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX, ShieldAlert } from "lucide-react"
-import type { UserCategory, User as AppUser } from "@/lib/types/user"
+import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX, ShieldAlert, Swords } from "lucide-react"
+import type { UserCategory, User as AppUser, GameType } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
 import { app } from "@/lib/firebase"
@@ -24,22 +24,23 @@ const chartConfig = {
   bookings: {
     label: "Reservas",
   },
-  player: {
-    label: "Player",
-    color: "hsl(var(--chart-2))",
-  },
-  gamer: {
-    label: "Gamer",
+  RPG: {
+    label: "RPG",
     color: "hsl(var(--chart-1))",
   },
-  master: {
-    label: "Master",
+  "Board Game": {
+    label: "Board Game",
+    color: "hsl(var(--chart-2))",
+  },
+  "Card Game": {
+    label: "Card Game",
     color: "hsl(var(--chart-3))",
   },
-  ghalmaraz: { label: "Ghal-Maraz", color: "hsl(var(--chart-1))" },
-  conselho: { label: "Conselho", color: "hsl(var(--chart-2))" },
-  arena: { label: "Arena", color: "hsl(var(--chart-3))" },
-  taverna: { label: "Taverna", color: "hsl(var(--chart-4))" },
+} satisfies {
+  [key: string]: {
+    label: string
+    color?: string
+  }
 }
 
 type SortKey = "name" | "category";
@@ -54,11 +55,10 @@ export default function StatisticsPage() {
   // --- Firestore Data ---
   const [users, loadingUsers, errorUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
   const [bookings, loadingBookings, errorBookings] = useCollectionData<Booking>(query(collection(firestore, 'bookings')), { idField: 'id' });
-  const [rooms, loadingRooms, errorRooms] = useCollectionData<Room>(query(collection(firestore, 'rooms')), { idField: 'id' });
 
   // --- Memoized Data Processing ---
   const { 
-    roomChartData,
+    gameTypesChartData,
     totalBookings,
     activeMembers,
     inactiveOrVisitors,
@@ -66,9 +66,9 @@ export default function StatisticsPage() {
     monthlyBirthdays
   } = useMemo(() => {
     // Return empty state if data is not ready
-    if (!users || !bookings || !rooms) {
+    if (!users || !bookings) {
         return {
-            roomChartData: [],
+            gameTypesChartData: [],
             totalBookings: 0,
             activeMembers: [],
             inactiveOrVisitors: [],
@@ -77,32 +77,23 @@ export default function StatisticsPage() {
         };
     }
 
-    // 1. Bookings by room
-    const bookingsByRoom = bookings.reduce((acc, booking) => {
-        const room = rooms.find(r => r.id === booking.roomId);
-        if (room) {
-            const roomName = room.name;
-            if (!acc[roomName]) {
-                acc[roomName] = 0;
+    // 1. Game Types Preferences
+    const gameTypeCounts = users.reduce((acc, user) => {
+        user.gameTypes?.forEach(type => {
+            if (!acc[type]) {
+                acc[type] = 0;
             }
-            acc[roomName]++;
-        }
+            acc[type]++;
+        });
         return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<GameType, number>);
 
-    const roomColors: { [key: string]: string } = {
-        "Sala Ghal-Maraz": "var(--color-ghalmaraz)",
-        "Sala do Conselho": "var(--color-conselho)",
-        "Arena Imperial": "var(--color-arena)",
-        "Taverna do Anão": "var(--color-taverna)",
-    };
-
-    const roomData = Object.entries(bookingsByRoom).map(([room, count]) => ({
-        room: room,
-        bookings: count,
-        fill: roomColors[room] || "var(--color-default)",
+    const gameTypesData = Object.entries(gameTypeCounts).map(([name, value]) => ({
+      name,
+      value,
+      fill: chartConfig[name as GameType]?.color || "hsl(var(--chart-4))",
     }));
-    
+
     // 2. Stats Cards
     const totalBookingsCount = bookings.length;
     const upcomingCount = bookings.filter(b => !isPast(parseISO(`${b.date}T${b.endTime}`))).length;
@@ -130,27 +121,25 @@ export default function StatisticsPage() {
     const currentMonth = getMonth(new Date());
     const birthdays = users.filter(user => {
         if (!user.birthdate) return false;
-        // Adiciona 1 ao mês do parseISO pois ele é 0-indexed, enquanto getMonth() não.
         const birthMonth = getMonth(parseISO(user.birthdate));
         return birthMonth === currentMonth;
     }).sort((a,b) => {
         if (!a.birthdate || !b.birthdate) return 0;
-        // Ordena pelo dia do mês
         return parseISO(a.birthdate).getDate() - parseISO(b.birthdate).getDate();
     });
 
     return {
-        roomChartData: roomData,
+        gameTypesChartData: gameTypesData,
         totalBookings: totalBookingsCount,
         activeMembers: active,
         inactiveOrVisitors: inactive,
         upcomingBookingsCount: upcomingCount,
         monthlyBirthdays: birthdays
     };
-  }, [bookings, rooms, users, sortKey, sortOrder]);
+  }, [bookings, users, sortKey, sortOrder]);
   
-  const isLoading = loadingUsers || loadingBookings || loadingRooms;
-  const hasError = errorUsers || errorBookings || errorRooms;
+  const isLoading = loadingUsers || loadingBookings;
+  const hasError = errorUsers || errorBookings;
   
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -248,17 +237,17 @@ export default function StatisticsPage() {
         </Card>
          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Salas Mais Usadas</CardTitle>
-                <CardDescription className="sr-only">Distribuição de reservas.</CardDescription>
+                <CardTitle className="text-sm font-medium">Tipos de Jogo Mais Curtidos</CardTitle>
+                 <Swords className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="flex items-center justify-center pb-4">
                 {isLoading ? <Skeleton className="h-[120px] w-full" /> : (
                     <ChartContainer config={chartConfig} className="min-h-[120px] w-full max-w-[250px]">
                     <PieChart>
                         <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Pie data={roomChartData} dataKey="bookings" nameKey="room" innerRadius={30} strokeWidth={5} />
+                        <Pie data={gameTypesChartData} dataKey="value" nameKey="name" innerRadius={30} strokeWidth={5} />
                         <ChartLegend
-                            content={<ChartLegendContent nameKey="room" />}
+                            content={<ChartLegendContent nameKey="name" />}
                             className="-translate-y-1 flex-wrap gap-x-4 gap-y-1 text-xs"
                         />
                     </PieChart>
@@ -326,3 +315,5 @@ export default function StatisticsPage() {
     </div>
   )
 }
+
+    

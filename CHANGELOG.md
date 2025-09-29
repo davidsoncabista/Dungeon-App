@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.8 - 2025-10-02 10:00:00 - davidson.dev.br
+
+- **feat(statistics): Mudar widget de sala mais usada para tipos de jogos mais curtidos**
+  - Substituído o gráfico de "Salas Mais Usadas" por um novo gráfico de "Tipos de Jogo Mais Curtidos" na página de estatísticas.
+  - A nova visualização oferece um insight mais valioso sobre as preferências da comunidade, mostrando a distribuição de interesses entre RPG de Mesa, Board Games e Card Games com base nos perfis dos usuários.
+
 ## v1.3.7 - 2025-10-01 11:00:00 - davidson.dev.br
 
 - **refactor(finance): Remove a exibição do UID do usuário nos detalhes da transação**
@@ -295,3 +301,6 @@
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
 
 
+
+
+    
