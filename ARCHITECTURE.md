@@ -27,7 +27,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
     - **Ativo**: Acesso total às funcionalidades do seu plano.
   - **Perfil do Usuário**: Página completa para o usuário gerenciar suas informações, incluindo nome, foto (sincronizada com Google), apelido, telefone, documentos (CPF/RG), data de nascimento, redes sociais e preferências de jogo.
     - **Verificação de Maioridade**: O sistema valida a data de nascimento para garantir que apenas usuários maiores de 18 anos possam se cadastrar.
-    - **Preenchimento de Endereço via CEP**: O formulário de perfil utiliza a API do ViaCEP para preencher automaticamente os campos de endereço.
+    - **Preenchimento de Endereço via CEP**: O formulário de perfil utiliza la API do ViaCEP para preencher automaticamente os campos de endereço.
 - **Sistema de Comunicação**:
   - **Mural de Avisos**: Exibir avisos importantes do administrador após o login e manter um histórico acessível no mural.
   - **Caixa de Entrada Privada**: Uma página (`/messages`) onde o usuário pode visualizar todas as mensagens diretas e categorizadas (avisos, advertências, multas) enviadas pela administração, com um indicador de mensagens não lidas no cabeçalho.
@@ -51,11 +51,11 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
     - **Envio Seguro**: Interface em `/admin/messages` que utiliza uma Cloud Function (`sendUserMessage`) para que administradores possam enviar mensagens privadas a usuários específicos.
     - **Categorização**: As mensagens podem ser categorizadas como `aviso`, `advertencia`, `multa` ou `bloqueio`, facilitando a comunicação formal.
     - **Histórico**: A administração pode visualizar todas as mensagens enviadas e seus status (lida/não lida).
-- **Sistema de Votação Democrático**:
+- **Módulo de Votação (Admin)**:
   - **Criação Flexível**: Interface no painel de administração (`/admin/system`) para criar votações com título, descrição e opções personalizáveis.
   - **Controle de Votantes**: Permitir que o administrador selecione uma lista de membros "Ativos" elegíveis para cada votação, garantindo que apenas o público certo participe.
   - **Gestão do Ciclo de Vida**: Funcionalidades para iniciar e encerrar votações manualmente, dando controle total sobre o período de votação.
-  - **Apuração com Peso de Voto**: O sistema calculará automaticamente os resultados finais, ponderando cada voto com base na `category` (e, consequentemente, no `votingWeight`) do membro no momento da votação.
+  - **Apuração de Votos**: O sistema calculará automaticamente os resultados finais, ponderando cada voto com base na `category` (e, consequentemente, no `votingWeight`) do membro no momento da votação.
 - **Gerenciamento de Planos e Regras**: Interface em `/admin/system` para criar, editar e excluir planos, controlando preços, cotas e limites.
 - **Gerenciamento de Avisos**: Criar, enviar e monitorar a visualização de avisos públicos.
 - **Gerenciamento de Salas**: CRUD de salas e definição de capacidade.
