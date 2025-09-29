@@ -625,6 +625,7 @@ export const mercadoPagoWebhook = functions
                     const userUpdateData: any = {
                         category: planData.name,
                         status: "Ativo",
+                        role: "Membro", // Promove de 'Convidado' para 'Membro'
                     };
 
                     const today = new Date();

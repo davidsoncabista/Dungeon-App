@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.4 - 2025-09-29 21:00:00 - davidson.dev.br
+
+- **feat(auth): Promove usuário para Membro com a role correta após pagamento**
+  - Este commit ajusta a Cloud Function que processa a confirmação de pagamento da matrícula (`mercadoPagoWebhook`).
+  - Anteriormente, a função apenas alterava a `category` do usuário de 'Visitante' para o novo plano. Agora, além disso, a função também atribui a `role` de 'Membro' ao usuário.
+  - Isso automatiza completamente o processo de onboarding, garantindo que um novo associado (`Convidado`) receba as permissões corretas de um membro imediatamente após a confirmação do pagamento, sem necessidade de intervenção manual de um administrador.
+
 ## v1.3.3 - 2025-09-29 20:00:00 - davidson.dev.br
 
 - **feat(auth): Adiciona nível de acesso "Convidado" para novos usuários**
@@ -264,12 +271,3 @@
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
-
-```
-- **fix(auth): Aprimora o sistema de proteção de rotas**
-  - Refatorada a lógica de controle de acesso no `AppLayout` para garantir que usuários sem permissão sejam redirecionados de forma mais robusta e inteligente.
-  - A verificação agora centraliza as regras de status (`Pendente`, `Bloqueado`) e de roles (`Administrador`, `Editor`, etc.), impedindo o carregamento de páginas indevidas e melhorando a experiência do usuário.
-  - Ajustado o `AdminLayout` para exibir corretamente os itens de navegação (como "Salas" para Editores) de acordo com as permissões de cada nível de acesso.
-```
-- src/app/(app)/admin/layout.tsx
-- src/app/(app)/layout.tsx
