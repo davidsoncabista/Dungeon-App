@@ -1,20 +1,66 @@
+
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"
+import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore"
 import { app } from "@/lib/firebase"
 import type { LandingPageBlock } from "@/lib/types/landing-page-block"
 import { useToast } from "@/hooks/use-toast"
 
+import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { LayoutTemplate, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { LayoutTemplate, PlusCircle, MoreHorizontal, Pencil, Trash2, GripVertical } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { LandingBlockForm } from "@/components/app/admin/landing-editor/landing-block-form"
+
+// --- Sortable Item Component ---
+function SortableBlockItem({ block, onEdit, onDelete }: { block: LandingPageBlock, onEdit: () => void, onDelete: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: block.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className="flex justify-between items-center p-4" >
+        <div className="flex items-center gap-4">
+            <button {...attributes} {...listeners} className="cursor-grab p-2">
+              <GripVertical />
+            </button>
+            <div>
+              <CardTitle className="text-lg">{block.type}</CardTitle>
+              <CardDescription>Ordem: {block.order}</CardDescription>
+            </div>
+        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuItem onSelect={onEdit}><Pencil className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={onDelete} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+      </Card>
+    </div>
+  );
+}
+
 
 export default function LandingEditorPage() {
   const { toast } = useToast();
@@ -22,11 +68,18 @@ export default function LandingEditorPage() {
 
   // --- Data Fetching ---
   const [blocksData, loadingBlocks, errorBlocks] = useCollectionData<LandingPageBlock>(
-    query(collection(firestore, 'landingPageBlocks'), orderBy('order')), 
+    query(collection(firestore, 'landingPageBlocks'), orderBy('order')),
     { idField: 'id' }
   );
 
-  const blocks = useMemo(() => blocksData || [], [blocksData]);
+  const [activeBlocks, setActiveBlocks] = useState<LandingPageBlock[]>([]);
+
+  useEffect(() => {
+    if (blocksData) {
+      setActiveBlocks(blocksData);
+    }
+  }, [blocksData]);
+
 
   // --- State ---
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -39,17 +92,15 @@ export default function LandingEditorPage() {
     setIsSubmitting(true);
     try {
         if (editingBlock) {
-            // Update
             const blockRef = doc(firestore, "landingPageBlocks", editingBlock.id);
             await updateDoc(blockRef, data);
             toast({ title: "Sucesso!", description: `Bloco "${data.type}" atualizado.` });
         } else {
-            // Create
             const newBlockRef = doc(collection(firestore, "landingPageBlocks"));
             const newBlock = { 
                 ...data, 
                 id: newBlockRef.id, 
-                order: blocks.length, // Add to the end
+                order: activeBlocks.length, // Add to the end
                 enabled: true,
             };
             await setDoc(newBlockRef, newBlock);
@@ -90,6 +141,37 @@ export default function LandingEditorPage() {
     setIsFormModalOpen(true);
   };
 
+  // --- Drag and Drop Handler ---
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = activeBlocks.findIndex((b) => b.id === active.id);
+      const newIndex = activeBlocks.findIndex((b) => b.id === over!.id);
+      const newOrderBlocks = arrayMove(activeBlocks, oldIndex, newIndex);
+      
+      // Update local state for immediate feedback
+      setActiveBlocks(newOrderBlocks);
+
+      // Update Firestore
+      const batch = writeBatch(firestore);
+      newOrderBlocks.forEach((block, index) => {
+        const blockRef = doc(firestore, "landingPageBlocks", block.id);
+        batch.update(blockRef, { order: index });
+      });
+
+      try {
+        await batch.commit();
+        toast({ title: "Layout Atualizado", description: "A ordem dos blocos foi salva." });
+      } catch (error: any) {
+        console.error("Erro ao reordenar blocos:", error);
+        toast({ title: "Erro ao Salvar", description: "Não foi possível salvar a nova ordem.", variant: "destructive" });
+        // Revert local state on error
+        setActiveBlocks(blocksData || []);
+      }
+    }
+  };
+
+
   const renderContent = () => {
     if (loadingBlocks) {
       return Array.from({ length: 3 }).map((_, i) => (
@@ -99,27 +181,25 @@ export default function LandingEditorPage() {
     if (errorBlocks) {
       return <p className="text-destructive">Erro ao carregar blocos: {errorBlocks.message}</p>;
     }
-    if (blocks.length === 0) {
+    if (activeBlocks.length === 0) {
       return <p className="text-muted-foreground text-center py-10">Nenhum bloco de conteúdo encontrado. Crie o primeiro!</p>;
     }
-    return blocks.map(block => (
-        <Card key={block.id} className="flex justify-between items-center p-4">
-            <div>
-                <CardTitle className="text-lg">{block.type}</CardTitle>
-                <CardDescription>Ordem: {block.order}</CardDescription>
-            </div>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => openEditModal(block)}><Pencil className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => setDeletingBlock(block)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </Card>
-    ));
+    return (
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={activeBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {activeBlocks.map(block => (
+              <SortableBlockItem
+                key={block.id}
+                block={block}
+                onEdit={() => openEditModal(block)}
+                onDelete={() => setDeletingBlock(block)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    );
   };
 
 
@@ -154,9 +234,9 @@ export default function LandingEditorPage() {
       <Card>
         <CardHeader>
             <CardTitle>Gerenciador de Layout</CardTitle>
-            <CardDescription>Arraste, solte e edite os blocos para montar sua página.</CardDescription>
+            <CardDescription>Arraste e solte os blocos para reordenar o conteúdo da sua página.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           {renderContent()}
         </CardContent>
       </Card>
