@@ -282,7 +282,7 @@ export default function MyBookingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {renderTable(upcomingBookings, isLoading, isVisitor ? "Associe-se para poder criar e gerenciar suas reservas." : "Você não tem nenhuma reserva futura.")}
+              {renderTable(upcomingBookings, isLoading, isVisitor && upcomingBookings.length === 0 ? "Nenhuma reserva à vista. Como membro, você pode criar suas próprias sessões ou aguardar um convite para participar de uma aventura!" : "Você não tem nenhuma reserva futura.")}
             </TableBody>
           </Table>
         </CardContent>
