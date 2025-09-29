@@ -677,61 +677,90 @@ export const sendBirthdayWishes = functions
     console.log("[Scheduler] Iniciando verificação de aniversariantes do dia.");
 
     try {
-      const usersSnapshot = await db.collection("users").get();
-      if (usersSnapshot.empty) {
-        console.log("[Scheduler] Nenhum usuário encontrado.");
-        return null;
-      }
-
-      const today = new Date();
-      const todayMonth = today.getMonth() + 1; // getMonth() é 0-indexado
-      const todayDay = today.getDate();
-
-      // Encontrar um admin para ser o remetente
-      const adminUserSnapshot = await db.collection('users').where('role', '==', 'Administrador').limit(1).get();
-      const senderId = adminUserSnapshot.empty ? 'dungeon-bot-admin' : adminUserSnapshot.docs[0].id;
-      const senderName = adminUserSnapshot.empty ? 'Dungeon Bot' : adminUserSnapshot.docs[0].data().name;
-
-      const batch = db.batch();
-      let messagesSent = 0;
-
-      for (const userDoc of usersSnapshot.docs) {
-        const user = userDoc.data();
-        if (!user.birthdate) continue;
-
-        // Formato da data no banco é 'YYYY-MM-DD'
-        const [birthYear, birthMonth, birthDay] = user.birthdate.split('-').map(Number);
-
-        if (birthMonth === todayMonth && birthDay === todayDay) {
-          console.log(`[Scheduler] É aniversário de ${user.name} (${user.uid})!`);
-          
-          const messageRef = db.collection("userMessages").doc();
-          batch.set(messageRef, {
-            id: messageRef.id,
-            recipientId: user.uid,
-            recipientName: user.name,
-            senderId: senderId,
-            senderName: senderName,
-            title: "Feliz Aniversário, Aventureiro(a)!",
-            content: `Olá, ${user.name.split(' ')[0]}!\n\nA equipe da Dungeon Belém e toda a guilda desejam a você um feliz aniversário! Que seu dia seja repleto de alegrias, aventuras e muitos rolagens de dados decisivas.\n\nFelicidades!`,
-            category: 'aviso',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            read: false,
-          });
-          messagesSent++;
+        const usersSnapshot = await db.collection("users").get();
+        if (usersSnapshot.empty) {
+            console.log("[Scheduler] Nenhum usuário encontrado.");
+            return null;
         }
-      }
 
-      if (messagesSent > 0) {
+        const allUsers = usersSnapshot.docs.map(doc => doc.data());
+        const today = new Date();
+        const todayMonth = today.getMonth() + 1;
+        const todayDay = today.getDate();
+
+        // 1. Encontrar os aniversariantes do dia
+        const birthdayUsers = allUsers.filter(user => {
+            if (!user.birthdate) return false;
+            const [, birthMonth, birthDay] = user.birthdate.split('-').map(Number);
+            return birthMonth === todayMonth && birthDay === todayDay;
+        });
+
+        if (birthdayUsers.length === 0) {
+            console.log("[Scheduler] Nenhum aniversariante hoje.");
+            return null;
+        }
+
+        console.log(`[Scheduler] Aniversariantes de hoje: ${birthdayUsers.map(u => u.name).join(', ')}`);
+
+        // 2. Preparar para enviar mensagens
+        const adminUserSnapshot = await db.collection('users').where('role', '==', 'Administrador').limit(1).get();
+        const senderId = adminUserSnapshot.empty ? 'dungeon-bot-admin' : adminUserSnapshot.docs[0].id;
+        const senderName = adminUserSnapshot.empty ? 'Dungeon Bot' : adminUserSnapshot.docs[0].data().name;
+        
+        const batch = db.batch();
+        const adminRoles = ['Administrador', 'Editor', 'Revisor'];
+        const usersToNotify = allUsers.filter(user => 
+            (user.status === 'Ativo' && user.category !== 'Visitante') || adminRoles.includes(user.role)
+        );
+
+        // 3. Enviar mensagem de parabéns para cada aniversariante
+        birthdayUsers.forEach(bUser => {
+            const messageRef = db.collection("userMessages").doc();
+            batch.set(messageRef, {
+                id: messageRef.id,
+                recipientId: bUser.uid,
+                recipientName: bUser.name,
+                senderId: senderId,
+                senderName: senderName,
+                title: "Feliz Aniversário, Aventureiro(a)!",
+                content: `Olá, ${bUser.name.split(' ')[0]}!\n\nA equipe da Dungeon Belém e toda a guilda desejam a você um feliz aniversário! Que seu dia seja repleto de alegrias, aventuras e muitos rolagens de dados decisivas.\n\nFelicidades!`,
+                category: 'aviso',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false,
+            });
+        });
+
+        // 4. Enviar lembrete para os outros membros
+        const birthdayNames = birthdayUsers.map(u => u.name.split(' ')[0]).join(', ');
+        const reminderTitle = birthdayUsers.length > 1 ? "Aniversariantes do Dia!" : "Aniversariante do Dia!";
+        const reminderContent = `Hoje é um dia especial na guilda! Vamos todos desejar um feliz aniversário para: ${birthdayNames}.\n\nParabéns e muitas felicidades!`;
+
+        usersToNotify.forEach(user => {
+            // Não envia o lembrete para o próprio aniversariante
+            if (birthdayUsers.some(bUser => bUser.uid === user.uid)) return;
+
+            const reminderRef = db.collection("userMessages").doc();
+            batch.set(reminderRef, {
+                id: reminderRef.id,
+                recipientId: user.uid,
+                recipientName: user.name,
+                senderId: senderId,
+                senderName: senderName,
+                title: reminderTitle,
+                content: reminderContent,
+                category: 'aviso',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                read: false,
+            });
+        });
+
         await batch.commit();
-        console.log(`[Scheduler] ${messagesSent} mensagens de aniversário enviadas.`);
-      } else {
-        console.log("[Scheduler] Nenhum aniversariante hoje.");
-      }
+        console.log(`[Scheduler] Mensagens de aniversário e lembretes enviados com sucesso.`);
 
-      return null;
+        return null;
+
     } catch (error) {
-      console.error("[Scheduler] Erro ao enviar mensagens de aniversário:", error);
-      return null;
+        console.error("[Scheduler] Erro ao enviar mensagens de aniversário:", error);
+        return null;
     }
-  });
+});

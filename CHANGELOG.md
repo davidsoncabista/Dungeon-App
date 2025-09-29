@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.4.0 - 2025-10-03 10:00:00 - davidson.dev.br
+
+- **refactor(community): Notifica a comunidade sobre os aniversariantes do dia**
+  - A função de aniversário foi aprimorada para criar uma experiência mais comunitária.
+  - Além de enviar uma mensagem privada de parabéns para o aniversariante, o sistema agora também envia um lembrete para todos os outros membros ativos, administradores, editores e revisores, informando quem está celebrando o aniversário no dia, incentivando a interação entre os membros.
+
 ## v1.3.9 - 2025-10-02 11:00:00 - davidson.dev.br
 
 - **feat(community): Envia mensagem automática de aniversário para membros**
@@ -310,4 +316,5 @@
 
 
     
+
 
