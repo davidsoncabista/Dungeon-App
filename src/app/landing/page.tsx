@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dices, ShieldCheck, Calendar, Users, Award, Vote, MessageSquare, Eye } from "lucide-react";
+import { ShieldCheck, Calendar, Vote, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const features = [
   {
@@ -34,7 +35,14 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/landing" className="flex items-center gap-2">
-            <Dices className="h-8 w-8 text-primary" />
+          <Image 
+                  src="/logo.svg" 
+                  width={75}
+                  height={75}
+                  alt="Logo da Associação Dungeon Belém"
+                  className="rounded-xl"
+                  priority
+                />
             <span className="font-bold text-lg font-headline">Dungeon App</span>
           </Link>
           <Button asChild>
@@ -98,11 +106,54 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t">
-        <div className="container flex items-center justify-between h-20">
-            <p className="text-sm text-muted-foreground">© 2025 Associação Dungeon Belém. Todos os direitos reservados.</p>
-            <p className="text-sm text-muted-foreground">Desenvolvido pela comunidade para a comunidade.</p>
-        </div>
-      </footer>
+  <div className="container flex items-center justify-between h-20">
+    <p className="text-sm text-muted-foreground">
+      © 2025 Associação Dungeon Belém.
+    </p>
+
+    {/* Grupo de Créditos à Direita */}
+    <div className="text-sm text-muted-foreground text-right space-y-1">
+      <p>
+        Feito em Belém-PA, em colaboração com uma comunidade incrível.
+      </p>
+      <div className="flex items-center justify-end space-x-2">
+        <p>
+          Desenvolvido por <a 
+            href="https://davidson.dev.br" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="underline hover:text-primary"
+          >
+            davidson.dev.br
+          </a>
+        </p>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="link" size="sm" className="text-xs text-muted-foreground p-0 h-auto">| Ver colaboradores</Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 text-left text-sm">
+            <div className="p-2">
+                <p className="mb-2"><strong>Davidson Santos Conceição:</strong><br /><span className="text-xs text-muted-foreground">Project Lead & DevOps Engineer</span></p>
+                <hr className="my-2" />
+                <p className="text-xs text-muted-foreground mb-2">Com agradecimentos à comunidade e colaboradores que apoiaram o projeto:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Heydrigh Leão Ribeiro</li>
+                    <li>Caio de Oliveira Bastos</li>
+                    <li>Thyago Costa (@thyagobib)</li>
+                    <li>Luiz Pedro Reis Pinheiro (@luizprp)</li>
+                    <li>Hermann Duarte Ribeiro Filho</li>
+                    <li>Thiago de Castro Araújo</li>
+                    <li>Bruno Rafael Viana Oliveira (@brunorvo)</li>
+                    <li>Iasmin Oneide Figueira de Castro Leal (@koda_master)</li>
+                </ul>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  </div>
+</footer>
     </div>
   );
 }

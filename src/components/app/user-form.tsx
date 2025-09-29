@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogFooter } from "@/components/ui/dialog"
 import type { UserCategory, UserStatus, User, GameType } from "@/lib/types/user"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -70,6 +70,8 @@ interface UserFormProps {
 }
 
 export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValues }: UserFormProps) {
+  const [isBirthdateCalendarOpen, setIsBirthdateCalendarOpen] = useState(false);
+  const [isCreatedAtCalendarOpen, setIsCreatedAtCalendarOpen] = useState(false);
   
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -174,7 +176,7 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>Data de Nascimento</FormLabel>
-                    <Popover>
+                    <Popover open={isBirthdateCalendarOpen} onOpenChange={setIsBirthdateCalendarOpen}>
                         <PopoverTrigger asChild>
                         <FormControl>
                             <Button
@@ -197,7 +199,10 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
                         <Calendar
                             mode="single"
                             selected={field.value ?? undefined}
-                            onSelect={field.onChange}
+                            onSelect={(date) => {
+                              field.onChange(date);
+                              setIsBirthdateCalendarOpen(false);
+                            }}
                             disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
                             }
@@ -215,7 +220,7 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                     <FormLabel>Membro Desde</FormLabel>
-                    <Popover>
+                     <Popover open={isCreatedAtCalendarOpen} onOpenChange={setIsCreatedAtCalendarOpen}>
                         <PopoverTrigger asChild>
                         <FormControl>
                             <Button
@@ -239,7 +244,10 @@ export function UserForm({ onSuccess, onCancel, isEditMode = false, defaultValue
                             locale={ptBR}
                             mode="single"
                             selected={field.value ?? undefined}
-                            onSelect={field.onChange}
+                            onSelect={(date) => {
+                                field.onChange(date);
+                                setIsCreatedAtCalendarOpen(false);
+                            }}
                             disabled={(date) => date > new Date()}
                             initialFocus
                         />

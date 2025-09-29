@@ -132,14 +132,16 @@ const roleBadgeClass: Record<AdminRole, string> = {
     Revisor: "bg-yellow-500 text-black",
     Membro: "bg-secondary text-secondary-foreground",
     Visitante: "bg-muted text-muted-foreground",
+    Convidado: "bg-blue-200 text-blue-800",
 }
 
 
 export default function ProfilePage() {
-  const [user, loadingAuth] = useAuthState(auth);
+  const [user, loadingAuth, authError] = useAuthState(auth);
   const { toast } = useToast();
   const router = useRouter();
   const [isRefreshingClaims, setIsRefreshingClaims] = useState(false);
+  const [isBirthdateCalendarOpen, setIsBirthdateCalendarOpen] = useState(false);
 
 
   const firestore = getFirestore(app);
@@ -235,30 +237,6 @@ export default function ProfilePage() {
       });
     }
   };
-
-  const handleRefreshClaims = async () => {
-    setIsRefreshingClaims(true);
-    try {
-      const refreshClaimsFunc = httpsCallable(functions, 'refreshClaims');
-      await refreshClaimsFunc();
-      
-      // Força a atualização do token no lado do cliente
-      await user?.getIdToken(true);
-
-      toast({
-        title: "Permissões Atualizadas!",
-        description: "Seu token de acesso foi atualizado com as últimas permissões.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao Atualizar Permissões",
-        description: error.message || "Não foi possível atualizar seu token.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshingClaims(false);
-    }
-  }
 
   if (loadingAuth || loadingUser) {
     return (
@@ -384,7 +362,7 @@ export default function ProfilePage() {
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                         <FormLabel>Data de Nascimento *</FormLabel>
-                        <Popover>
+                        <Popover open={isBirthdateCalendarOpen} onOpenChange={setIsBirthdateCalendarOpen}>
                             <PopoverTrigger asChild>
                             <FormControl>
                                 <Button
@@ -407,7 +385,10 @@ export default function ProfilePage() {
                             <Calendar
                                 mode="single"
                                 selected={field.value}
-                                onSelect={field.onChange}
+                                onSelect={(date) => {
+                                  field.onChange(date);
+                                  setIsBirthdateCalendarOpen(false);
+                                }}
                                 disabled={(date) =>
                                 date > new Date() || date < new Date("1900-01-01")
                                 }
