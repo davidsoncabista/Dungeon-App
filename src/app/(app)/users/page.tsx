@@ -149,7 +149,7 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="Convidado">Convidado (Novo Usuário)</SelectItem>
-                            <SelectItem value="Membro">Membro (Ex-Associado)</SelectItem>
+                            <SelectItem value="Membro">Membro</SelectItem>
                             <SelectItem value="Revisor">Revisor</SelectItem>
                             <SelectItem value="Editor">Editor</SelectItem>
                             <SelectItem value="Administrador">Administrador</SelectItem>

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.9 - 2025-10-02 11:00:00 - davidson.dev.br
+
+- **feat(community): Envia mensagem automática de aniversário para membros**
+  - Implementada uma nova Cloud Function (`sendBirthdayWishes`) que roda diariamente para verificar os aniversariantes do dia.
+  - A função envia automaticamente uma mensagem privada de felicitações para a caixa de entrada do membro, fortalecendo o senso de comunidade e o engajamento.
+
 ## v1.3.8 - 2025-10-02 10:00:00 - davidson.dev.br
 
 - **feat(statistics): Mudar widget de sala mais usada para tipos de jogos mais curtidos**
@@ -194,7 +200,7 @@
                                     ## v0.9.0 - 2025-09-18 10:00:00 - davidson.dev.br
 
                                     - **feat(onboarding): Adiciona modal de boas-vindas para o primeiro login**
-                                      - Implementado um tour guiado em múltiplos passos (`WelcomeModal`) que é exibido aos novos usuários.
+                                      - Implementado um tour guiado em múltiplos passos (`WelcomeModal`) que é exibido aos neuen usuários.
                                         - O modal orienta o usuário a completar o perfil, escolher um plano de associação e explica como visualizar reservas como convidado, melhorando significativamente a experiência inicial.
                                         - **feat(agenda): Reintroduz visualizações de timeline diária e semanal**
                                           - A página da "Agenda Online" agora possui abas para alternar entre as visualizações de **Mês**, **Semana** e **Dia**.
@@ -304,3 +310,4 @@
 
 
     
+

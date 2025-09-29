@@ -666,3 +666,72 @@ export const mercadoPagoWebhook = functions
    
    response.status(200).send("OK");
  });
+
+
+// --- FUNÇÃO DE ANIVERSÁRIO ---
+export const sendBirthdayWishes = functions
+  .region("southamerica-east1")
+  .pubsub.schedule("0 9 * * *") // "Às 09:00 todos os dias"
+  .timeZone("America/Sao_Paulo")
+  .onRun(async (context) => {
+    console.log("[Scheduler] Iniciando verificação de aniversariantes do dia.");
+
+    try {
+      const usersSnapshot = await db.collection("users").get();
+      if (usersSnapshot.empty) {
+        console.log("[Scheduler] Nenhum usuário encontrado.");
+        return null;
+      }
+
+      const today = new Date();
+      const todayMonth = today.getMonth() + 1; // getMonth() é 0-indexado
+      const todayDay = today.getDate();
+
+      // Encontrar um admin para ser o remetente
+      const adminUserSnapshot = await db.collection('users').where('role', '==', 'Administrador').limit(1).get();
+      const senderId = adminUserSnapshot.empty ? 'dungeon-bot-admin' : adminUserSnapshot.docs[0].id;
+      const senderName = adminUserSnapshot.empty ? 'Dungeon Bot' : adminUserSnapshot.docs[0].data().name;
+
+      const batch = db.batch();
+      let messagesSent = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        const user = userDoc.data();
+        if (!user.birthdate) continue;
+
+        // Formato da data no banco é 'YYYY-MM-DD'
+        const [birthYear, birthMonth, birthDay] = user.birthdate.split('-').map(Number);
+
+        if (birthMonth === todayMonth && birthDay === todayDay) {
+          console.log(`[Scheduler] É aniversário de ${user.name} (${user.uid})!`);
+          
+          const messageRef = db.collection("userMessages").doc();
+          batch.set(messageRef, {
+            id: messageRef.id,
+            recipientId: user.uid,
+            recipientName: user.name,
+            senderId: senderId,
+            senderName: senderName,
+            title: "Feliz Aniversário, Aventureiro(a)!",
+            content: `Olá, ${user.name.split(' ')[0]}!\n\nA equipe da Dungeon Belém e toda a guilda desejam a você um feliz aniversário! Que seu dia seja repleto de alegrias, aventuras e muitos rolagens de dados decisivas.\n\nFelicidades!`,
+            category: 'aviso',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false,
+          });
+          messagesSent++;
+        }
+      }
+
+      if (messagesSent > 0) {
+        await batch.commit();
+        console.log(`[Scheduler] ${messagesSent} mensagens de aniversário enviadas.`);
+      } else {
+        console.log("[Scheduler] Nenhum aniversariante hoje.");
+      }
+
+      return null;
+    } catch (error) {
+      console.error("[Scheduler] Erro ao enviar mensagens de aniversário:", error);
+      return null;
+    }
+  });
