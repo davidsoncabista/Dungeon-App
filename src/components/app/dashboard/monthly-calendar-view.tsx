@@ -88,7 +88,7 @@ export function MonthlyCalendarView({ currentMonth, bookings, rooms, isLoading, 
                             className={cn(
                                 "border-t border-l p-1.5 h-32 md:h-40 flex flex-col relative",
                                 !isSameMonth(day, currentMonth) && "bg-muted/30 text-muted-foreground",
-                                isToday(day) && "bg-blue-50",
+                                isToday(day) && "bg-muted",
                                 isPastDay && "bg-muted/50"
                             )}
                         >
@@ -162,4 +162,3 @@ export function MonthlyCalendarView({ currentMonth, bookings, rooms, isLoading, 
         </div>
     );
 }
-
