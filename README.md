@@ -24,7 +24,7 @@ Para rodar o projeto em ambiente de desenvolvimento, siga os passos abaixo:
 
 1. **Clone o repositório:**
    ```bash
-   git clone <url-do-repositorio>
+   git clone <https://github.com/davidsoncabista/Dungeon-App.git>
    cd <nome-do-repositorio>
    ```
 
