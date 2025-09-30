@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import type { LandingPageBlock, HeroBlock, FeatureListBlock, MarkdownBlock, HTMLBlock } from "@/lib/types/landing-page-block";
+import type { LandingPageBlock, HeroBlock, FeatureListBlock, MarkdownBlock, HTMLBlock, SeparatorBlock } from "@/lib/types/landing-page-block";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -105,6 +105,14 @@ const HTMLSection = ({ block }: { block: HTMLBlock }) => (
     </section>
 );
 
+const SeparatorSection = ({ block }: { block: SeparatorBlock }) => (
+    <section className="py-12">
+        <div className="container">
+            <hr className="border-border" />
+        </div>
+    </section>
+);
+
 
 const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
   switch (block.type) {
@@ -116,6 +124,8 @@ const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
       return <MarkdownSection block={block as MarkdownBlock} />;
     case 'html':
       return <HTMLSection block={block as HTMLBlock} />;
+    case 'separator':
+      return <SeparatorSection block={block as SeparatorBlock} />;
     default:
       return null;
   }
@@ -191,9 +201,7 @@ export default function LandingPage() {
             © 2025 Associação Dungeon Belém.
           </p>
           <div className="text-sm text-muted-foreground text-right space-y-1">
-            <p>Feito em Belém-PA, em colaboração com uma comunidade incrível.</p>
-            <div className="flex items-center justify-end space-x-2">
-              <p>
+            <p>
                 Desenvolvido por <a 
                   href="https://davidson.dev.br" 
                   target="_blank" 
@@ -203,29 +211,6 @@ export default function LandingPage() {
                   davidson.dev.br
                 </a>
               </p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="link" size="sm" className="text-xs text-muted-foreground p-0 h-auto">| Ver colaboradores</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 text-left text-sm">
-                  <div className="p-2">
-                      <p className="mb-2"><strong>Davidson Santos Conceição:</strong><br /><span className="text-xs text-muted-foreground">Project Lead & DevOps Engineer</span></p>
-                      <hr className="my-2" />
-                      <p className="text-xs text-muted-foreground mb-2">Com agradecimentos à comunidade e colaboradores que apoiaram o projeto:</p>
-                      <ul className="list-disc list-inside space-y-1 text-xs">
-                          <li>Heydrigh Leão Ribeiro</li>
-                          <li>Caio de Oliveira Bastos</li>
-                          <li>Thyago Costa (@thyagobib)</li>
-                          <li>Luiz Pedro Reis Pinheiro (@luizprp)</li>
-                          <li>Hermann Duarte Ribeiro Filho</li>
-                          <li>Thiago de Castro Araújo</li>
-                          <li>Bruno Rafael Viana Oliveira (@brunorvo)</li>
-                          <li>Iasmin Oneide Figueira de Castro Leal (@koda_master)</li>
-                      </ul>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
         </div>
       </footer>

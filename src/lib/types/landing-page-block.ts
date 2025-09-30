@@ -6,7 +6,7 @@
 /**
  * Representa os tipos de blocos de conteúdo que podem ser renderizados na landing page.
  */
-export type BlockType = 'hero' | 'featureList' | 'markdown' | 'html';
+export type BlockType = 'hero' | 'featureList' | 'markdown' | 'html' | 'separator';
 
 /**
  * Interface base para todos os blocos de conteúdo.
@@ -65,6 +65,11 @@ export interface HTMLBlockContent {
     html: string;
 }
 
+/**
+ * Conteúdo para o bloco 'Separator'. Não possui conteúdo.
+ */
+export interface SeparatorBlockContent {}
+
 
 // --- Tipos de Blocos Discernidos ---
 
@@ -88,9 +93,14 @@ export interface HTMLBlock extends BaseBlock {
     content: HTMLBlockContent;
 }
 
+export interface SeparatorBlock extends BaseBlock {
+    type: 'separator';
+    content: SeparatorBlockContent;
+}
+
 
 /**
  * Um tipo união que representa qualquer um dos possíveis blocos de conteúdo.
  * Isso permite o tratamento polimórfico dos blocos na lógica de renderização.
  */
-export type LandingPageBlock = HeroBlock | FeatureListBlock | MarkdownBlock | HTMLBlock;
+export type LandingPageBlock = HeroBlock | FeatureListBlock | MarkdownBlock | HTMLBlock | SeparatorBlock;

@@ -59,11 +59,14 @@ const htmlContentSchema = z.object({
     html: z.string().min(1, "O conteúdo HTML é obrigatório."),
 });
 
+const separatorContentSchema = z.object({});
+
 const formSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal('hero'), content: heroContentSchema }),
   z.object({ type: z.literal('featureList'), content: featureListContentSchema }),
   z.object({ type: z.literal('markdown'), content: markdownContentSchema }),
   z.object({ type: z.literal('html'), content: htmlContentSchema }),
+  z.object({ type: z.literal('separator'), content: separatorContentSchema }),
 ]);
 
 type FormValues = z.infer<typeof formSchema>;
@@ -93,6 +96,8 @@ const defaultMarkdownContent = {
 const defaultHTMLContent = {
     html: "<!-- Escreva seu código HTML aqui -->\n<div class=\"text-center\">\n  <h2 class=\"text-2xl font-bold\">Seu Título</h2>\n  <p>Seu parágrafo.</p>\n</div>",
 };
+
+const defaultSeparatorContent = {};
 
 
 interface LandingBlockFormProps {
@@ -140,6 +145,8 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
         form.reset({ type, content: defaultMarkdownContent });
     } else if (type === 'html') {
         form.reset({ type, content: defaultHTMLContent });
+    } else if (type === 'separator') {
+        form.reset({ type, content: defaultSeparatorContent });
     }
   };
   
@@ -162,6 +169,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                     <SelectItem value="featureList">Lista de Features</SelectItem>
                     <SelectItem value="markdown">Bloco de Texto (Markdown)</SelectItem>
                     <SelectItem value="html">Bloco de HTML</SelectItem>
+                    <SelectItem value="separator">Separador</SelectItem>
                     </SelectContent>
                 </Select>
                 <FormMessage />
@@ -296,6 +304,13 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                             </FormItem>
                         )}
                     />
+                </div>
+            )}
+
+            {selectedType === 'separator' && (
+                <div className="p-4 text-center text-muted-foreground">
+                    <p>Este bloco adicionará uma linha separadora horizontal.</p>
+                    <p className="text-sm">Nenhuma configuração adicional é necessária.</p>
                 </div>
             )}
         </ScrollArea>
