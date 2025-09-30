@@ -24,19 +24,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     // Itens que aparecem no menu lateral da área /admin
     const sideNavItems = [
-      { href: "/admin/system", label: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
-      { href: "/admin/finance", label: "Finanças", icon: DollarSign, roles: ["Administrador"] },
-      { href: "/admin/messages", label: "Mensagens", icon: MessageSquare, roles: ["Administrador"] },
-      { href: "/admin/access-rules", label: "Regras de Acesso", icon: Eye, roles: ["Administrador"] },
-      { href: "/admin/rooms", label: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
+      { href: "/admin/system", label: "Sistema", shortLabel: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
+      { href: "/admin/finance", label: "Finanças", shortLabel: "Finanças", icon: DollarSign, roles: ["Administrador"] },
+      { href: "/admin/messages", label: "Mensagens", shortLabel: "Msg", icon: MessageSquare, roles: ["Administrador"] },
+      { href: "/admin/access-rules", label: "Regras de Acesso", shortLabel: "ACL", icon: Eye, roles: ["Administrador"] },
+      { href: "/admin/rooms", label: "Salas", shortLabel: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     ];
     
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-1">
                  <Card>
-                    <CardContent className="p-4">
-                        <nav className="flex flex-col gap-2">
+                    <CardContent className="p-2 md:p-4">
+                        <nav className="flex flex-row md:flex-col gap-1 md:gap-2">
                             {sideNavItems.map(item => {
                                 if (currentUserRole && item.roles.includes(currentUserRole)) {
                                     return (
@@ -44,11 +44,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                             key={item.href}
                                             asChild
                                             variant={pathname === item.href ? "default" : "ghost"}
-                                            className="justify-start"
+                                            className="justify-center md:justify-start flex-1"
                                         >
                                             <Link href={item.href}>
-                                                <item.icon className="mr-2 h-4 w-4" />
-                                                {item.label}
+                                                <item.icon className="mr-0 md:mr-2 h-4 w-4" />
+                                                <span className="hidden md:inline">{item.label}</span>
+                                                <span className="inline md:hidden">{item.shortLabel}</span>
                                             </Link>
                                         </Button>
                                     )
