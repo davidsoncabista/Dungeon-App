@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Pie, PieChart, Tooltip } from "recharts"
-import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX, ShieldAlert, Swords } from "lucide-react"
+import { BookOpenCheck, Cake, Users, ArrowUpDown, UserCheck, UserX, ShieldAlert, Swords, Search } from "lucide-react"
 import type { UserCategory, User as AppUser, GameType } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy } from "firebase/firestore"
@@ -19,6 +19,7 @@ import type { Room } from "@/lib/types/room"
 import { Button } from "@/components/ui/button"
 import { isPast, parseISO, getMonth, format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { Input } from "@/components/ui/input"
 
 const chartConfig = {
   bookings: {
@@ -53,6 +54,8 @@ export default function StatisticsPage() {
   const [activeSortOrder, setActiveSortOrder] = useState<"asc" | "desc">("asc");
   const [inactiveSortKey, setInactiveSortKey] = useState<SortKey>("name");
   const [inactiveSortOrder, setInactiveSortOrder] = useState<"asc" | "desc">("asc");
+  const [activeSearchTerm, setActiveSearchTerm] = useState("");
+  const [inactiveSearchTerm, setInactiveSearchTerm] = useState("");
 
   // --- Firestore Data ---
   const [users, loadingUsers, errorUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
@@ -101,10 +104,28 @@ export default function StatisticsPage() {
     const upcomingCount = bookings.filter(b => !isPast(parseISO(`${b.date}T${b.endTime}`))).length;
     
     // 3. User lists (active and inactive)
-    const active = users?.filter(u => u.status === 'Ativo' && u.category !== 'Visitante') || [];
-    const inactive = users?.filter(u => u.status !== 'Ativo' || u.category === 'Visitante') || [];
+    let active = users?.filter(u => u.status === 'Ativo' && u.category !== 'Visitante') || [];
+    let inactive = users?.filter(u => u.status !== 'Ativo' || u.category === 'Visitante') || [];
+
+    // 4. Filtering logic
+    if (activeSearchTerm) {
+        const lowercasedTerm = activeSearchTerm.toLowerCase();
+        active = active.filter(u => 
+            u.name.toLowerCase().includes(lowercasedTerm) || 
+            (u.nickname && u.nickname.toLowerCase().includes(lowercasedTerm)) ||
+            u.email.toLowerCase().includes(lowercasedTerm)
+        );
+    }
+    if (inactiveSearchTerm) {
+        const lowercasedTerm = inactiveSearchTerm.toLowerCase();
+        inactive = inactive.filter(u => 
+            u.name.toLowerCase().includes(lowercasedTerm) || 
+            (u.nickname && u.nickname.toLowerCase().includes(lowercasedTerm)) ||
+            u.email.toLowerCase().includes(lowercasedTerm)
+        );
+    }
     
-    // 4. Sorting logic
+    // 5. Sorting logic
     const categoryOrder: Record<UserCategory, number> = { "Master": 1, "Gamer": 2, "Player": 3, "Visitante": 4 };
     
     active.sort((a, b) => {
@@ -127,7 +148,7 @@ export default function StatisticsPage() {
         return inactiveSortOrder === 'asc' ? comparison : -comparison;
     });
 
-    // 5. Monthly Birthdays
+    // 6. Monthly Birthdays
     const currentMonth = getMonth(new Date());
     const birthdays = users.filter(user => {
         if (!user.birthdate) return false;
@@ -146,7 +167,7 @@ export default function StatisticsPage() {
         upcomingBookingsCount: upcomingCount,
         monthlyBirthdays: birthdays
     };
-  }, [bookings, users, activeSortKey, activeSortOrder, inactiveSortKey, inactiveSortOrder]);
+  }, [users, bookings, activeSortKey, activeSortOrder, inactiveSortKey, inactiveSortOrder, activeSearchTerm, inactiveSearchTerm]);
   
   const isLoading = loadingUsers || loadingBookings;
   const hasError = errorUsers || errorBookings;
@@ -169,22 +190,27 @@ export default function StatisticsPage() {
     }
   }
 
-  const renderUserList = (userList: AppUser[]) => (
-    <ul className="space-y-3">
-        {userList.map(user => (
-            <li key={user.uid} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 truncate">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person"/>
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium truncate">{user.name}</span>
-                </div>
-                <Badge variant={user.category === 'Visitante' ? 'outline' : 'secondary'} className="shrink-0">{user.category}</Badge>
-            </li>
-        ))}
-    </ul>
-  );
+  const renderUserList = (userList: AppUser[], searchTerm: string) => {
+      if (userList.length === 0 && searchTerm) {
+        return <p className="text-center text-sm text-muted-foreground py-4">Nenhum usuário encontrado com o termo "{searchTerm}".</p>
+      }
+      return (
+        <ul className="space-y-3">
+            {userList.map(user => (
+                <li key={user.uid} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 truncate">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person"/>
+                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium truncate">{user.name}</span>
+                    </div>
+                    <Badge variant={user.category === 'Visitante' ? 'outline' : 'secondary'} className="shrink-0">{user.category}</Badge>
+                </li>
+            ))}
+        </ul>
+      )
+  };
   
   if (hasError) {
       return (
@@ -279,53 +305,59 @@ export default function StatisticsPage() {
        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-green-600" />
                   <CardTitle>Membros Ativos</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => handleActiveSort('name')}>
-                    Nome <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleActiveSort('category')}>
-                    Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
                 {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
               </div>
+            </div>
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar membros ativos..." 
+                    className="pl-9"
+                    value={activeSearchTerm}
+                    onChange={(e) => setActiveSearchTerm(e.target.value)}
+                />
             </div>
           </CardHeader>
           <CardContent>
               <ScrollArea className="h-72 pr-4">
                 {isLoading ? (
                   <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
-                ) : renderUserList(activeMembers)}
+                ) : renderUserList(activeMembers, activeSearchTerm)}
               </ScrollArea>
           </CardContent>
         </Card>
          <Card>
           <CardHeader>
-             <div className="flex items-center justify-between">
+             <div className="flex items-center justify-between mb-4">
                <div className="flex items-center gap-2">
                   <UserX className="h-5 w-5 text-amber-600" />
                   <CardTitle>Inativos e Visitantes</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="sm" onClick={() => handleInactiveSort('name')}>
-                    Nome <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleInactiveSort('category')}>
-                    Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
                 {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
               </div>
+            </div>
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar inativos/visitantes..." 
+                    className="pl-9"
+                    value={inactiveSearchTerm}
+                    onChange={(e) => setInactiveSearchTerm(e.target.value)}
+                />
             </div>
           </CardHeader>
           <CardContent>
                <ScrollArea className="h-72 pr-4">
                  {isLoading ? (
                   <div className="space-y-3">{Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
-                ) : renderUserList(inactiveOrVisitors)}
+                ) : renderUserList(inactiveOrVisitors, inactiveSearchTerm)}
                </ScrollArea>
           </CardContent>
         </Card>
@@ -334,3 +366,5 @@ export default function StatisticsPage() {
     </div>
   )
 }
+
+    
