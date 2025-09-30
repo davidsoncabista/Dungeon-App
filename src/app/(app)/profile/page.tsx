@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,43 @@ const gameTypes = [
   { id: 'Board Game', label: 'Board Game' },
   { id: 'Card Game', label: 'Card Game' },
 ] as const;
+
+// --- FUNÇÕES DE VALIDAÇÃO E MÁSCARA ---
+
+// Validação de CPF
+const validateCPF = (cpf: string) => {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false;
+
+    const digits = cpf.split('').map(Number);
+    
+    const calcChecker = (sliceEnd: number) => {
+        let sum = 0;
+        for (let i = 0; i < sliceEnd; i++) {
+            sum += digits[i] * (sliceEnd + 1 - i);
+        }
+        const remainder = (sum * 10) % 11;
+        return remainder === 10 ? 0 : remainder;
+    };
+
+    const checker1 = calcChecker(9);
+    if (checker1 !== digits[9]) return false;
+
+    const checker2 = calcChecker(10);
+    if (checker2 !== digits[10]) return false;
+
+    return true;
+};
+
+// Máscara de Telefone
+const phoneMask = (value: string) => {
+  if (!value) return ""
+  value = value.replace(/\D/g,'')
+  value = value.replace(/(\d{2})(\d)/,"($1) $2")
+  value = value.replace(/(\d)(\d{4})$/,"$1-$2")
+  return value
+}
+
 
 // --- VIA CEP API ---
 interface ViaCepResponse {
@@ -101,7 +139,7 @@ const profileFormSchema = z.object({
   name: z.string().min(3, { message: "O nome completo é obrigatório." }),
   nickname: z.string().optional(),
   phone: z.string().min(10, { message: "O telefone deve ter pelo menos 10 dígitos." }),
-  cpf: z.string().min(11, { message: "O CPF deve ter 11 dígitos." }),
+  cpf: z.string().refine(validateCPF, 'CPF inválido.'),
   rg: z.string().optional(),
   birthdate: z.date({ required_error: "A data de nascimento é obrigatória."}).refine((date) => {
     const today = new Date();
@@ -350,7 +388,18 @@ export default function ProfilePage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Telefone *</FormLabel>
-                          <FormControl><Input placeholder="(91) 99999-9999" {...field} /></FormControl>
+                          <FormControl>
+                            <Input 
+                                placeholder="(91) 99999-9999" 
+                                {...field} 
+                                onChange={(e) => {
+                                    const { value } = e.target;
+                                    e.target.value = phoneMask(value);
+                                    field.onChange(e);
+                                }}
+                                maxLength={15}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -658,3 +707,5 @@ export default function ProfilePage() {
     </div>
   )
 }
+
+    
