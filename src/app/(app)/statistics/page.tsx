@@ -49,8 +49,10 @@ export default function StatisticsPage() {
   const firestore = getFirestore(app);
   
   // --- Component State ---
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [activeSortKey, setActiveSortKey] = useState<SortKey>("name");
+  const [activeSortOrder, setActiveSortOrder] = useState<"asc" | "desc">("asc");
+  const [inactiveSortKey, setInactiveSortKey] = useState<SortKey>("name");
+  const [inactiveSortOrder, setInactiveSortOrder] = useState<"asc" | "desc">("asc");
 
   // --- Firestore Data ---
   const [users, loadingUsers, errorUsers] = useCollectionData<AppUser>(query(collection(firestore, 'users'), orderBy('name')), { idField: 'id' });
@@ -104,18 +106,26 @@ export default function StatisticsPage() {
     
     // 4. Sorting logic
     const categoryOrder: Record<UserCategory, number> = { "Master": 1, "Gamer": 2, "Player": 3, "Visitante": 4 };
-    const sortFunction = (a: AppUser, b: AppUser) => {
+    
+    active.sort((a, b) => {
         let comparison = 0;
-        if (sortKey === 'name') {
+        if (activeSortKey === 'name') {
             comparison = a.name.localeCompare(b.name);
         } else { // sort by category
             comparison = (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99);
         }
-        return sortOrder === 'asc' ? comparison : -comparison;
-    };
-    
-    active.sort(sortFunction);
-    inactive.sort(sortFunction);
+        return activeSortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    inactive.sort((a, b) => {
+        let comparison = 0;
+        if (inactiveSortKey === 'name') {
+            comparison = a.name.localeCompare(b.name);
+        } else { // sort by category
+            comparison = (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99);
+        }
+        return inactiveSortOrder === 'asc' ? comparison : -comparison;
+    });
 
     // 5. Monthly Birthdays
     const currentMonth = getMonth(new Date());
@@ -136,17 +146,26 @@ export default function StatisticsPage() {
         upcomingBookingsCount: upcomingCount,
         monthlyBirthdays: birthdays
     };
-  }, [bookings, users, sortKey, sortOrder]);
+  }, [bookings, users, activeSortKey, activeSortOrder, inactiveSortKey, inactiveSortOrder]);
   
   const isLoading = loadingUsers || loadingBookings;
   const hasError = errorUsers || errorBookings;
   
-  const handleSort = (key: SortKey) => {
-    if (key === sortKey) {
-        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  const handleActiveSort = (key: SortKey) => {
+    if (key === activeSortKey) {
+        setActiveSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
-        setSortKey(key);
-        setSortOrder('asc');
+        setActiveSortKey(key);
+        setActiveSortOrder('asc');
+    }
+  }
+
+  const handleInactiveSort = (key: SortKey) => {
+    if (key === inactiveSortKey) {
+        setInactiveSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+        setInactiveSortKey(key);
+        setInactiveSortOrder('asc');
     }
   }
 
@@ -266,10 +285,10 @@ export default function StatisticsPage() {
                   <CardTitle>Membros Ativos</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
+                <Button variant="ghost" size="sm" onClick={() => handleActiveSort('name')}>
                     Nome <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleSort('category')}>
+                <Button variant="ghost" size="sm" onClick={() => handleActiveSort('category')}>
                     Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
                 {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-green-100 text-green-800">{activeMembers.length}</Badge>}
@@ -292,10 +311,10 @@ export default function StatisticsPage() {
                   <CardTitle>Inativos e Visitantes</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="sm" onClick={() => handleSort('name')}>
+                 <Button variant="ghost" size="sm" onClick={() => handleInactiveSort('name')}>
                     Nome <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleSort('category')}>
+                <Button variant="ghost" size="sm" onClick={() => handleInactiveSort('category')}>
                     Categoria <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
                 {isLoading ? <Skeleton className="h-6 w-12 rounded-full" /> : <Badge variant="secondary" className="bg-amber-100 text-amber-800">{inactiveOrVisitors.length}</Badge>}
@@ -315,5 +334,3 @@ export default function StatisticsPage() {
     </div>
   )
 }
-
-    
