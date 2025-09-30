@@ -73,7 +73,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
             </TableCell>
             <TableCell className="hidden md:table-cell">{transaction.description}</TableCell>
             <TableCell>R$ {transaction.amount.toFixed(2).replace('.', ',')}</TableCell>
-            <TableCell className="hidden sm:table-cell">{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
+            <TableCell className="hidden lg:table-cell">{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
             <TableCell>
                 <Badge className={getStatusBadge(transaction.status)}>{transaction.status}</Badge>
             </TableCell>
@@ -203,7 +203,7 @@ export default function FinanceAdminPage() {
                     <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-full" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                 </TableRow>
@@ -247,13 +247,24 @@ export default function FinanceAdminPage() {
                     </h1>
                     <p className="text-muted-foreground">Acompanhe e gerencie todas as transações da associação.</p>
                 </div>
-                <AddTransactionDialog
-                    users={users || []}
-                    loadingUsers={loadingUsers}
-                    onSave={handleCreateTransaction}
-                    isOpen={isAddModalOpen}
-                    setIsOpen={setIsAddModalOpen}
-                />
+                <div className="sm:hidden">
+                    <AddTransactionDialog
+                        users={users || []}
+                        loadingUsers={loadingUsers}
+                        onSave={handleCreateTransaction}
+                        isOpen={isAddModalOpen}
+                        setIsOpen={setIsAddModalOpen}
+                    />
+                </div>
+                <div className="hidden sm:block">
+                    <AddTransactionDialog
+                        users={users || []}
+                        loadingUsers={loadingUsers}
+                        onSave={handleCreateTransaction}
+                        isOpen={isAddModalOpen}
+                        setIsOpen={setIsAddModalOpen}
+                    />
+                </div>
             </div>
 
             <Card>
@@ -309,7 +320,7 @@ export default function FinanceAdminPage() {
                                         Valor <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead className="hidden sm:table-cell">
+                                <TableHead className="hidden lg:table-cell">
                                      <Button variant="ghost" onClick={() => handleSort('createdAt')} className="px-0">
                                         Data <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
