@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { AddTransactionDialog } from "@/components/app/admin/finance/add-transaction-dialog";
 import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
+import { cn } from "@/lib/utils";
 
 type SortKey = 'createdAt' | 'amount';
 type StatusFilter = TransactionStatus | 'all';
@@ -31,7 +32,8 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     const { toast } = useToast();
     const firestore = getFirestore(app);
 
-    const handleMarkAsPaid = async () => {
+    const handleMarkAsPaid = async (e: React.MouseEvent) => {
+        e.stopPropagation(); // Evita que o clique se propague para o DropdownMenuTrigger da linha
         if (transaction.status === 'Pago') return;
         const transactionRef = doc(firestore, 'transactions', transaction.id);
         try {
@@ -66,41 +68,39 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     };
 
     return (
-        <TableRow>
-            <TableCell>
-                <div className="font-medium">{transaction.userName}</div>
-                <div className="text-sm text-muted-foreground md:hidden">{transaction.description}</div>
-            </TableCell>
-            <TableCell className="hidden md:table-cell">{transaction.description}</TableCell>
-            <TableCell>R$ {transaction.amount.toFixed(2).replace('.', ',')}</TableCell>
-            <TableCell className="hidden lg:table-cell">{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
-            <TableCell>
-                <Badge className={getStatusBadge(transaction.status)}>{transaction.status}</Badge>
-            </TableCell>
-            <TableCell className="text-right">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <TransactionDetailsDialog transaction={transaction}>
-                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver Detalhes
-                            </DropdownMenuItem>
-                        </TransactionDetailsDialog>
-                        {transaction.status !== 'Pago' && (
-                             <DropdownMenuItem onClick={handleMarkAsPaid}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                Marcar como Pago
-                            </DropdownMenuItem>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </TableCell>
-        </TableRow>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <TableRow className="cursor-pointer">
+                    <TableCell>
+                        <div className="font-medium">{transaction.userName}</div>
+                        <div className="text-sm text-muted-foreground md:hidden">{transaction.description}</div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{transaction.description}</TableCell>
+                    <TableCell>R$ {transaction.amount.toFixed(2).replace('.', ',')}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{transaction.createdAt ? format(transaction.createdAt.toDate(), "dd/MM/yyyy") : "..."}</TableCell>
+                    <TableCell>
+                        <Badge className={cn(getStatusBadge(transaction.status), "whitespace-nowrap")}>{transaction.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right hidden md:table-cell">
+                         <MoreHorizontal className="h-4 w-4" />
+                    </TableCell>
+                </TableRow>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <TransactionDetailsDialog transaction={transaction}>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Detalhes
+                    </DropdownMenuItem>
+                </TransactionDetailsDialog>
+                {transaction.status !== 'Pago' && (
+                        <DropdownMenuItem onClick={handleMarkAsPaid}>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Marcar como Pago
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -205,7 +205,7 @@ export default function FinanceAdminPage() {
                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                     <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    <TableCell className="text-right hidden md:table-cell"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                 </TableRow>
             ));
         }
@@ -326,7 +326,7 @@ export default function FinanceAdminPage() {
                                     </Button>
                                 </TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
+                                <TableHead className="text-right hidden md:table-cell">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -337,8 +337,5 @@ export default function FinanceAdminPage() {
             </Card>
         </div>
     )
-}
-
-    
 
     
