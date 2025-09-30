@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useMemo } from "react";
 
 
 // --- Dynamic Components ---
@@ -124,8 +125,15 @@ const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
 export default function LandingPage() {
   const firestore = getFirestore(app);
   const blocksRef = collection(firestore, 'landingPageBlocks');
-  const blocksQuery = query(blocksRef, where("enabled", "==", true), orderBy('order'));
-  const [blocks, loadingBlocks, errorBlocks] = useCollectionData<LandingPageBlock>(blocksQuery, { idField: 'id' });
+  // Simplificamos a query para apenas ordenar. O filtro de 'enabled' será feito no cliente.
+  const blocksQuery = query(blocksRef, orderBy('order'));
+  const [allBlocks, loadingBlocks, errorBlocks] = useCollectionData<LandingPageBlock>(blocksQuery, { idField: 'id' });
+
+  // Filtramos os blocos habilitados no lado do cliente
+  const enabledBlocks = useMemo(() => {
+    if (!allBlocks) return [];
+    return allBlocks.filter(block => block.enabled);
+  }, [allBlocks]);
 
 
   const renderSkeletons = () => (
@@ -163,10 +171,16 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {loadingBlocks && renderSkeletons()}
-        {!loadingBlocks && blocks?.map(block => <BlockRenderer key={block.id} block={block} />)}
-        {!loadingBlocks && (!blocks || blocks.length === 0) && (
+        {!loadingBlocks && enabledBlocks?.map(block => <BlockRenderer key={block.id} block={block} />)}
+        {!loadingBlocks && (!enabledBlocks || enabledBlocks.length === 0) && (
             <div className="container py-32 text-center text-muted-foreground">
                 <p>Nenhum conteúdo para a landing page foi configurado ainda.</p>
+            </div>
+        )}
+         {errorBlocks && (
+            <div className="container py-32 text-center text-destructive">
+                <p>Ocorreu um erro ao carregar o conteúdo: {errorBlocks.message}</p>
+                <p>Verifique se as regras do Firestore para 'landingPageBlocks' permitem leitura pública.</p>
             </div>
         )}
       </main>
@@ -218,5 +232,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
