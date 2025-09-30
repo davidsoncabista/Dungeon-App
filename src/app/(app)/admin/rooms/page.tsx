@@ -65,55 +65,57 @@ function RoomTableRow({ room, canEdit }: { room: Room, canEdit: boolean }) {
   };
 
   return (
-    <TableRow>
-      <TableCell className="hidden w-[128px] sm:table-cell">
-        {room.image ? (
-          <Image
-            alt={room.name}
-            className="aspect-video rounded-md object-cover"
-            height="64"
-            src={room.image}
-            width="128"
-            data-ai-hint="rpg room"
-          />
-        ) : (
-           <div className="w-full aspect-video bg-muted rounded-md flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Sem imagem</span>
-           </div>
-        )}
-      </TableCell>
-      <TableCell className="font-medium">
-        {room.name}
-        <p className="text-sm text-muted-foreground md:hidden">{room.description}</p>
-      </TableCell>
-      <TableCell>{room.capacity} pessoas</TableCell>
-      <TableCell className="hidden md:table-cell">
-        <Badge variant={room.status === 'Disponível' ? 'secondary' : room.status === 'Ocupada' ? 'outline' : 'destructive'} className={room.status === 'Disponível' ? 'bg-green-100 text-green-800' : ''}>
-          {room.status}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-right">
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)} disabled={!canEdit}>
-                  <Pencil className="mr-2 h-4 w-4" />Editar Sala
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={!canEdit}>
-                        <Trash2 className="mr-2 h-4 w-4" />Excluir Sala
+                <DropdownMenuTrigger asChild>
+                    <TableRow className="cursor-pointer">
+                        <TableCell className="hidden w-[128px] sm:table-cell">
+                            {room.image ? (
+                            <Image
+                                alt={room.name}
+                                className="aspect-video rounded-md object-cover"
+                                height="64"
+                                src={room.image}
+                                width="128"
+                                data-ai-hint="rpg room"
+                            />
+                            ) : (
+                            <div className="w-full aspect-video bg-muted rounded-md flex items-center justify-center">
+                                    <span className="text-xs text-muted-foreground">Sem imagem</span>
+                            </div>
+                            )}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                            {room.name}
+                            <p className="text-sm text-muted-foreground md:hidden">{room.description}</p>
+                        </TableCell>
+                        <TableCell>{room.capacity} pessoas</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            <Badge variant={room.status === 'Disponível' ? 'secondary' : room.status === 'Ocupada' ? 'outline' : 'destructive'} className={room.status === 'Disponível' ? 'bg-green-100 text-green-800' : ''}>
+                            {room.status}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="hidden text-right md:table-cell">
+                             <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                </DropdownMenuTrigger>
+                 <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)} disabled={!canEdit}>
+                        <Pencil className="mr-2 h-4 w-4" />Editar Sala
                     </DropdownMenuItem>
-                </AlertDialogTrigger>
-              </DropdownMenuContent>
+                    <DropdownMenuSeparator />
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={!canEdit}>
+                            <Trash2 className="mr-2 h-4 w-4" />Excluir Sala
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                </DropdownMenuContent>
             </DropdownMenu>
 
             {/* Edit Dialog */}
@@ -141,10 +143,8 @@ function RoomTableRow({ room, canEdit }: { room: Room, canEdit: boolean }) {
                 </AlertDialogFooter>
             </AlertDialogContent>
 
-          </AlertDialog>
-        </Dialog>
-      </TableCell>
-    </TableRow>
+        </AlertDialog>
+     </Dialog>
   )
 }
 
@@ -268,7 +268,7 @@ export default function RoomsPage() {
                 <TableHead>Capacidade</TableHead>
                 <TableHead className="hidden md:table-cell">Status</TableHead>
                 <TableHead className="text-right">
-                  Ações
+                  <span className="sr-only">Ações</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -281,5 +281,3 @@ export default function RoomsPage() {
     </div>
   )
 }
-
-    
