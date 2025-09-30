@@ -8,20 +8,20 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 
 Evoluir a ideia de uma simples edição de textos para a construção de um sistema de gerenciamento de conteúdo modular (CMS) para a landing page. O objetivo é transformar seções estáticas (como "Features") em áreas dinâmicas compostas por "blocos de conteúdo" que podem ser criados, editados e reordenados pelo administrador.
 
-- [ ] **Pilar 1: Arquitetura de Conteúdo no Firestore**
-  - [ ] Criar a coleção `landingPageBlocks` para armazenar os componentes da página.
-  - [ ] Definir a estrutura de cada "bloco", incluindo `type` (hero, featureList, etc.), `content` (título, texto, imagem) e uma propriedade `order`.
+- [x] **Pilar 1: Arquitetura de Conteúdo no Firestore**
+  - [x] Criar a coleção `landingPageBlocks` para armazenar os componentes da página.
+  - [x] Definir a estrutura de cada "bloco", incluindo `type` (hero, featureList, etc.), `content` (título, texto, imagem) e uma propriedade `order`.
 
-- [ ] **Pilar 2: Gerenciador de Layout (Admin)**
-  - [ ] Criar a nova página de administração `/admin/landing-editor` para o gerenciador visual.
-  - [ ] Desenvolver a funcionalidade para adicionar, editar e excluir blocos de conteúdo.
-  - [ ] Implementar uma interface de arrastar e soltar (drag-and-drop) para reordenar os blocos.
-  - [ ] Adicionar controles de layout (ex: nº de colunas para a grade de features).
+- [x] **Pilar 2: Gerenciador de Layout (Admin)**
+  - [x] Criar a nova página de administração `/admin/landing-editor` para o gerenciador visual.
+  - [x] Desenvolver a funcionalidade para adicionar, editar e excluir blocos de conteúdo.
+  - [x] Implementar uma interface de arrastar e soltar (drag-and-drop) para reordenar os blocos.
+  - [x] Adicionar controles de layout (ex: nº de colunas para a grade de features).
 
-- [ ] **Pilar 3: Renderização Dinâmica (Frontend)**
-  - [ ] Refatorar a página `landing/page.tsx` para buscar os blocos do Firestore.
-  - [ ] Implementar um sistema que mapeia o `type` de cada bloco ao seu respectivo componente React (`<HeroSection>`, `<FeatureGrid>`, etc.).
-  - [ ] Garantir que a página seja construída dinamicamente com base na configuração definida pelo administrador.
+- [x] **Pilar 3: Renderização Dinâmica (Frontend)**
+  - [x] Refatorar a página `landing/page.tsx` para buscar os blocos do Firestore.
+  - [x] Implementar um sistema que mapeia o `type` de cada bloco ao seu respectivo componente React (`<HeroSection>`, `<FeatureGrid>`, etc.).
+  - [x] Garantir que a página seja construída dinamicamente com base na configuração definida pelo administrador.
 
 ---
 

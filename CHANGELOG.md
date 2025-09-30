@@ -1,5 +1,53 @@
 # Changelog
 
+## v1.4.5 - Planejamento do Construtor de Conteúdo da Landing Page
+
+Esta versão documenta o planejamento da Sprint 10, que visa transformar a landing page em uma plataforma dinâmica e gerenciável.
+
+* **docs(sprint-10): Planeja a criação de um construtor de conteúdo para a landing page**
+    * **Evolução da Ideia:** O escopo foi expandido de um simples editor de texto para um sistema modular de "blocos de conteúdo" (CMS), inspirado em plataformas como Joomla.
+    * **Arquitetura de Conteúdo:** Planejamento da criação de uma nova coleção no Firestore (`landingPageBlocks`) para armazenar os componentes da página, cada um com tipo, conteúdo e ordem de exibição.
+    * **Gerenciador de Layout (Admin):** Concepção de uma nova página (`/admin/landing-editor`) com funcionalidades de adicionar, editar, reordenar (arrastar e soltar) e alterar o layout dos blocos de conteúdo.
+    * **Refatoração da Landing Page (Frontend):** A página da landing page será refatorada para buscar e renderizar dinamicamente os blocos de conteúdo a partir do Firestore.
+
+## v1.4.4 - Refatoração Completa da Landing Page
+
+Esta versão focou em redesenhar a landing page para refletir todas as novas funcionalidades e melhorias do aplicativo.
+
+* **feat(landing): Redesenha a landing page para refletir as novas funcionalidades do app**
+    * **Novas Seções:** Foram adicionadas seções dedicadas para destacar recursos recentes, como o sistema de votação e o gerenciamento dinâmico de regras.
+    * **Conteúdo Atualizado:** O texto foi completamente reescrito para ser mais claro, focando nos benefícios para associados e administradores.
+    * **Melhorias de UI/UX:** A estrutura visual foi modernizada para melhorar a experiência do usuário e otimizar a navegação.
+
+## v1.4.3 - Melhorias na Experiência do Administrador
+
+Melhorias focadas na usabilidade e responsividade do painel de administração.
+
+* **fix(responsive): Abrevia os links do menu de administração em telas menores**
+    * Para evitar a quebra de layout em dispositivos móveis, os nomes dos links no menu lateral da administração foram abreviados (ex: "Regras de Acesso" se torna "ACL").
+* **refactor(nav): Centraliza o link de Regras de Acesso**
+    * O link para a página "Regras de Acesso" foi removido do menu principal do cabeçalho e centralizado dentro do menu lateral da página de Administração, tornando a navegação mais limpa e organizada.
+
+## v1.4.2 - Otimização e Melhorias na Interface de Usuário
+
+Esta versão trouxe otimizações de performance e melhorias visuais na experiência do usuário.
+
+* **perf(login): Otimiza o carregamento da logo na página de login**
+    * A imagem da logo foi otimizada (comprimida e convertida para WebP) e seu carregamento foi priorizado (`fetchpriority="high"`) para melhorar a métrica LCP (Largest Contentful Paint) da página de login.
+* **feat(profile): Adiciona exibição do nível de acesso e status da conta**
+    * Foi introduzido um novo card na página de perfil do usuário que exibe seu papel no sistema (Membro, Administrador, etc.) e o status atual da sua conta (Ativo, Pendente, etc.).
+* **chore(profile): Remove card de diagnóstico de acesso**
+    * O card de teste "Diagnóstico de Acesso", utilizado durante o desenvolvimento para depuração de permissões, foi removido da interface de produção.
+
+## v1.4.1 - Automação de Permissões e Refatoração de Regras
+
+Melhorias significativas no backend para automatizar processos e aumentar a segurança.
+
+* **feat(auth): Promove usuário para Membro com a role correta após pagamento**
+    * A Cloud Function que processa o pagamento da matrícula foi ajustada. Agora, além de alterar a `category` do usuário de 'Visitante' para o tipo de plano, ela também atribui a `role` de 'Membro' automaticamente, garantindo que o novo membro receba as permissões corretas sem intervenção manual.
+* **fix(security): Refatora e corrige as regras de segurança do Firestore**
+    * As regras do Firestore (`firestore.rules`) foram completamente reescritas para corrigir um erro crítico de "Missing or insufficient permissions". A verificação de papéis (roles) agora é feita lendo os dados diretamente do documento do usuário, garantindo que a "fonte da verdade" seja sempre consultada e evitando problemas de sincronia com os custom claims do token de autenticação.
+
 ## v1.4.0 - 2025-10-03 10:00:00 - davidson.dev.br
 
 - **refactor(community): Notifica a comunidade sobre os aniversariantes do dia**
@@ -316,5 +364,6 @@
 
 
     
+
 
 
