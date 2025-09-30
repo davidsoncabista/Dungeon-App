@@ -152,8 +152,8 @@ export default function AccessRulesPage() {
 
   return (
     <div className="grid gap-8">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1">
             <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
                 <Eye className="h-8 w-8"/>
                 Regras de Acesso
@@ -162,7 +162,7 @@ export default function AccessRulesPage() {
         </div>
         <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
             <DialogTrigger asChild>
-                <Button onClick={openCreateModal}><PlusCircle className="mr-2 h-4 w-4" />Nova Regra</Button>
+                <Button onClick={openCreateModal} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Nova Regra</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
