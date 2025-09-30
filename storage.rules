@@ -3,17 +3,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /landing-page-media/{imageId} {
-      // Qualquer um pode ler
-      allow get, list: if true;
+      // Qualquer um pode ler as imagens da landing page.
+      allow read;
 
-      // Permite criar e atualizar (upload/substituição)
-      // se o usuário estiver logado E o arquivo for menor que 5MB.
-      allow create, update: if request.auth != null &&
-                               request.resource.size < 5 * 1024 * 1024;
-
-      // Permite excluir
-      // se o usuário estiver logado (não há verificação de tamanho aqui).
-      allow delete: if request.auth != null;
+      // Apenas administradores autenticados podem escrever (upload, update, delete).
+      // A verificação de 'isAdmin' é feita via custom claims no token de autenticação.
+      allow write: if request.auth != null && request.auth.token.role == 'Administrador';
     }
   }
 }

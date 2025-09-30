@@ -1,53 +1,87 @@
- 
+
 # Dungeon App - Sistema de Reserva de Salas da Dungeon Belém
 
-O Dungeon App é o sistema oficial e completo para gerenciamento de reservas de salas para a **Associação Dungeon Belém**, focado em jogadores de RPG, Board Games e Card Games. A plataforma conta com uma área pública de apresentação e uma área restrita para associados.
+O Dungeon App é o sistema oficial para gerenciamento de reservas, comunicação e administração da **Associação Dungeon Belém**, uma comunidade de jogadores de RPG, Board Games e Card Games. A plataforma foi construída para modernizar e automatizar os processos da associação, oferecendo uma experiência integrada para membros e administradores.
 
-## Funcionalidades
+## Tecnologias Utilizadas
 
-### Para Associados
+O projeto é construído com uma stack moderna e robusta, focada em performance, escalabilidade e uma ótima experiência de desenvolvimento.
 
-- **Autenticação Segura e Acessível**: Login simplificado com Google, utilizando um fluxo (`signInWithRedirect`) compatível com WebViews de aplicativos móveis.
-- **Controle de Acesso por Status**: O sistema garante que apenas membros com status "Ativo" possam realizar novas reservas, direcionando usuários com pendências para a página de cobrança.
-- **Agenda Multivisualização**: Uma agenda robusta que permite visualizar a disponibilidade das salas em formato de **calendário mensal** ou em uma **timeline diária/semanal**.
-- **Fluxo de Onboarding Guiado**: Novos usuários são recebidos com um tour interativo que os orienta a completar o perfil e a escolher um plano de associação.
-- **Gerenciamento de Reservas**: Os usuários podem criar novas reservas, editar agendamentos futuros e visualizar seu histórico completo na página "Minhas Reservas".
-- **Gerenciamento de Participação**: Flexibilidade para o organizador editar os participantes e para os convidados saírem de uma reserva futura.
-- **Extrato de Reservas com Ordenação**: Visualize, filtre e veja os detalhes de seus agendamentos passados e futuros. Ordene a lista por data ou número de participantes para melhor organização.
-- **Controle de Cotas Transparente**: Um painel em "Minhas Reservas" exibe em tempo real o saldo de cotas de reserva mensal, corujão e de convidados, com a data de renovação do ciclo.
-- **Perfil de Usuário Completo**: Edite suas informações pessoais, apelido, telefone, documentos, data de nascimento (com **verificação de maioridade**) e preferências de jogo. O formulário de endereço conta com **preenchimento automático via CEP**.
-- **Comunicação Centralizada**:
-  - **Mural de Avisos**: Fique por dentro dos últimos comunicados gerais da administração.
-  - **Caixa de Entrada Privada**: Receba mensagens diretas da administração (avisos, advertências, etc.) com um indicador de notificações não lidas no cabeçalho.
-- **Pagamentos Simplificados**: Gere um QR Code PIX através do gateway de pagamento seguro para quitar sua matrícula e mensalidades.
-- **Transparência na Matrícula**: Visualize claramente o valor da taxa de inscrição (joia) durante o processo e confirme o status do seu pagamento diretamente no seu perfil.
-- **Participação em Votações**: Participe de votações importantes da associação através de uma página dedicada, que aparece apenas quando você é elegível para votar.
+- **Frontend**: [Next.js](https://nextjs.org/) (React Framework) com App Router, [TypeScript](https://www.typescriptlang.org/)
+- **UI**: [Tailwind CSS](https://tailwindcss.com/), [Shadcn/UI](https://ui.shadcn.com/), [Lucide React](https://lucide.dev/guide/packages/lucide-react) (ícones)
+- **Backend & Infraestrutura**: [Firebase](https://firebase.google.com/)
+  - **Autenticação**: Firebase Authentication (Login com Google)
+  - **Banco de Dados**: Cloud Firestore (NoSQL em tempo real)
+  - **Funções Serverless**: Cloud Functions for Firebase
+  - **Hospedagem**: Firebase App Hosting
+- **Formulários**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) (validação)
+- **Estado e Sincronização com Firebase**: [React Firebase Hooks](https://github.com/csfrequency/react-firebase-hooks)
+- **Pagamentos**: [Mercado Pago SDK](https://www.mercadopago.com.br/developers/pt/docs)
 
-### Para Administradores
+## Como Começar
 
-- **Painel de Controle Centralizado**: Uma área de administração robusta e organizada em seções (`Sistema`, `Finanças`, `Mensagens`) para gerenciar todos os aspectos do sistema.
-- **Comunicação Direta com Membros**: Envie mensagens privadas e categorizadas (aviso, advertência, multa, etc.) para usuários específicos através da página de `Mensagens`, com histórico de envio.
-- **Sistema de Votação Democrático**: Crie votações flexíveis, defina quem pode votar, inicie, encerre e apure os resultados ponderados pelo peso de voto de cada membro, tudo em uma interface centralizada.
-- **Gerenciamento de Planos e Regras de Negócio**: Crie, edite e remova planos de associação dinamicamente. Controle os preços, cotas de reserva e limites de convidados em uma única interface.
-- **Gerenciamento de Regras de Acesso via API**: Acesse uma interface dedicada para criar, editar e excluir dinamicamente as regras e permissões de cada nível de acesso (Administrador, Editor, Revisor), ajustando o que cada um pode ver e fazer no sistema em tempo real, sem necessidade de um novo deploy.
-- **Gerenciamento de Usuários Simplificado**: Acompanhe a lista de membros, gerencie status, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`).
-- **Gerenciamento de Salas**: Crie, edite ou remova salas, ajustando sua capacidade e configurações.
-- **Comunicação em Massa**: Envie avisos para todos os usuários através de um formulário integrado no Mural de Avisos.
-- **Dashboard de Estatísticas**: Visualize métricas de uso, como taxa de ocupação, número de adimplentes e a lista de aniversariantes do mês.
-- **Moderação de Reservas**: Tenha uma visão completa de todas as reservas e realize aprovações ou cancelamentos.
-- **Gestão Financeira**: Gerencie cobranças avulsas, marque transações como pagas e tenha acesso ao histórico financeiro de todos os membros.
+Para rodar o projeto em ambiente de desenvolvimento, siga os passos abaixo:
 
-## Desenvolvimento e Deploy
+1. **Clone o repositório:**
+   ```bash
+   git clone <url-do-repositorio>
+   cd <nome-do-repositorio>
+   ```
 
-### Rodando Localmente
-Para rodar o projeto em ambiente de desenvolvimento, utilize o comando:
-`npm run dev`
+2. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure as variáveis de ambiente:**
+   - Crie um arquivo `.env.local` na raiz do projeto.
+   - Adicione as chaves de configuração do seu projeto Firebase. Você pode obtê-las no Console do Firebase > Configurações do Projeto.
+
+4. **Rode o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Acesse a aplicação:**
+   - Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 ### Fazendo Deploy
 Para publicar as alterações no Firebase (App Hosting e Functions), utilize o comando:
 `firebase deploy`
 
 Certifique-se de estar autenticado na CLI do Firebase (`firebase login`).
+
+## Guia de Uso
+
+### Para Associados
+
+- **Autenticação Segura e Acessível**: Login simplificado com Google, utilizando um fluxo (`signInWithRedirect`) compatível com WebViews de aplicativos móveis.
+- **Fluxo de Onboarding Guiado**: Novos usuários são recebidos com um tour interativo que os orienta a completar o perfil e a escolher um plano de associação.
+- **Controle de Acesso por Status**: O sistema garante que apenas membros com status "Ativo" possam realizar novas reservas, direcionando usuários com pendências para a página de cobrança.
+
+#### Páginas Principais
+
+- **Agenda Online (`/online-schedule`)**: Uma agenda robusta que permite visualizar a disponibilidade das salas em formato de **calendário mensal** ou em uma **timeline diária/semanal**.
+- **Minhas Reservas (`/my-bookings`)**: Gerencie suas reservas, edite agendamentos futuros e visualize seu histórico completo. Aqui também fica o **painel de cotas**, que exibe em tempo real o saldo de reservas mensais, "corujão" e convidados.
+- **Matrícula e Cobranças (`/billing`)**: Novos usuários são direcionados para cá para escolher um plano e se associar. Membros existentes podem visualizar seu histórico de pagamentos e quitar pendências via PIX com Mercado Pago.
+- **Meu Perfil (`/profile`)**: Edite suas informações pessoais, apelido, telefone, documentos, data de nascimento (com **verificação de maioridade**) e preferências de jogo. O formulário de endereço conta com **preenchimento automático via CEP**.
+- **Mural de Avisos (`/notices`)**: Fique por dentro dos últimos comunicados gerais da administração.
+- **Minhas Mensagens (`/messages`)**: Caixa de entrada privada para receber mensagens diretas da administração (avisos, advertências, etc.), com um indicador de notificações não lidas no cabeçalho.
+- **Votação (`/voting`)**: Participe de votações importantes da associação através de uma página dedicada, que aparece no menu apenas quando você é elegível para votar.
+
+### Para Administradores
+
+Uma área de administração robusta e organizada, acessível através do menu principal para usuários com as permissões adequadas.
+
+- **Estatísticas (`/statistics`)**: Dashboard com métricas de uso, como total de membros, número de reservas, aniversariantes do mês e um gráfico com os tipos de jogos mais curtidos pela comunidade.
+- **Gerenciamento de Usuários (`/users`)**: Acompanhe a lista de membros, gerencie status, aplique advertências e controle níveis de acesso administrativo (`Administrador`, `Editor`, `Revisor`).
+- **Administração (`/admin`)**: Um painel centralizado com sub-rotas para gerenciar todos os aspectos do sistema:
+  - **Sistema (`/admin/system`)**: Crie e edite planos de associação, controle preços, cotas de reserva, limites de convidados e o valor da taxa de inscrição (joia). Também é aqui que se gerencia o **sistema de votação**.
+  - **Finanças (`/admin/finance`)**: Visualize o histórico financeiro de todos os membros, gere cobranças avulsas e marque transações como pagas manualmente.
+  - **Mensagens (`/admin/messages`)**: Envie mensagens privadas e categorizadas (aviso, advertência, multa, etc.) para usuários específicos, com um histórico completo de envio.
+  - **Regras de Acesso (`/admin/access-rules`)**: Crie, edite e exclua dinamicamente as regras e permissões de cada nível de acesso administrativo.
+  - **Salas (`/admin/rooms`)**: Crie, edite ou remova as salas de jogo, ajustando sua capacidade e configurações.
+- **Editor da Landing Page (`/admin/landing-editor`)**: Um CMS integrado para gerenciar o conteúdo da página inicial de forma modular, permitindo adicionar, editar e reordenar blocos de conteúdo (herói, lista de features, etc.) e gerenciar uma biblioteca de mídia otimizada.
 
 ## Equipe do Projeto
 
@@ -60,5 +94,3 @@ Certifique-se de estar autenticado na CLI do Firebase (`firebase login`).
 - **Thiago de Castro Araújo**: Homologação (Testes)
 - **Bruno Rafael Viana Oliveira (@brunorvo)**: Consultor de Fluxo e Homologação
 - **Iasmin Oneide Figueira de Castro Leal (@koda_master)**: Homologação (Testes)
-
-Este projeto foi construído com Next.js, React, Tailwind CSS e Firebase.

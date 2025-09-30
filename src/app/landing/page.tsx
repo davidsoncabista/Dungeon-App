@@ -172,10 +172,10 @@ export default function LandingPage() {
           <Link href="/landing" className="flex items-center gap-2">
             <Image 
               src="/logo.svg" 
-              width={75}
-              height={75}
+              width={40}
+              height={40}
               alt="Logo da Associação Dungeon Belém"
-              className="rounded-xl"
+              className="rounded-md"
               priority
             />
             <span className="font-bold text-lg font-headline">Dungeon App</span>
