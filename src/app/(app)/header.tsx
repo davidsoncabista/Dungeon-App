@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate } from "lucide-react"
@@ -251,3 +250,5 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
     </header>
   );
 }
+
+    

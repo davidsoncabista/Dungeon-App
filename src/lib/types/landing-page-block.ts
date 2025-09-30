@@ -105,3 +105,5 @@ export interface SeparatorBlock extends BaseBlock {
  * Isso permite o tratamento polimórfico dos blocos na lógica de renderização.
  */
 export type LandingPageBlock = HeroBlock | FeatureListBlock | MarkdownBlock | HTMLBlock | SeparatorBlock;
+
+    
