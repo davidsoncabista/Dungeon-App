@@ -201,15 +201,15 @@ export default function NoticesPage() {
 
   return (
     <div className="grid gap-8">
-      <div className="flex items-center justify-between">
-          <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1">
             <h1 className="text-3xl font-bold tracking-tight font-headline">Mural de Avisos</h1>
             <p className="text-muted-foreground">Fique por dentro das últimas notícias e comunicados da associação.</p>
-          </div>
-          {canManage && (
+        </div>
+        {canManage && (
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogTrigger asChild>
-                    <Button onClick={openCreateModal}>
+                    <Button onClick={openCreateModal} className="w-full sm:w-auto">
                         <PlusCircle className="mr-2 h-4 w-4" /> Novo Aviso
                     </Button>
                 </DialogTrigger>
@@ -228,7 +228,7 @@ export default function NoticesPage() {
                     />
                 </DialogContent>
             </Dialog>
-          )}
+        )}
       </div>
       
       <div className="space-y-6">
