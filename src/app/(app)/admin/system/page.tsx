@@ -476,10 +476,13 @@ export default function AdminPage() {
             </Card>
              <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex-1">
+                            <CardTitle className="flex items-center gap-2"><Vote className="h-5 w-5" /> Sistema de Votação</CardTitle>
+                            <CardDescription>Crie e gerencie as votações da associação.</CardDescription>
+                        </div>
                          <Dialog open={isPollCreateModalOpen} onOpenChange={setIsPollCreateModalOpen}>
-                            <DialogTrigger asChild><Button onClick={openCreatePollModal} disabled={isSaving || !isAdmin || loadingActiveUsers}><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
+                            <DialogTrigger asChild><Button onClick={openCreatePollModal} disabled={isSaving || !isAdmin || loadingActiveUsers} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Nova Votação</Button></DialogTrigger>
                             <DialogContent className="sm:max-w-2xl">
                                 <DialogHeader>
                                     <DialogTitle>{editingPoll ? 'Editar Votação' : 'Criar Nova Votação'}</DialogTitle>
@@ -494,7 +497,6 @@ export default function AdminPage() {
                             </DialogContent>
                         </Dialog>
                     </div>
-                    <CardDescription>Crie e gerencie as votações da associação.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <Table><TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Status</TableHead><TableHead className="hidden sm:table-cell">Criação</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>{renderPollsContent()}</TableBody></Table>
@@ -575,5 +577,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-    
