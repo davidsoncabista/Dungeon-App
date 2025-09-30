@@ -190,7 +190,7 @@ export default function MyBookingsPage() {
           <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20" /></TableCell>
           <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+          <TableCell className="text-right hidden sm:table-cell"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
         </TableRow>
       ));
     }
@@ -234,7 +234,7 @@ export default function MyBookingsPage() {
     <div className="grid gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">Minhas Reservas</h1>
-        <p className="text-muted-foreground">Acompanhe seus agendamentos e seu histórico de jogos.</p>
+        <p className="text-muted-foreground break-words">Acompanhe seus agendamentos e seu histórico de jogos.</p>
       </div>
       
       <div className="relative">
@@ -324,7 +324,7 @@ export default function MyBookingsPage() {
                         Participantes <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 </TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -355,7 +355,7 @@ export default function MyBookingsPage() {
                         Participantes <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 </TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

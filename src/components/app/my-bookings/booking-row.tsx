@@ -40,6 +40,7 @@ import { EditBookingModal } from "@/components/app/dashboard/edit-booking-modal"
 import { BookingDetailsModal } from "@/components/app/dashboard/booking-details-modal"
 import { useToast } from "@/hooks/use-toast"
 import { DialogTrigger } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 export function BookingRow({ booking }: { booking: Booking }) {
     const { toast } = useToast();
@@ -89,93 +90,97 @@ export function BookingRow({ booking }: { booking: Booking }) {
         )
     }
 
+    const dropdownContent = (
+        <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            
+            {isBookingInThePast ? (
+                <DialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Detalhes
+                    </DropdownMenuItem>
+                </DialogTrigger>
+            ) : (
+                <>
+                    {isOrganizer ? (
+                        <DialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar Reserva
+                            </DropdownMenuItem>
+                        </DialogTrigger>
+                    ) : (
+                        <DialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver Detalhes
+                            </DropdownMenuItem>
+                        </DialogTrigger>
+                    )}
+                </>
+            )}
+            
+            {!isOrganizer && !isBookingInThePast && (
+                <>
+                    <DropdownMenuSeparator />
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={e => e.preventDefault()}>
+                                <LogOut className="mr-2 h-4 w-4" /> Sair da Reserva
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Sair da Reserva?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Você tem certeza que quer sair desta sessão? O organizador será notificado.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleLeaveBooking}>Sim, sair</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </>
+            )}
+        </DropdownMenuContent>
+    );
+
     return (
-      <TableRow>
-        <TableCell>
-            <div className="font-medium">{booking.title || 'Reserva sem título'}</div>
-            <div className="text-sm text-muted-foreground">{room?.name || "Sala não encontrada"}</div>
-        </TableCell>
-        <TableCell className="hidden md:table-cell">
-            {formattedDate}
-        </TableCell>
-        <TableCell className="hidden sm:table-cell">
-            {booking.startTime} - {booking.endTime}
-        </TableCell>
-        <TableCell>
-            <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>{totalParticipants}</span>
-            </div>
-        </TableCell>
-        <TableCell className="text-right">
-             <EditBookingModal booking={booking} onOpenChange={setIsModalOpen}>
-             <BookingDetailsModal booking={booking} onOpenChange={setIsModalOpen}>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Ações</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        
-                         {isBookingInThePast ? (
-                            <DialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Ver Detalhes
-                                </DropdownMenuItem>
-                            </DialogTrigger>
-                        ) : (
-                            <>
-                                {isOrganizer ? (
-                                    <DialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Editar Reserva
-                                        </DropdownMenuItem>
-                                    </DialogTrigger>
-                                ) : (
-                                    <DialogTrigger asChild>
-                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                            <Eye className="mr-2 h-4 w-4" />
-                                            Ver Detalhes
-                                        </DropdownMenuItem>
-                                    </DialogTrigger>
-                                )}
-                            </>
-                        )}
-                        
-                        {!isOrganizer && !isBookingInThePast && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10" onSelect={e => e.preventDefault()}>
-                                            <LogOut className="mr-2 h-4 w-4" /> Sair da Reserva
-                                        </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Sair da Reserva?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Você tem certeza que quer sair desta sessão? O organizador será notificado.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleLeaveBooking}>Sim, sair</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </BookingDetailsModal>
-            </EditBookingModal>
-        </TableCell>
-      </TableRow>
+      <EditBookingModal booking={booking} onOpenChange={setIsModalOpen}>
+        <BookingDetailsModal booking={booking} onOpenChange={setIsModalOpen}>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <TableRow className="cursor-pointer">
+                        <TableCell>
+                            <div className="font-medium">{booking.title || 'Reserva sem título'}</div>
+                            <div className="text-sm text-muted-foreground">{room?.name || "Sala não encontrada"}</div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            {formattedDate}
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                            {booking.startTime} - {booking.endTime}
+                        </TableCell>
+                        <TableCell>
+                            <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <span>{totalParticipants}</span>
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right hidden sm:table-cell">
+                            <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Ações</span>
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                </DropdownMenuTrigger>
+                {dropdownContent}
+            </DropdownMenu>
+        </BookingDetailsModal>
+      </EditBookingModal>
     );
 };
