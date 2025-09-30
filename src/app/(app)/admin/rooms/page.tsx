@@ -230,14 +230,14 @@ export default function RoomsPage() {
 
   return (
     <div className="grid gap-8">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight font-headline">Gerenciamento de Salas</h1>
           <p className="text-muted-foreground">Crie, edite e gerencie as salas de jogo.</p>
         </div>
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-                <Button disabled={!canEdit}>
+                <Button disabled={!canEdit} className="w-full sm:w-auto">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nova Sala
                 </Button>
@@ -281,3 +281,5 @@ export default function RoomsPage() {
     </div>
   )
 }
+
+    
