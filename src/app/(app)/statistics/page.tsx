@@ -281,13 +281,13 @@ export default function StatisticsPage() {
           </CardContent>
         </Card>
          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tipos de Jogo Mais Curtidos</CardTitle>
+            <CardHeader className="flex flex-col md:flex-row md:items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium mb-2 md:mb-0">Tipos de Jogo Mais Curtidos</CardTitle>
                  <Swords className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="flex items-center justify-center pb-4">
+            <CardContent className="flex items-center justify-center pb-0">
                 {isLoading ? <Skeleton className="h-[120px] w-full" /> : (
-                    <ChartContainer config={chartConfig} className="min-h-[120px] w-full max-w-[250px]">
+                    <ChartContainer config={chartConfig} className="mx-auto aspect-square w-full max-w-[250px]">
                     <PieChart>
                         <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                         <Pie data={gameTypesChartData} dataKey="value" nameKey="name" innerRadius={30} strokeWidth={5} />
@@ -366,5 +366,7 @@ export default function StatisticsPage() {
     </div>
   )
 }
+
+    
 
     
