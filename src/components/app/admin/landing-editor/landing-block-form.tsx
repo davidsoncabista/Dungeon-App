@@ -174,13 +174,13 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
             {selectedType === 'hero' && (
             <div className="space-y-4 p-4 border rounded-md">
                 <h3 className="font-semibold text-lg">Conteúdo do Hero</h3>
-                <FormField control={form.control} name="content.badge" render={({ field }) => (<FormItem><FormLabel>Badge</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="content.badge" render={({ field }) => (<FormItem><FormLabel>Badge</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Pequeno texto de destaque acima do título.</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="content.title" render={({ field }) => (<FormItem><FormLabel>Título</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="content.subtitle" render={({ field }) => (<FormItem><FormLabel>Subtítulo</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="content.buttonText" render={({ field }) => (<FormItem><FormLabel>Texto do Botão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="content.buttonLink" render={({ field }) => (<FormItem><FormLabel>Link do Botão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="content.imageUrl" render={({ field }) => (<FormItem><FormLabel>URL da Imagem</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="content.imageAlt" render={({ field }) => (<FormItem><FormLabel>Texto Alternativo da Imagem</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="content.imageUrl" render={({ field }) => (<FormItem><FormLabel>URL da Imagem</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Use um serviço como Unsplash ou Picsum Photos.</FormDescription><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="content.imageAlt" render={({ field }) => (<FormItem><FormLabel>Texto Alternativo da Imagem</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Texto descritivo para acessibilidade e SEO.</FormDescription><FormMessage /></FormItem>)} />
             </div>
             )}
 
@@ -189,7 +189,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                 <h3 className="font-semibold text-lg">Conteúdo da Lista de Features</h3>
                 <FormField control={form.control} name="content.title" render={({ field }) => (<FormItem><FormLabel>Título da Seção</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="content.subtitle" render={({ field }) => (<FormItem><FormLabel>Subtítulo da Seção</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="content.layout" render={({ field }) => (<FormItem><FormLabel>Layout</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="2-cols">2 Colunas</SelectItem><SelectItem value="3-cols">3 Colunas</SelectItem><SelectItem value="4-cols">4 Colunas</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="content.layout" render={({ field }) => (<FormItem><FormLabel>Layout</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="2-cols">2 Colunas</SelectItem><SelectItem value="3-cols">3 Colunas</SelectItem><SelectItem value="4-cols">4 Colunas</SelectItem></SelectContent></Select><FormDescription>Define como as funcionalidades serão exibidas em telas grandes.</FormDescription><FormMessage /></FormItem>)} />
                 
                 <div className="space-y-4">
                 <FormLabel>Painel de Funcionalidades</FormLabel>
@@ -214,6 +214,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                                                 <FormControl>
                                                     <Input {...field} placeholder="Ícone (Lucide)" className="text-center" />
                                                 </FormControl>
+                                                <FormDescription className="text-xs">Ex: CheckCircle</FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -267,7 +268,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                                     <MarkdownEditor value={field.value} onChange={field.onChange} />
                                 </FormControl>
                                 <FormDescription>
-                                    Utilize a barra de ferramentas ou escreva diretamente em Markdown.
+                                    Use a sintaxe Markdown para formatar o texto. A barra de ferramentas pode ajudar.
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
