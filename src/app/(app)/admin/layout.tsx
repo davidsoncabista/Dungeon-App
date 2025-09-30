@@ -28,6 +28,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       { href: "/admin/finance", label: "Finanças", shortLabel: "Finanças", icon: DollarSign, roles: ["Administrador"] },
       { href: "/admin/messages", label: "Mensagens", shortLabel: "Msg", icon: MessageSquare, roles: ["Administrador"] },
       { href: "/admin/access-rules", label: "ACL", shortLabel: "ACL", icon: Eye, roles: ["Administrador"] },
+      { href: "/admin/landing-editor", label: "Editor Landing", shortLabel: "Landing", icon: LayoutTemplate, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/rooms", label: "Salas", shortLabel: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
     ];
     
@@ -66,5 +67,3 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
     )
 }
-
-    

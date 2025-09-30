@@ -48,7 +48,6 @@ const visitorNavItems = [
 
 const adminNavItems = [
     { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
-    { href: "/admin/landing-editor", label: "Landing", icon: LayoutTemplate, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador"] },
 ]
@@ -250,5 +249,3 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
     </header>
   );
 }
-
-    
