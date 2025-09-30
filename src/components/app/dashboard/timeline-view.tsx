@@ -12,6 +12,8 @@ import { PlusCircle } from "lucide-react";
 import { BookingModal } from "@/components/app/dashboard/booking-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AccordionScheduleView } from "../accordion-schedule-view";
 
 interface TimelineViewProps {
     selectedDate: Date;
@@ -23,6 +25,7 @@ interface TimelineViewProps {
 
 export function TimelineView({ selectedDate, bookings, rooms, isLoading, currentUser }: TimelineViewProps) {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const { isMobile, isHydrated } = useIsMobile();
 
     const canBook = currentUser?.status === 'Ativo';
 
@@ -39,8 +42,15 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
         });
     }, [bookings, selectedDate]);
     
-    if (isLoading) {
-        return <Skeleton className="h-96 w-full" />;
+    if (isLoading || !isHydrated) {
+        return (
+             <div className="space-y-4">
+                <div className="flex justify-end mb-4 md:hidden">
+                    <Skeleton className="h-10 w-36" />
+                </div>
+                <Skeleton className="h-96 w-full" />
+            </div>
+        )
     }
     
     if (!rooms || rooms.length === 0) {
@@ -68,15 +78,26 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
                     </Button>
                 </BookingModal>
             </div>
-             <ScheduleView
-                rooms={availableRooms}
-                bookings={bookingsForSelectedDate}
-                selectedDate={selectedDate}
-                setModalOpen={setIsModalOpen}
-                allBookings={bookings || []}
-                canBook={canBook}
-                currentUser={currentUser}
-            />
+            {isMobile ? (
+                 <AccordionScheduleView 
+                    rooms={availableRooms}
+                    bookings={bookingsForSelectedDate}
+                    selectedDate={selectedDate}
+                    currentUser={currentUser}
+                    isLoading={isLoading}
+                 />
+            ) : (
+                <ScheduleView
+                    rooms={availableRooms}
+                    bookings={bookingsForSelectedDate}
+                    selectedDate={selectedDate}
+                    setModalOpen={setIsModalOpen}
+                    allBookings={bookings || []}
+                    canBook={canBook}
+                    currentUser={currentUser}
+                />
+            )}
         </div>
     );
 }
+
