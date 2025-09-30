@@ -4,6 +4,7 @@
 import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react"
 import type { User as FirebaseUser } from "firebase/auth"
 import type { User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore";
@@ -58,6 +59,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ user, currentUserData }: AppHeaderProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
@@ -147,7 +149,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
       </nav>
       
       {/* Mobile Menu */}
-      <Sheet>
+      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild>
           <Button
             variant="outline"
@@ -166,6 +168,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
             <Link
               href="/online-schedule"
               className="flex items-center gap-2 text-lg font-semibold mb-4"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
               <Image src="/logo.svg" alt="Dungeon App Logo" width={32} height={32} className="rounded-md" />
               <span className="">Dungeon App</span>
@@ -174,6 +177,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
                 <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                     pathname.startsWith(item.href) && "bg-muted text-primary"
