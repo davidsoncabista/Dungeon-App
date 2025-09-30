@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.5.0 - Refatoração da Responsividade e Melhorias de UX
+
+Esta versão concentra-se em uma ampla refatoração da interface do usuário (UI) e da experiência do usuário (UX), com foco especial em garantir que o aplicativo seja totalmente funcional e visualmente agradável em dispositivos móveis.
+
+* **feat(responsive): Padroniza os cabeçalhos das páginas de administração**
+    * Os botões de ação principal (ex: "Nova Regra", "Nova Sala", "Novo Aviso", "Novo Bloco") nas páginas de administração (`/admin/access-rules`, `/admin/rooms`, `/admin/notices`, `/admin/landing-editor`) agora são movidos para baixo do título da página em telas pequenas, criando um layout mais limpo e consistente.
+* **feat(mobile-ux): Melhora a interatividade das tabelas em dispositivos móveis**
+    * Nas tabelas de "Gerenciamento de Salas" (`/admin/rooms`) e "Minhas Reservas" (`/my-bookings`), a coluna "Ações" agora é oculta em telas pequenas. A funcionalidade foi substituída tornando a linha inteira clicável, o que abre o menu de ações e melhora significativamente a usabilidade em dispositivos de toque.
+* **feat(mobile-ux): Otimiza a visualização da agenda em telas pequenas**
+    * Nas visualizações de "Dia" e "Semana" da Agenda Online (`/online-schedule`), a timeline horizontal é automaticamente substituída por uma visualização vertical em formato de acordeão em dispositivos móveis, tornando a leitura dos horários mais clara e eliminando a necessidade de rolagem horizontal.
+* **feat(nav): Aprimora o menu de navegação móvel**
+    * O menu lateral em telas pequenas agora se fecha automaticamente após o usuário tocar em um link, melhorando o fluxo de navegação.
+* **fix(ui): Corrige erro de componente não controlado**
+    * Resolvido um erro no console do React ("A component is changing an uncontrolled input to be controlled") no formulário do editor da landing page, garantindo que todos os campos sejam inicializados com valores definidos.
+* **refactor(nav): Centraliza o acesso ao Editor da Landing Page**
+    * O link para o "Editor da Landing Page" foi removido do menu principal e movido para o menu lateral da área de Administração, centralizando todas as ferramentas de gestão.
+* **refactor(ui): Ajusta a responsividade de componentes**
+    * O gráfico de pizza na página de "Estatísticas" agora se adapta melhor a telas menores.
+    * O texto do cabeçalho na página "Minhas Reservas" foi ajustado para ter uma quebra de linha adequada em dispositivos móveis.
+
 ## v1.4.5 - Planejamento do Construtor de Conteúdo da Landing Page
 
 Esta versão documenta o planejamento da Sprint 10, que visa transformar a landing page em uma plataforma dinâmica e gerenciável.
@@ -367,3 +387,6 @@ Melhorias significativas no backend para automatizar processos e aumentar a segu
 
 
 
+
+
+    
