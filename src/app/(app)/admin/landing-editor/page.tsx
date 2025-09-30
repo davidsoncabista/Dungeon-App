@@ -14,12 +14,13 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { LayoutTemplate, PlusCircle, MoreHorizontal, Pencil, Trash2, GripVertical } from "lucide-react"
+import { LayoutTemplate, PlusCircle, MoreHorizontal, Pencil, Trash2, GripVertical, Library } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { LandingBlockForm } from "@/components/app/admin/landing-editor/landing-block-form"
+import { ImageLibrary } from "@/components/app/admin/landing-editor/image-library"
 
 // --- Sortable Item Component ---
 function SortableBlockItem({ block, onEdit, onDelete }: { block: LandingPageBlock, onEdit: () => void, onDelete: () => void }) {
@@ -231,15 +232,30 @@ export default function LandingEditorPage() {
         </Dialog>
       </div>
       
-      <Card>
-        <CardHeader>
-            <CardTitle>Gerenciador de Layout</CardTitle>
-            <CardDescription>Arraste e solte os blocos para reordenar o conteúdo da sua página.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {renderContent()}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Gerenciador de Layout</CardTitle>
+                    <CardDescription>Arraste e solte os blocos para reordenar o conteúdo da sua página.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                {renderContent()}
+                </CardContent>
+            </Card>
+        </div>
+        <div className="lg:col-span-1 space-y-8">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Library className="h-5 w-5" /> Biblioteca de Mídia</CardTitle>
+                    <CardDescription>Gerencie as imagens para usar nos blocos de conteúdo.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <ImageLibrary />
+                </CardContent>
+            </Card>
+        </div>
+      </div>
 
         <AlertDialog open={!!deletingBlock} onOpenChange={(isOpen) => !isOpen && setDeletingBlock(null)}>
             <AlertDialogContent>
