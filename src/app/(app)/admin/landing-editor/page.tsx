@@ -21,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { LandingBlockForm } from "@/components/app/admin/landing-editor/landing-block-form"
 import { ImageLibrary } from "@/components/app/admin/landing-editor/image-library"
+import { Badge } from "@/components/ui/badge"
 
 // --- Sortable Item Component ---
 function SortableBlockItem({ block, onEdit, onDelete }: { block: LandingPageBlock, onEdit: () => void, onDelete: () => void }) {
@@ -45,8 +46,10 @@ function SortableBlockItem({ block, onEdit, onDelete }: { block: LandingPageBloc
               <GripVertical />
             </button>
             <div>
-              <CardTitle className="text-lg">{block.type}</CardTitle>
-              <CardDescription>Ordem: {block.order}</CardDescription>
+              <CardTitle className="text-lg">{block.title}</CardTitle>
+              <CardDescription>
+                <Badge variant="outline" className="capitalize mt-1">{block.type}</Badge>
+              </CardDescription>
             </div>
         </div>
         <DropdownMenu>
@@ -95,7 +98,7 @@ export default function LandingEditorPage() {
         if (editingBlock) {
             const blockRef = doc(firestore, "landingPageBlocks", editingBlock.id);
             await updateDoc(blockRef, data);
-            toast({ title: "Sucesso!", description: `Bloco "${data.type}" atualizado.` });
+            toast({ title: "Sucesso!", description: `Bloco "${data.title}" atualizado.` });
         } else {
             const newBlockRef = doc(collection(firestore, "landingPageBlocks"));
             const newBlock = { 
@@ -105,7 +108,7 @@ export default function LandingEditorPage() {
                 enabled: true,
             };
             await setDoc(newBlockRef, newBlock);
-            toast({ title: "Sucesso!", description: `Bloco "${data.type}" criado.` });
+            toast({ title: "Sucesso!", description: `Bloco "${data.title}" criado.` });
         }
         setIsFormModalOpen(false);
         setEditingBlock(null);
