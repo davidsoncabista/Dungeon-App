@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import type { LandingPageBlock, HeroBlock, FeatureListBlock, MarkdownBlock, HTMLBlock, SeparatorBlock } from "@/lib/types/landing-page-block";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from "react";
+import { Dices } from "lucide-react";
 
 
 // --- Dynamic Components ---
@@ -108,7 +109,13 @@ const HTMLSection = ({ block }: { block: HTMLBlock }) => (
 const SeparatorSection = ({ block }: { block: SeparatorBlock }) => (
     <section className="py-12">
         <div className="container">
-            <hr className="border-border" />
+            <div className="flex items-center text-muted-foreground">
+                <div className="flex-grow border-t border-border"></div>
+                <span className="mx-4">
+                    <Dices className="h-6 w-6" />
+                </span>
+                <div className="flex-grow border-t border-border"></div>
+            </div>
         </div>
     </section>
 );
