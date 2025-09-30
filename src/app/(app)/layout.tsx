@@ -15,11 +15,12 @@ import { WelcomeModal } from "@/components/app/welcome-modal";
 import { NoticeModal } from "@/components/app/notice-modal";
 
 const adminRoutes: Record<string, string[]> = {
-    'Administrador': ['/admin/system', '/admin/finance', '/admin/messages', '/admin/access-rules', '/admin/landing-editor', '/admin/rooms', '/statistics', '/users'],
-    'Editor': ['/admin/rooms', '/statistics', '/users'],
-    'Revisor': ['/statistics', '/users'],
+    'Administrador': ['/admin/system', '/admin/finance', '/admin/messages', '/admin/access-rules', '/admin/landing-editor', '/admin/rooms', '/statistics', '/users', '/admin'],
+    'Editor': ['/admin/rooms', '/statistics', '/users', '/admin'],
+    'Revisor': ['/statistics', '/users', '/admin'],
     'Membro': [],
     'Visitante': [],
+    'Convidado': [],
 };
 
 const getAccessibleRoutes = (role: User['role']): string[] => {
@@ -125,7 +126,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     // Se `currentUser` não foi encontrado, pode ser um erro ou um usuário recém-criado.
     // Por segurança, não fazemos nada até que `currentUser` esteja disponível.
     if (!currentUser) {
-        // Você pode adicionar um log aqui para depuração, se necessário.
         return;
     }
 
