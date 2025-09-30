@@ -421,10 +421,13 @@ export default function AdminPage() {
         <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex-1">
+                            <CardTitle>Gerenciamento de Planos e Cotas</CardTitle>
+                             <CardDescription>Defina os preços e limites para cada plano. {!isAdmin && "(Apenas visualização)"}</CardDescription>
+                        </div>
                         <Dialog open={isPlanCreateModalOpen} onOpenChange={setIsPlanCreateModalOpen}>
-                            <DialogTrigger asChild><Button disabled={isSaving || !isAdmin}><PlusCircle className="mr-2 h-4 w-4" />Novo Plano</Button></DialogTrigger>
+                            <DialogTrigger asChild><Button disabled={isSaving || !isAdmin} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Novo Plano</Button></DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Criar Novo Plano</DialogTitle>
@@ -434,7 +437,6 @@ export default function AdminPage() {
                             </DialogContent>
                         </Dialog>
                     </div>
-                     <CardDescription>Defina os preços e limites para cada plano. {!isAdmin && "(Apenas visualização)"}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 md:p-6">
                     <TooltipProvider>
@@ -573,3 +575,5 @@ export default function AdminPage() {
     </div>
   )
 }
+
+    

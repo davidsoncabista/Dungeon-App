@@ -44,12 +44,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                                             key={item.href}
                                             asChild
                                             variant={pathname === item.href ? "default" : "ghost"}
-                                            className="justify-center md:justify-start flex-1"
+                                            className="justify-center md:justify-start flex-1 md:flex-none"
                                         >
                                             <Link href={item.href}>
-                                                <item.icon className="mr-0 md:mr-2 h-4 w-4" />
+                                                <item.icon className="h-5 w-5 md:mr-2" />
                                                 <span className="hidden md:inline">{item.label}</span>
-                                                <span className="inline md:hidden">{item.shortLabel}</span>
+                                                <span className="sr-only md:hidden">{item.shortLabel}</span>
                                             </Link>
                                         </Button>
                                     )
