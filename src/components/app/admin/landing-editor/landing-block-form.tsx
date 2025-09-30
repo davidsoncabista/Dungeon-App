@@ -102,6 +102,16 @@ const defaultHTMLContent = {
 
 const defaultSeparatorContent = {};
 
+const getInitialValues = (defaultValues?: LandingPageBlock): Partial<FormValues> => {
+    if (defaultValues) {
+        return defaultValues as FormValues;
+    }
+    return {
+        type: undefined,
+        title: "",
+    };
+};
+
 
 interface LandingBlockFormProps {
     onSave: (data: Partial<LandingPageBlock>) => void;
@@ -164,7 +174,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues ? (defaultValues as FormValues) : undefined,
+    defaultValues: getInitialValues(defaultValues)
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -380,5 +390,3 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
     </Form>
   )
 }
-
-    
