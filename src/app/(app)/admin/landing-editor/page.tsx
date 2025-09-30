@@ -209,14 +209,16 @@ export default function LandingEditorPage() {
 
   return (
     <div className="grid gap-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-            <LayoutTemplate className="h-8 w-8"/>
-            Editor da Landing Page
-        </h1>
+       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+              <LayoutTemplate className="h-8 w-8"/>
+              Editor da Landing Page
+          </h1>
+        </div>
         <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
             <DialogTrigger asChild>
-                <Button onClick={openCreateModal}><PlusCircle className="mr-2 h-4 w-4"/> Novo Bloco</Button>
+                <Button onClick={openCreateModal} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4"/> Novo Bloco</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
                  <DialogHeader>
@@ -229,7 +231,7 @@ export default function LandingEditorPage() {
                     isSubmitting={isSubmitting}
                     onSave={handleSave}
                     onCancel={() => setIsFormModalOpen(false)}
-                    defaultValues={editingBlock ?? undefined}
+                    defaultValues={editingBlock || undefined}
                 />
             </DialogContent>
         </Dialog>
@@ -276,5 +278,3 @@ export default function LandingEditorPage() {
     </div>
   )
 }
-
-    
