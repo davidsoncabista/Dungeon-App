@@ -89,7 +89,7 @@ export function MonthlyCalendarView({ currentMonth, bookings, rooms, isLoading, 
                             className={cn(
                                 "border-t border-l p-1.5 h-32 md:h-40 flex flex-col relative",
                                 !isSameMonth(day, currentMonth) && "bg-muted/30 text-muted-foreground",
-                                isCurrentDay && "bg-blue-50 dark:bg-sky-900/20",
+                                isCurrentDay && "bg-muted",
                                 isPastDay && "bg-muted/50"
                             )}
                         >
@@ -100,13 +100,12 @@ export function MonthlyCalendarView({ currentMonth, bookings, rooms, isLoading, 
                                 {isWithinBookingLimit && isSameMonth(day, currentMonth) && (
                                     <BookingModal initialDate={day} onOpenChange={setIsModalOpen} allBookings={bookings || []}>
                                         <Button 
-                                            variant={isCurrentDay ? "default" : "ghost"} 
+                                            variant="ghost" 
                                             size="icon" 
-                                            className={cn("h-6 w-6", isCurrentDay && "h-7 w-auto px-2 text-xs" )} 
+                                            className="h-6 w-6" 
                                             disabled={!canBook}
                                         >
-                                            <Plus className={cn("h-4 w-4", isCurrentDay && "mr-1")} />
-                                            {isCurrentDay && "Agendar"}
+                                            <Plus className="h-4 w-4" />
                                             <span className="sr-only">Adicionar Reserva</span>
                                         </Button>
                                     </BookingModal>
