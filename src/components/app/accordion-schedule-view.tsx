@@ -11,7 +11,7 @@ import { Skeleton } from "../ui/skeleton";
 import { EditBookingModal } from "./dashboard/edit-booking-modal";
 import { BookingDetailsModal } from "./dashboard/booking-details-modal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { Lock } from "lucide-react/dist/esm/icons/lock";
+import { Lock } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { useState } from "react";

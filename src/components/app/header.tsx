@@ -1,9 +1,10 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react"
 import type { User as FirebaseUser } from "firebase/auth"
 import type { User as AppUser } from "@/lib/types/user"
 import { useCollectionData } from "react-firebase-hooks/firestore";
@@ -28,6 +29,7 @@ import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { ThemeToggle } from "@/components/theme-toggle"
+import Image from "next/image"
 
 // Navegação principal para membros ativos
 const navItems = [
@@ -57,6 +59,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ user, currentUserData }: AppHeaderProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
@@ -67,11 +70,11 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
   const userCategory = currentUserData?.category || 'Visitante';
 
   // --- Buscas para notificações e votações ---
-  const messagesQuery = user ? query(collection(firestore, 'userMessages'), where('recipientId', '==', user.uid), where('read', '==', false)) : null;
+  const messagesQuery = user && user.uid ? query(collection(firestore, 'userMessages'), where('recipientId', '==', user.uid), where('read', '==', false)) : null;
   const [unreadMessages] = useCollectionData<UserMessage>(messagesQuery);
   const unreadCount = unreadMessages?.length || 0;
 
-  const pollsQuery = user ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
+  const pollsQuery = user && user.uid ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
   const [activePolls] = useCollectionData<Poll>(pollsQuery);
   const isVotingActive = (activePolls?.length || 0) > 0;
 
@@ -128,7 +131,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
           href="/online-schedule"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <Dices className="h-8 w-8 text-primary" />
+          <Image src="/logo.svg" alt="Dungeon App Logo" width={40} height={40} className="rounded-md" />
           <span className="sr-only">Dungeon App</span>
         </Link>
         {allVisibleItems.map((item) => (
@@ -146,7 +149,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
       </nav>
       
       {/* Mobile Menu */}
-      <Sheet>
+      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild>
           <Button
             variant="outline"
@@ -165,14 +168,16 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
             <Link
               href="/online-schedule"
               className="flex items-center gap-2 text-lg font-semibold mb-4"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <Dices className="h-6 w-6 text-primary" />
+              <Image src="/logo.svg" alt="Dungeon App Logo" width={32} height={32} className="rounded-md" />
               <span className="">Dungeon App</span>
             </Link>
             {allVisibleItems.map((item) => (
                 <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                     pathname.startsWith(item.href) && "bg-muted text-primary"

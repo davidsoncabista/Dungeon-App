@@ -62,5 +62,3 @@ export function DeleteBookingDialog({ onConfirm, children, disabled = false, dis
         </AlertDialog>
     )
 }
-
-    

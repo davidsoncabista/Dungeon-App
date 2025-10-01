@@ -366,7 +366,3 @@ export default function StatisticsPage() {
     </div>
   )
 }
-
-    
-
-    

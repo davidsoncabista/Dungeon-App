@@ -1,15 +1,7 @@
 
 "use client"
 
-import { Bold } from "lucide-react/dist/esm/icons/bold";
-import { Italic } from "lucide-react/dist/esm/icons/italic";
-import { Strikethrough } from "lucide-react/dist/esm/icons/strikethrough";
-import { List } from "lucide-react/dist/esm/icons/list";
-import { ListOrdered } from "lucide-react/dist/esm/icons/list-ordered";
-import { Heading2 } from "lucide-react/dist/esm/icons/heading-2";
-import { Quote } from "lucide-react/dist/esm/icons/quote";
-import { Link as LinkIcon } from "lucide-react/dist/esm/icons/link";
-import { Image as ImageIcon } from "lucide-react/dist/esm/icons/image";
+import { Bold, Italic, Strikethrough, List, ListOrdered, Heading2, Quote, Link as LinkIcon, Image as ImageIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";

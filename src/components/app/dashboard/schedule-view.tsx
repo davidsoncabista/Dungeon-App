@@ -9,7 +9,7 @@ import type { Room } from "@/lib/types/room"
 import type { User as AppUser } from "@/lib/types/user";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
-import { Lock } from "lucide-react/dist/esm/icons/lock"
+import { Lock } from "lucide-react"
 import { EditBookingModal } from "./edit-booking-modal"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"

@@ -3,8 +3,7 @@
 
 import * as React from "react";
 import { format, isSameMonth, isToday, startOfWeek, isBefore, startOfDay, addDays } from "date-fns";
-import { Plus } from 'lucide-react/dist/esm/icons/plus';
-import { Lock } from 'lucide-react/dist/esm/icons/lock';
+import { Plus, Lock } from 'lucide-react';
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy } from "firebase/firestore";
 import { app, auth } from "@/lib/firebase";

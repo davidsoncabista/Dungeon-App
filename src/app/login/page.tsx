@@ -1,8 +1,9 @@
+
 "use client"
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, ArrowLeft } from 'lucide-react/dist/esm/icons/loader-2';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/firebase';

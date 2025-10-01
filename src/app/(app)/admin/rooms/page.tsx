@@ -207,7 +207,7 @@ export default function RoomsPage() {
                 <ShieldAlert className="h-8 w-8 text-destructive" />
                 <div>
                     <h4 className="font-bold text-destructive">Erro de Permissão</h4>
-                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados das salas. Verifique suas permissões de acesso. ({errorRooms.message})</p>
+                    <p className="text-sm text-destructive/80">Não foi possível buscar os dados das salas. Verifique suas permissões de acesso. (${errorRooms.message})</p>
                 </div>
             </div>
           </TableCell>
