@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
@@ -50,7 +50,7 @@ const visitorNavItems = [
 const adminNavItems = [
     { href: "/statistics", label: "Estatísticas", icon: BarChart3, roles: ["Revisor", "Editor", "Administrador"] },
     { href: "/users", label: "Usuários", icon: UsersIcon, roles: ["Revisor", "Editor", "Administrador"] },
-    { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador"] },
+    { href: "/admin", label: "Administração", icon: ShieldCheck, roles: ["Administrador", "Editor", "Revisor"] },
 ]
 
 interface AppHeaderProps {
@@ -163,6 +163,9 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
         <SheetContent side="left">
            <SheetHeader>
               <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
+              <SheetDescription className="sr-only">
+                Uma lista de links para navegar pelo aplicativo.
+              </SheetDescription>
            </SheetHeader>
           <nav className="grid gap-6 text-lg font-medium mt-4">
             <Link
