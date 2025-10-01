@@ -33,15 +33,15 @@ import Image from "next/image"
 
 // Navegação principal para membros ativos
 const navItems = [
-  { href: "/online-schedule", label: "Agenda Online", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
-  { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/online-schedule", label: "Agenda", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/my-bookings", label: "Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/billing", label: "Cobranças", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/voting", label: "Votação", icon: Vote, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
 ];
 
 // Navegação visível para usuários 'Visitante' ou 'Pendente'
 const visitorNavItems = [
-    { href: "/my-bookings", label: "Minhas Reservas", icon: BookMarked, roles: ["Visitante"] },
+    { href: "/my-bookings", label: "Reservas", icon: BookMarked, roles: ["Visitante"] },
     { href: "/billing", label: "Matrícula", icon: CreditCard, roles: ["Visitante"] },
     { href: "/profile", label: "Meu Perfil", icon: User, roles: ["Visitante", "Pendente"] },
 ];
