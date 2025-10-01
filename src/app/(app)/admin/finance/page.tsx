@@ -337,5 +337,4 @@ export default function FinanceAdminPage() {
             </Card>
         </div>
     )
-
-    
+}

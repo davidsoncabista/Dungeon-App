@@ -258,5 +258,4 @@ export default function MessagesAdminPage() {
             </Card>
         </div>
     )
-
-    
+}
