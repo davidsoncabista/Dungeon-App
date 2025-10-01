@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, Calendar, AlertCircle, Search, Trash2 } from "lucide-react"
+import { Users, Calendar, AlertCircle, Search, Trash2 } from "lucide-react/dist/esm/icons";
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"

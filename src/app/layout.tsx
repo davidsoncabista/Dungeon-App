@@ -9,6 +9,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
        <head>
         <link rel="preconnect" href="https://adbelm.firebaseapp.com" />
         <link rel="preconnect" href="https://apis.google.com" />
+        <link rel="preconnect" href="https://firestore.googleapis.com" />
       </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

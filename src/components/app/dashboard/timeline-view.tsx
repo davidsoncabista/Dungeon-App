@@ -8,7 +8,7 @@ import type { Room } from "@/lib/types/room";
 import type { User as AppUser } from "@/lib/types/user";
 import { ScheduleView } from "@/components/app/dashboard/schedule-view";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react/dist/esm/icons/plus-circle";
 import { BookingModal } from "@/components/app/dashboard/booking-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,4 +100,3 @@ export function TimelineView({ selectedDate, bookings, rooms, isLoading, current
         </div>
     );
 }
-

@@ -3,7 +3,8 @@
 
 import * as React from "react";
 import { format, isSameMonth, isToday, startOfWeek, isBefore, startOfDay, addDays } from "date-fns";
-import { Plus, Lock } from "lucide-react";
+import { Plus } from 'lucide-react/dist/esm/icons/plus';
+import { Lock } from 'lucide-react/dist/esm/icons/lock';
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy } from "firebase/firestore";
 import { app, auth } from "@/lib/firebase";
@@ -81,6 +82,7 @@ export function MonthlyCalendarView({ currentMonth, bookings, rooms, isLoading, 
                     const dayBookings = bookingsByDay.get(format(day, 'yyyy-MM-dd')) || [];
                     const isPastDay = isBefore(day, today);
                     const isWithinBookingLimit = !isPastDay && isBefore(day, bookingLimitDate);
+                    const isCurrentDay = isToday(day);
                     
                     return (
                         <div 
@@ -88,18 +90,24 @@ export function MonthlyCalendarView({ currentMonth, bookings, rooms, isLoading, 
                             className={cn(
                                 "border-t border-l p-1.5 h-32 md:h-40 flex flex-col relative",
                                 !isSameMonth(day, currentMonth) && "bg-muted/30 text-muted-foreground",
-                                isToday(day) && "bg-muted",
+                                isCurrentDay && "bg-blue-50 dark:bg-sky-900/20",
                                 isPastDay && "bg-muted/50"
                             )}
                         >
                             <div className="flex justify-between items-center">
-                                <span className={cn("font-semibold text-xs md:text-sm", isToday(day) && "text-primary font-bold")}>
+                                <span className={cn("font-semibold text-xs md:text-sm", isCurrentDay && "text-primary font-bold")}>
                                     {format(day, 'd')}
                                 </span>
                                 {isWithinBookingLimit && isSameMonth(day, currentMonth) && (
                                     <BookingModal initialDate={day} onOpenChange={setIsModalOpen} allBookings={bookings || []}>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!canBook}>
-                                            <Plus className="h-4 w-4" />
+                                        <Button 
+                                            variant={isCurrentDay ? "default" : "ghost"} 
+                                            size="icon" 
+                                            className={cn("h-6 w-6", isCurrentDay && "h-7 w-auto px-2 text-xs" )} 
+                                            disabled={!canBook}
+                                        >
+                                            <Plus className={cn("h-4 w-4", isCurrentDay && "mr-1")} />
+                                            {isCurrentDay && "Agendar"}
                                             <span className="sr-only">Adicionar Reserva</span>
                                         </Button>
                                     </BookingModal>

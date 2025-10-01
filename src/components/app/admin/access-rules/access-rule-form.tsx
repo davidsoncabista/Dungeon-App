@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input"
 import { DialogFooter } from "@/components/ui/dialog"
 import type { AccessRule } from "@/lib/types/accessRule"
 import { Textarea } from "@/components/ui/textarea"
-import { PlusCircle, Trash2 } from "lucide-react"
+import { PlusCircle } from "lucide-react/dist/esm/icons/plus-circle"
+import { Trash2 } from "lucide-react/dist/esm/icons/trash-2"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const appRoutes = [

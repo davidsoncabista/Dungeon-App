@@ -9,7 +9,7 @@ import type { Booking } from "@/lib/types/booking"
 import { auth, app } from "@/lib/firebase"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { Clock, Users, User, Info, Pencil, CalendarPlus } from "lucide-react"
+import { Clock, Users, User, Info, Pencil, CalendarPlus } from "lucide-react/dist/esm/icons";
 import { EditBookingModal } from "./edit-booking-modal"
 import { getFirestore, collection, query, where, doc } from "firebase/firestore"
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
