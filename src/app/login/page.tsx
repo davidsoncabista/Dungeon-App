@@ -89,7 +89,7 @@ export default function LoginPage() {
                 alt="Logo da Associação Dungeon Belém"
                 className="rounded-md"
                 priority
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </div>
             <CardTitle className="font-headline text-4xl">Dungeon App</CardTitle>
