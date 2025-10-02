@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -5,20 +6,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import type { Booking } from "@/lib/types/booking"
 import { BookingEditForm } from "@/components/app/booking-edit-form"
 import { useToast } from "@/hooks/use-toast"
-import { getFirestore, doc, updateDoc, deleteDoc } from "firebase/firestore"
-import { app } from "@/lib/firebase"
-import { useDocumentData } from "react-firebase-hooks/firestore"
+import { getFirestore, doc, updateDoc, deleteDoc, collection, query, where } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore"
+import { app, auth } from "@/lib/firebase"
 import type { Room } from "@/lib/types/room"
 import { differenceInHours, parseISO } from "date-fns"
-import { DeleteBookingDialog } from "./delete-booking-dialog"
+import { createAuditLog } from "@/lib/auditLogger"
+import type { User } from "@/lib/types/user"
 
 // --- Componente de Edição de Reserva (Modal) ---
 export const EditBookingModal = ({ booking, onOpenChange, children }: { booking: Booking; onOpenChange: (open: boolean) => void; children: React.ReactNode }) => {
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const firestore = getFirestore(app);
+    const [user] = useAuthState(auth);
+
     const roomRef = doc(firestore, 'rooms', booking.roomId);
     const [room] = useDocumentData<Room>(roomRef, { idField: 'id' });
+
+    const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+    const [currentUserData] = useCollectionData<User>(userQuery);
+    const currentUser = currentUserData?.[0];
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
@@ -26,9 +35,17 @@ export const EditBookingModal = ({ booking, onOpenChange, children }: { booking:
     };
 
     const handleSuccess = async (data: Partial<Omit<Booking, 'id'>>) => {
+        if (!currentUser) {
+            toast({ title: "Erro!", description: "Usuário não encontrado.", variant: "destructive" });
+            return;
+        }
+
         const bookingRef = doc(firestore, 'bookings', booking.id);
         try {
             await updateDoc(bookingRef, data);
+            
+            // Aqui poderíamos adicionar um log de 'UPDATE_BOOKING' se necessário
+            
             toast({
                 title: "Reserva Atualizada!",
                 description: `Sua reserva para a ${room?.name} foi modificada.`,
@@ -44,8 +61,20 @@ export const EditBookingModal = ({ booking, onOpenChange, children }: { booking:
     };
     
     const handleDelete = async () => {
+        if (!currentUser) {
+            toast({ title: "Erro!", description: "Usuário não encontrado.", variant: "destructive" });
+            return;
+        }
+
         const bookingRef = doc(firestore, 'bookings', booking.id);
         try {
+            // Log de Auditoria ANTES de deletar
+            await createAuditLog(currentUser, 'CANCEL_BOOKING', {
+                bookingId: booking.id,
+                title: booking.title,
+                date: booking.date,
+            });
+
             await deleteDoc(bookingRef);
             toast({
                 title: "Reserva Cancelada!",

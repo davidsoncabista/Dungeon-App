@@ -6,14 +6,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import type { Booking } from "@/lib/types/booking"
 import { BookingForm } from "@/components/app/booking-form"
 import { useToast } from "@/hooks/use-toast"
-import { getFirestore, collection, doc, setDoc } from "firebase/firestore"
-import { app } from "@/lib/firebase"
+import { getFirestore, collection, doc, setDoc, query, where } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { useCollectionData } from "react-firebase-hooks/firestore"
+import { app, auth } from "@/lib/firebase"
+import { createAuditLog } from "@/lib/auditLogger"
+import type { User } from "@/lib/types/user"
+
 
 // --- Componente de Reserva (Modal) ---
 export const BookingModal = ({ initialDate, onOpenChange, allBookings, children }: { initialDate: Date, onOpenChange: (open: boolean) => void, allBookings: Booking[], children: React.ReactNode }) => {
     const { toast } = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const firestore = getFirestore(app);
+    const [user] = useAuthState(auth);
+
+    const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+    const [currentUserData] = useCollectionData<User>(userQuery);
+    const currentUser = currentUserData?.[0];
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
@@ -21,6 +31,11 @@ export const BookingModal = ({ initialDate, onOpenChange, allBookings, children 
     }
     
     const handleSuccess = async (data: Omit<Booking, 'id' | 'status'>) => {
+        if (!currentUser) {
+            toast({ title: "Erro!", description: "Usuário não encontrado.", variant: "destructive" });
+            return;
+        }
+
         const bookingsRef = collection(firestore, "bookings");
         const newBookingRef = doc(bookingsRef);
         
@@ -32,6 +47,14 @@ export const BookingModal = ({ initialDate, onOpenChange, allBookings, children 
 
         try {
             await setDoc(newBookingRef, newBooking);
+            
+            // Log de Auditoria
+            await createAuditLog(currentUser, 'CREATE_BOOKING', { 
+                bookingId: newBooking.id, 
+                date: newBooking.date,
+                title: newBooking.title
+            });
+            
             handleOpenChange(false);
             toast({
                 title: "Reserva Confirmada!",
