@@ -1,4 +1,3 @@
-
 # Daily - Plano de Execução
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
@@ -21,14 +20,14 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [x] **Tarefa 2.2 (Log de Ações de Reserva):**
   - [x] No `booking-modal.tsx` (criação), após o `addDoc` da reserva, chamar `createAuditLog` com a ação `CREATE_BOOKING`.
   - [x] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
-- [ ] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
-  - [ ] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
-- [ ] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
-  - [ ] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
+- [x] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
+  - [x] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
+- [x] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
+  - [x] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
 
 #### História 3: Visualizador de Logs
-- [ ] **Tarefa 3.1 (Criação da Página):**
-  - [ ] Criar a nova página `/admin/audit-log/page.tsx`.
+- [x] **Tarefa 3.1 (Criação da Página):**
+  - [x] Criar a nova página `/admin/audit-log/page.tsx`.
 - [ ] **Tarefa 3.2 (Construção do Componente da Tabela):**
   - [ ] Dentro da nova página, implementar uma tabela que busca e exibe os dados da coleção `auditLogs`, ordenados por data.
 - [ ] **Tarefa 3.3 (Implementação de Filtros):**

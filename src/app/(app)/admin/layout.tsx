@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, DollarSign, MessageSquare, Eye, Users, BarChart3, DoorOpen, LayoutTemplate } from "lucide-react";
+import { ShieldCheck, DollarSign, MessageSquare, Eye, Users, BarChart3, DoorOpen, LayoutTemplate, History } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { auth, app } from "@/lib/firebase";
@@ -26,10 +26,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     const sideNavItems = [
       { href: "/admin/system", label: "Sistema", shortLabel: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
       { href: "/admin/finance", label: "Finanças", shortLabel: "Finanças", icon: DollarSign, roles: ["Administrador"] },
-      { href: "/admin/messages", label: "Mensagens", shortLabel: "Msg", icon: MessageSquare, roles: ["Administrador"] },
+      { href: "/admin/messages", label: "Mensagens", shortLabel: "Msg", icon: MessageSquare, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/access-rules", label: "ACL", shortLabel: "ACL", icon: Eye, roles: ["Administrador"] },
       { href: "/admin/landing-editor", label: "Editor Landing", shortLabel: "Landing", icon: LayoutTemplate, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/rooms", label: "Salas", shortLabel: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
+      { href: "/admin/audit-log", label: "Auditoria", shortLabel: "Log", icon: History, roles: ["Administrador", "Editor", "Revisor"] },
     ];
     
     return (
