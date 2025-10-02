@@ -3,10 +3,14 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useCollectionData } from "react-firebase-hooks/firestore"
-import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore"
-import { app } from "@/lib/firebase"
+import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc, writeBatch, where } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { app, auth } from "@/lib/firebase"
 import type { LandingPageBlock } from "@/lib/types/landing-page-block"
+import type { User } from "@/lib/types/user"
 import { useToast } from "@/hooks/use-toast"
+import { createAuditLog } from "@/lib/auditLogger"
+
 
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -69,6 +73,7 @@ function SortableBlockItem({ block, onEdit, onDelete }: { block: LandingPageBloc
 export default function LandingEditorPage() {
   const { toast } = useToast();
   const firestore = getFirestore(app);
+  const [user] = useAuthState(auth);
 
   // --- Data Fetching ---
   const [blocksData, loadingBlocks, errorBlocks] = useCollectionData<LandingPageBlock>(
@@ -77,6 +82,10 @@ export default function LandingEditorPage() {
   );
 
   const [activeBlocks, setActiveBlocks] = useState<LandingPageBlock[]>([]);
+  
+  const userQuery = user ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null;
+  const [currentUserData, loadingUser] = useCollectionData<User>(userQuery);
+  const currentUser = currentUserData?.[0];
 
   useEffect(() => {
     if (blocksData) {
@@ -93,11 +102,13 @@ export default function LandingEditorPage() {
 
   // --- Handlers ---
   const handleSave = async (data: any) => {
+    if (!currentUser) return;
     setIsSubmitting(true);
     try {
         if (editingBlock) {
             const blockRef = doc(firestore, "landingPageBlocks", editingBlock.id);
             await updateDoc(blockRef, data);
+            await createAuditLog(currentUser, 'UPDATE_LANDING_BLOCK', { blockId: editingBlock.id, title: data.title, type: data.type });
             toast({ title: "Sucesso!", description: `Bloco "${data.title}" atualizado.` });
         } else {
             const newBlockRef = doc(collection(firestore, "landingPageBlocks"));
@@ -108,6 +119,7 @@ export default function LandingEditorPage() {
                 enabled: true,
             };
             await setDoc(newBlockRef, newBlock);
+            await createAuditLog(currentUser, 'CREATE_LANDING_BLOCK', { blockId: newBlock.id, title: newBlock.title, type: newBlock.type });
             toast({ title: "Sucesso!", description: `Bloco "${data.title}" criado.` });
         }
         setIsFormModalOpen(false);
@@ -121,9 +133,10 @@ export default function LandingEditorPage() {
   };
 
   const handleDelete = async () => {
-    if (!deletingBlock) return;
+    if (!deletingBlock || !currentUser) return;
     setIsSubmitting(true);
     try {
+      await createAuditLog(currentUser, 'DELETE_LANDING_BLOCK', { blockId: deletingBlock.id, title: deletingBlock.title });
       await deleteDoc(doc(firestore, "landingPageBlocks", deletingBlock.id));
       toast({ title: "Bloco Excluído!", description: "O bloco foi removido com sucesso." });
       setDeletingBlock(null);
@@ -147,6 +160,7 @@ export default function LandingEditorPage() {
 
   // --- Drag and Drop Handler ---
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (!currentUser) return;
     const { active, over } = event;
     if (active.id !== over?.id) {
       const oldIndex = activeBlocks.findIndex((b) => b.id === active.id);
@@ -165,6 +179,11 @@ export default function LandingEditorPage() {
 
       try {
         await batch.commit();
+        await createAuditLog(currentUser, 'REORDER_LANDING_BLOCKS', {
+            movedBlockId: active.id,
+            fromIndex: oldIndex,
+            toIndex: newIndex,
+        });
         toast({ title: "Layout Atualizado", description: "A ordem dos blocos foi salva." });
       } catch (error: any) {
         console.error("Erro ao reordenar blocos:", error);
@@ -278,3 +297,5 @@ export default function LandingEditorPage() {
     </div>
   )
 }
+
+    
