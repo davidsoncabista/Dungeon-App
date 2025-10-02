@@ -2,7 +2,12 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Foco Atual (Sprint 11 - Revisada)
+## Foco Atual (Sprint 12 - Próximos Passos)
+...
+
+---
+
+## Concluído: Sprint 11
 
 ### Foco: Sistema de Auditoria Pragmático
 **Objetivo:** Integrar a criação de logs diretamente nas funções e ações existentes do sistema, aproveitando a estrutura de código atual para um desenvolvimento mais rápido e simples.
@@ -30,10 +35,8 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
   - [x] Criar a nova página `/admin/audit-log/page.tsx`.
 - [x] **Tarefa 3.2 (Construção do Componente da Tabela):**
   - [x] Dentro da nova página, implementar uma tabela que busca e exibe os dados da coleção `auditLogs`, ordenados por data.
-- [ ] **Tarefa 3.3 (Implementação de Filtros):**
-  - [ ] Adicionar campos de filtro para pesquisar por e-mail do usuário, tipo de ação e um seletor de intervalo de datas.
-
----
+- [x] **Tarefa 3.3 (Implementação de Filtros):**
+  - [x] Adicionar campos de filtro para pesquisar por e-mail do usuário, tipo de ação e um seletor de intervalo de datas.
 
 ## Concluído: Sprint 10
 

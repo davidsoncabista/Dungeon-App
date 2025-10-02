@@ -39,10 +39,6 @@ function LogRow({ log }: { log: AuditLog }) {
             <TableCell>
                 <Badge variant="secondary">{log.action}</Badge>
             </TableCell>
-            <TableCell className="hidden lg:table-cell">
-                 <div className="truncate max-w-xs">{log.target?.displayName}</div>
-                 <div className="text-xs text-muted-foreground truncate max-w-xs">{log.target?.displayId}</div>
-            </TableCell>
             <TableCell>
                  <Popover>
                     <PopoverTrigger asChild>
@@ -87,8 +83,7 @@ export default function AuditLogPage() {
         return logs.filter(log =>
             log.actor.displayName?.toLowerCase().includes(lowercasedTerm) ||
             log.actor.email?.toLowerCase().includes(lowercasedTerm) ||
-            log.action.toLowerCase().includes(lowercasedTerm) ||
-            log.target?.displayName?.toLowerCase().includes(lowercasedTerm)
+            log.action.toLowerCase().includes(lowercasedTerm)
         );
     }, [logs, searchTerm]);
 
@@ -99,7 +94,6 @@ export default function AuditLogPage() {
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
             ));
@@ -108,7 +102,7 @@ export default function AuditLogPage() {
         if (errorLogs) {
             return (
                 <TableRow>
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={4}>
                          <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                             <ShieldAlert className="h-8 w-8 text-destructive" />
                             <div>
@@ -124,7 +118,7 @@ export default function AuditLogPage() {
         if (!filteredLogs || filteredLogs.length === 0) {
             return (
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                         {searchTerm ? "Nenhum registro encontrado." : "Nenhum registro de auditoria encontrado."}
                     </TableCell>
                 </TableRow>
@@ -153,7 +147,7 @@ export default function AuditLogPage() {
                     <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Buscar por ator, ação ou alvo..."
+                            placeholder="Buscar por ator ou ação..."
                             className="pl-9"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -166,7 +160,6 @@ export default function AuditLogPage() {
                                 <TableHead className="hidden md:table-cell">Data</TableHead>
                                 <TableHead>Ator</TableHead>
                                 <TableHead>Ação</TableHead>
-                                <TableHead className="hidden lg:table-cell">Alvo</TableHead>
                                 <TableHead>Detalhes</TableHead>
                             </TableRow>
                         </TableHeader>
