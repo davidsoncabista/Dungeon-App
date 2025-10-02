@@ -24,7 +24,7 @@ export const createAuditLog = async (actor: User, action: string, details: objec
         uid: actor.uid,
         displayName: actor.name,
         email: actor.email,
-        role: actor.role || 'Membro', // Garante um valor padrão
+        role: actor.role,
       },
       action,
       details,
