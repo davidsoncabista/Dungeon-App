@@ -2,11 +2,42 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Foco Atual (Sprint 10)
+## Foco Atual (Sprint 11 - Revisada)
+
+### Foco: Sistema de Auditoria Pragmático
+**Objetivo:** Integrar a criação de logs diretamente nas funções e ações existentes do sistema, aproveitando a estrutura de código atual para um desenvolvimento mais rápido e simples.
+
+#### História 1: Preparação do Ambiente
+- [ ] **Tarefa 1.1 (Firestore):**
+  - [ ] Simplificar as `firestore.rules`: Permitir que qualquer usuário autenticado (`request.auth != null`) possa `create` documentos em `auditLogs`, mas apenas `Administrador`, `Editor` e `Revisor` possam `read`.
+- [ ] **Tarefa 1.2 (Helper no Frontend):**
+  - [ ] Criar o arquivo `src/lib/auditLogger.ts`.
+  - [ ] Implementar a função `createAuditLog(actor: User, action: string, details: object = {})` para registrar logs no Firestore a partir do cliente.
+
+#### História 2: Integrar o Log nas Ações
+- [ ] **Tarefa 2.1 (Log de Login):**
+  - [ ] Na lógica de `onAuthStateChanged`, após a verificação bem-sucedida do usuário, chamar `createAuditLog` com a ação `USER_LOGIN`.
+- [ ] **Tarefa 2.2 (Log de Ações de Reserva):**
+  - [ ] No `booking-modal.tsx` (criação), após o `addDoc` da reserva, chamar `createAuditLog` com a ação `CREATE_BOOKING`.
+  - [ ] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
+- [ ] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
+  - [ ] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
+- [ ] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
+  - [ ] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
+
+#### História 3: Visualizador de Logs
+- [ ] **Tarefa 3.1 (Criação da Página):**
+  - [ ] Criar a nova página `/admin/audit-log/page.tsx`.
+- [ ] **Tarefa 3.2 (Construção do Componente da Tabela):**
+  - [ ] Dentro da nova página, implementar uma tabela que busca e exibe os dados da coleção `auditLogs`, ordenados por data.
+- [ ] **Tarefa 3.3 (Implementação de Filtros):**
+  - [ ] Adicionar campos de filtro para pesquisar por e-mail do usuário, tipo de ação e um seletor de intervalo de datas.
+
+---
+
+## Concluído: Sprint 10
 
 ### Foco: Construtor de Conteúdo Dinâmico para a Landing Page
-
-Evoluir a ideia de uma simples edição de textos para a construção de um sistema de gerenciamento de conteúdo modular (CMS) para a landing page. O objetivo é transformar seções estáticas (como "Features") em áreas dinâmicas compostas por "blocos de conteúdo" que podem ser criados, editados e reordenados pelo administrador.
 
 - [x] **Pilar 1: Arquitetura de Conteúdo no Firestore**
   - [x] Criar a coleção `landingPageBlocks` para armazenar os componentes da página.
@@ -147,3 +178,4 @@ Evoluir a ideia de uma simples edição de textos para a construção de um sist
 - [x] **Refatoração da Agenda**: Timeline de 24h responsiva e com lógica "Corujão".
 - [x] **Extrato de Reservas**: Implementada a lista de reservas com filtros avançados e ordenação.
 - [x] **Ações de Edição**: Adicionado o modal de edição de reservas na lista, com controle de permissão.
+
