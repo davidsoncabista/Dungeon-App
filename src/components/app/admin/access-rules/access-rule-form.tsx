@@ -2,7 +2,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,13 +16,12 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { DialogFooter } from "@/components/ui/dialog"
-import type { AccessRule } from "@/lib/types/accessRule"
+import type { AccessRule, AccessPermission } from "@/lib/types/accessRule"
 import { Textarea } from "@/components/ui/textarea"
-import { PlusCircle } from "lucide-react"
-import { Trash2 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { cn } from "@/lib/utils"
 
 const appRoutes = [
     { label: 'Dashboard', value: '/online-schedule' },
@@ -45,11 +44,10 @@ const appRoutes = [
     { label: 'Admin: Log de Auditoria', value: '/admin/audit-log'}
 ];
 
-
 const AccessRuleFormSchema = z.object({
   id: z.string().min(3, "O ID deve ter pelo menos 3 caracteres.").regex(/^[A-Z][a-zA-Z]*$/, "O ID deve começar com letra maiúscula e conter apenas letras (PascalCase)."),
   description: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres."),
-  pages: z.array(z.string()).min(1, "É necessário selecionar pelo menos uma página."),
+  pages: z.record(z.enum(["editor", "revisor"])).min(1, "É necessário conceder acesso a pelo menos uma página."),
 });
 
 type FormValues = z.infer<typeof AccessRuleFormSchema>;
@@ -67,13 +65,29 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
     defaultValues: {
       id: defaultValues?.id || "",
       description: defaultValues?.description || "",
-      pages: defaultValues?.pages || [],
+      pages: defaultValues?.pages || {},
     },
   });
 
   const onSubmit = (data: FormValues) => {
     onSave(data);
   };
+  
+  const handlePageAccessChange = (pageValue: string, checked: boolean | 'indeterminate') => {
+      const currentPages = form.getValues('pages');
+      if (checked) {
+          form.setValue(`pages.${pageValue}`, 'revisor', { shouldValidate: true });
+      } else {
+          const { [pageValue]: _, ...newPages } = currentPages;
+          form.setValue('pages', newPages, { shouldValidate: true });
+      }
+  };
+  
+  const handlePermissionChange = (pageValue: string, permission: AccessPermission) => {
+      form.setValue(`pages.${pageValue}`, permission, { shouldValidate: true });
+  };
+  
+  const watchedPages = form.watch('pages');
 
   return (
     <Form {...form}>
@@ -106,55 +120,45 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="pages"
-          render={() => (
-            <FormItem>
-                <FormLabel>Páginas Acessíveis</FormLabel>
-                <ScrollArea className="h-48 w-full rounded-md border p-4">
-                    {appRoutes.map((route) =>
-                        route.type === 'separator' ? (
-                            <div key={route.label} className="my-2 border-t pt-2 text-sm font-semibold text-muted-foreground">{route.label}</div>
-                        ) : (
-                            <FormField
-                                key={route.value}
-                                control={form.control}
-                                name="pages"
-                                render={({ field }) => {
-                                return (
-                                    <FormItem
-                                    key={route.value}
-                                    className="flex flex-row items-center space-x-3 space-y-0 py-1"
-                                    >
-                                    <FormControl>
-                                        <Checkbox
-                                        checked={field.value?.includes(route.value)}
-                                        onCheckedChange={(checked) => {
-                                            return checked
-                                            ? field.onChange([...(field.value || []), route.value])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                (value) => value !== route.value
-                                                )
-                                            )
-                                        }}
-                                        />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                        {route.label}
-                                    </FormLabel>
+        <FormItem>
+            <FormLabel>Permissões de Página</FormLabel>
+            <FormDescription>Marque as páginas que este nível pode acessar e defina a permissão.</FormDescription>
+            <ScrollArea className="h-48 w-full rounded-md border p-4">
+                {appRoutes.map((route) =>
+                    route.type === 'separator' ? (
+                        <div key={route.label} className="my-2 border-t pt-2 text-sm font-semibold text-muted-foreground">{route.label}</div>
+                    ) : (
+                        <div key={route.value} className={cn("flex flex-col space-y-2 rounded-lg p-2 transition-colors", watchedPages[route.value] ? 'bg-muted' : '')}>
+                            <div className="flex items-center space-x-3">
+                                <Checkbox
+                                    id={route.value}
+                                    checked={!!watchedPages[route.value]}
+                                    onCheckedChange={(checked) => handlePageAccessChange(route.value, checked)}
+                                />
+                                <label htmlFor={route.value} className="font-medium text-sm flex-1 cursor-pointer">{route.label}</label>
+                            </div>
+                            {watchedPages[route.value] && (
+                                <RadioGroup
+                                    value={watchedPages[route.value]}
+                                    onValueChange={(permission) => handlePermissionChange(route.value, permission as AccessPermission)}
+                                    className="flex items-center space-x-4 pl-8"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="revisor" id={`${route.value}-revisor`} /></FormControl>
+                                        <FormLabel htmlFor={`${route.value}-revisor`} className="font-normal cursor-pointer">Apenas Ver</FormLabel>
                                     </FormItem>
-                                )
-                                }}
-                            />
-                        )
-                    )}
-                </ScrollArea>
-                <FormMessage />
-            </FormItem>
-          )}
-        />
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="editor" id={`${route.value}-editor`} /></FormControl>
+                                        <FormLabel htmlFor={`${route.value}-editor`} className="font-normal cursor-pointer">Pode Editar</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
+                            )}
+                        </div>
+                    )
+                )}
+            </ScrollArea>
+            <FormMessage>{form.formState.errors.pages?.message}</FormMessage>
+        </FormItem>
         
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>

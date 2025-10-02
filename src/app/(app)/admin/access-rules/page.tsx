@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Eye, Lock } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Trash2, Pencil, ShieldAlert, Eye, Lock, Edit, BookOpen } from "lucide-react"
 import { useState, useMemo } from "react"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, orderBy, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"
@@ -127,7 +127,12 @@ export default function AccessRulesPage() {
                 <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{rule.id}</h4>
                 <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
                 <div className="flex flex-wrap gap-2">
-                    {rule.pages.map(page => (<Badge key={page} variant="secondary">{page}</Badge>))}
+                    {Object.entries(rule.pages).map(([page, permission]) => (
+                        <Badge key={page} variant={permission === 'editor' ? 'default' : 'secondary'} className="capitalize">
+                            {permission === 'editor' ? <Edit className="h-3 w-3 mr-1.5"/> : <BookOpen className="h-3 w-3 mr-1.5"/>}
+                            {page.split('/').pop()}
+                        </Badge>
+                    ))}
                 </div>
             </div>
              <DropdownMenu>
@@ -164,7 +169,7 @@ export default function AccessRulesPage() {
             <DialogTrigger asChild>
                 <Button onClick={openCreateModal} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Nova Regra</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{editingRule ? 'Editar Regra' : 'Criar Nova Regra'}</DialogTitle>
                     <DialogDescription>
