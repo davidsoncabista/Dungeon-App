@@ -6,7 +6,7 @@ import { useCollectionData } from "react-firebase-hooks/firestore";
 import { getFirestore, collection, query, orderBy, where, doc, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { app } from "@/lib/firebase";
+import { app, auth } from "@/lib/firebase";
 import type { Transaction, TransactionStatus, TransactionType } from "@/lib/types/transaction";
 import type { User } from "@/lib/types/user";
 
@@ -23,6 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 import { AddTransactionDialog } from "@/components/app/admin/finance/add-transaction-dialog";
 import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
 import { cn } from "@/lib/utils";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { createAuditLog } from "@/lib/auditLogger";
 
 type SortKey = 'createdAt' | 'amount';
 type StatusFilter = TransactionStatus | 'all';
@@ -108,6 +110,7 @@ export default function FinanceAdminPage() {
     const firestore = getFirestore(app);
     const { toast } = useToast();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [user] = useAuthState(auth);
 
     // --- State for Sorting and Filtering ---
     const [sortKey, setSortKey] = useState<SortKey>('createdAt');
@@ -124,6 +127,9 @@ export default function FinanceAdminPage() {
     );
     const usersRef = collection(firestore, 'users');
     const [users, loadingUsers] = useCollectionData<User>(usersRef, { idField: 'id' });
+    const userQuery = user ? query(usersRef, where('uid', '==', user.uid)) : null;
+    const [currentUserData, loadingCurrentUserData] = useCollectionData<User>(userQuery);
+    const currentUser = currentUserData?.[0];
 
     // --- Memoized Sorting and Filtering ---
     const filteredAndSortedTransactions = useMemo(() => {
@@ -171,6 +177,7 @@ export default function FinanceAdminPage() {
 
 
     const handleCreateTransaction = async (data: any) => {
+        if (!currentUser) return;
         try {
             const newTransactionRef = doc(collection(firestore, "transactions"));
             const newTransactionId = newTransactionRef.id;
@@ -181,6 +188,14 @@ export default function FinanceAdminPage() {
                 uid: newTransactionId,
                 createdAt: serverTimestamp(),
             });
+
+            // Log de Auditoria
+            await createAuditLog(currentUser, 'CREATE_MANUAL_TRANSACTION', {
+                transactionId: newTransactionId,
+                recipientName: data.userName,
+                amount: data.amount,
+            });
+            
             toast({
                 title: "Cobrança Criada!",
                 description: `Uma nova cobrança foi gerada para ${data.userName}.`
@@ -197,7 +212,7 @@ export default function FinanceAdminPage() {
     };
     
     const renderContent = () => {
-        if (loadingTransactions) {
+        if (loadingTransactions || loadingUsers || loadingCurrentUserData) {
             return Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                     <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
@@ -338,3 +353,5 @@ export default function FinanceAdminPage() {
         </div>
     )
 }
+
+    

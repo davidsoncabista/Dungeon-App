@@ -197,6 +197,28 @@ export const handleBookingWrite = functions
 
         console.log(`[Charges] Cobrança de R$ ${chargeAmount} gerada/atualizada para o usuário ${organizerId}.`);
 
+        // Log de Auditoria
+        const adminUsersSnapshot = await db.collection('users').where('role', '==', 'Administrador').limit(1).get();
+        const adminActor = adminUsersSnapshot.docs[0]?.data();
+        
+        await db.collection('auditLogs').add({
+            actor: {
+                uid: adminActor?.uid || 'system',
+                displayName: adminActor?.name || 'Sistema',
+                email: adminActor?.email || 'system',
+                role: adminActor?.role || 'System',
+            },
+            action: 'CREATE_GUEST_CHARGE',
+            details: {
+                transactionId: transactionId,
+                recipientName: userData.name,
+                amount: chargeAmount,
+                reason: `Taxa de ${guestsToChargeNow} convidado(s) extra(s) na reserva "${newData.title}"`,
+            },
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+
     } catch (error) {
         console.error(`[Charges] Erro ao gerar cobrança para o usuário ${organizerId}:`, error);
     }
@@ -813,4 +835,5 @@ export const sendBirthdayWishes = functions
     }
 });
 
+    
     
