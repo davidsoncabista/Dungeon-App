@@ -8,11 +8,11 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 **Objetivo:** Integrar a criação de logs diretamente nas funções e ações existentes do sistema, aproveitando a estrutura de código atual para um desenvolvimento mais rápido e simples.
 
 #### História 1: Preparação do Ambiente
-- [ ] **Tarefa 1.1 (Firestore):**
-  - [ ] Simplificar as `firestore.rules`: Permitir que qualquer usuário autenticado (`request.auth != null`) possa `create` documentos em `auditLogs`, mas apenas `Administrador`, `Editor` e `Revisor` possam `read`.
-- [ ] **Tarefa 1.2 (Helper no Frontend):**
-  - [ ] Criar o arquivo `src/lib/auditLogger.ts`.
-  - [ ] Implementar a função `createAuditLog(actor: User, action: string, details: object = {})` para registrar logs no Firestore a partir do cliente.
+- [x] **Tarefa 1.1 (Firestore):**
+  - [x] Simplificar as `firestore.rules`: Permitir que qualquer usuário autenticado (`request.auth != null`) possa `create` documentos em `auditLogs`, mas apenas `Administrador`, `Editor` e `Revisor` possam `read`.
+- [x] **Tarefa 1.2 (Helper no Frontend):**
+  - [x] Criar o arquivo `src/lib/auditLogger.ts`.
+  - [x] Implementar a função `createAuditLog(actor: User, action: string, details: object = {})` para registrar logs no Firestore a partir do cliente.
 
 #### História 2: Integrar o Log nas Ações
 - [ ] **Tarefa 2.1 (Log de Login):**
@@ -178,4 +178,5 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [x] **Refatoração da Agenda**: Timeline de 24h responsiva e com lógica "Corujão".
 - [x] **Extrato de Reservas**: Implementada a lista de reservas com filtros avançados e ordenação.
 - [x] **Ações de Edição**: Adicionado o modal de edição de reservas na lista, com controle de permissão.
+
 
