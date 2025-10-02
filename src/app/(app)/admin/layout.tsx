@@ -24,12 +24,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     // Itens que aparecem no menu lateral da área /admin
     const sideNavItems = [
-      { href: "/admin/system", label: "Sistema", shortLabel: "Sistema", icon: ShieldCheck, roles: ["Administrador"] },
-      { href: "/admin/finance", label: "Finanças", shortLabel: "Finanças", icon: DollarSign, roles: ["Administrador"] },
+      { href: "/admin/system", label: "Sistema", shortLabel: "Sistema", icon: ShieldCheck, roles: ["Administrador", "Editor", "Revisor"] },
+      { href: "/admin/finance", label: "Finanças", shortLabel: "Finanças", icon: DollarSign, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/messages", label: "Mensagens", shortLabel: "Msg", icon: MessageSquare, roles: ["Administrador", "Editor", "Revisor"] },
-      { href: "/admin/access-rules", label: "ACL", shortLabel: "ACL", icon: Eye, roles: ["Administrador"] },
+      { href: "/admin/access-rules", label: "ACL", shortLabel: "ACL", icon: Eye, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/landing-editor", label: "Editor Landing", shortLabel: "Landing", icon: LayoutTemplate, roles: ["Administrador", "Editor", "Revisor"] },
-      { href: "/admin/rooms", label: "Salas", shortLabel: "Salas", icon: DoorOpen, roles: ["Editor", "Administrador"] },
+      { href: "/admin/rooms", label: "Salas", shortLabel: "Salas", icon: DoorOpen, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/audit-log", label: "Auditoria", shortLabel: "Log", icon: History, roles: ["Administrador", "Editor", "Revisor"] },
     ];
     
