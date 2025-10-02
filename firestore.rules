@@ -3,112 +3,101 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- FUNÇÕES AUXILIARES GLOBAIS ---
-    function isSignedIn() {
+    function isUserAuthenticated() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-    
-    function getRequestingUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return request.auth.uid == userId;
     }
 
-    // --- FUNÇÕES DE VERIFICAÇÃO DE PAPEL (ROLE) ---
     function isAdmin() {
-      return isSignedIn() && getRequestingUserData().role == 'Administrador';
+      return request.auth.token.role == 'Administrador';
     }
 
-    function isEditorOrAdmin() {
-      return isSignedIn() && getRequestingUserData().role in ['Administrador', 'Editor'];
-    }
-
-    function isRevisorOrHigher() {
-      return isSignedIn() && getRequestingUserData().role in ['Administrador', 'Editor', 'Revisor'];
+    function isEditor() {
+      return request.auth.token.role == 'Editor' || isAdmin();
     }
     
-    // --- FUNÇÃO-CHAVE DE ACESSO À APLICAÇÃO ---
-    function canPerformActions() {
-      let userData = getRequestingUserData();
-      return isSignedIn() && userData.status == 'Ativo' && userData.category != 'Visitante';
+    function isRevisor() {
+       return request.auth.token.role == 'Revisor' || isEditor();
     }
-
-    // --- REGRAS POR COLEÇÃO ---
+    
+    function isActiveMember() {
+        // Verifica se o usuário tem uma claim de 'Membro' e se não é 'Visitante'
+        // Acesso de leitura mais amplo para membros ativos.
+        return request.auth.token.role == 'Membro';
+    }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && (isOwner(userId) || isEditorOrAdmin());
-      allow delete: if isSignedIn() && isAdmin();
+      allow read: if isUserAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
     }
 
     match /rooms/{roomId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isEditorOrAdmin();
+      allow read: if isUserAuthenticated();
+      allow create, update, delete: if isEditor();
     }
 
     match /bookings/{bookingId} {
-      allow read: if isSignedIn() && (isRevisorOrHigher() || request.auth.uid == resource.data.organizerId || request.auth.uid in resource.data.participants || request.auth.uid in resource.data.guests);
-      allow create: if isSignedIn() && canPerformActions() && isOwner(request.resource.data.organizerId);
-      allow update: if isSignedIn() && canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin() || (isOwner(request.auth.uid) && request.auth.uid in resource.data.participants));
-      allow delete: if isSignedIn() && canPerformActions() && (isOwner(resource.data.organizerId) || isEditorOrAdmin());
+      allow read: if isUserAuthenticated();
+      allow create: if isUserAuthenticated();
+      allow update: if isOwner(resource.data.organizerId) || isEditor();
+      allow delete: if isOwner(resource.data.organizerId) || isEditor();
     }
 
-    match /userMessages/{messageId} {
-        allow read: if isSignedIn() && isOwner(resource.data.recipientId);
-        allow write: if isSignedIn() && (isAdmin() || (isOwner(resource.data.recipientId) && request.resource.data.read == true));
-        allow list: if isSignedIn() && isAdmin();
-    }
-
-    match /accessRules/{ruleId} {
-      allow read, write: if isSignedIn() && isAdmin();
-    }
-    
-    match /landingPageBlocks/{blockId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /notices/{noticeId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-
-      // Permite a atualização SE:
-      // 1. O usuário for um Administrador OU
-      // 2. O usuário estiver logado, a única alteração for no campo 'readBy',
-      //    e a alteração consistir apenas em adicionar o seu próprio ID de usuário à lista.
-      allow update: if isAdmin() || (
-        isSignedIn() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
-        request.resource.data.readBy == resource.data.readBy.concat([request.auth.uid])
-      );
-    }
-    
-    match /polls/{pollId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-      
-      match /votes/{voteId} {
-        allow create, read: if isOwner(voteId);
-        allow list: if isAdmin();
-        allow update, delete: if false;
-      }
-    }
-    
-    match /systemSettings/{docId} {
-        allow read: if isSignedIn();
-        allow write: if isAdmin();
-    }
-    
     match /plans/{planId} {
-        allow read: if isSignedIn();
+      allow read: if isUserAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /systemSettings/config {
+        allow read: if isUserAuthenticated();
         allow write: if isAdmin();
+    }
+    
+    match /notices/{noticeId} {
+        allow read: if isUserAuthenticated();
+        allow create, update, delete: if isAdmin();
     }
     
     match /transactions/{transactionId} {
         allow read: if isOwner(resource.data.userId) || isAdmin();
-        allow write: if isAdmin();
+        allow create, update, delete: if isAdmin();
+    }
+
+    match /userMessages/{messageId} {
+      allow read: if isOwner(resource.data.recipientId) || isAdmin();
+      allow create: if isAdmin(); // Apenas admin pode criar (enviar)
+      allow update(messageId): if isOwner(resource.data.recipientId); // Usuário só pode marcar como lida
+      allow delete: if false;
+    }
+
+    match /accessRules/{ruleId} {
+      allow read: if isRevisor();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /polls/{pollId} {
+      allow read: if isUserAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /polls/{pollId}/votes/{voteId} {
+       allow read: if isUserAuthenticated();
+       allow create: if isUserAuthenticated();
+       allow update, delete: if false;
+    }
+    
+    match /landingPageBlocks/{blockId} {
+      allow read: if true; // Leitura pública para a landing page
+      allow create, update, delete: if isEditor();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isUserAuthenticated();
+      allow update, delete: if false;
     }
   }
 }
