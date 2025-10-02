@@ -21,6 +21,16 @@ export interface AuditLog {
    * A ação que foi realizada (ex: 'USER_LOGIN', 'CREATE_BOOKING').
    */
   action: string;
+  
+  /**
+   * O objeto ou usuário que sofreu a ação (opcional).
+   */
+  target?: {
+    type: 'user' | 'booking' | 'room' | 'payment';
+    id: string;
+    displayName?: string; // Nome do usuário, título da reserva, etc.
+    displayId?: string; // Email, ID da sala, etc.
+  };
 
   /**
    * Um objeto com detalhes contextuais sobre a ação.

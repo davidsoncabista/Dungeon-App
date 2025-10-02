@@ -28,8 +28,8 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 #### História 3: Visualizador de Logs
 - [x] **Tarefa 3.1 (Criação da Página):**
   - [x] Criar a nova página `/admin/audit-log/page.tsx`.
-- [ ] **Tarefa 3.2 (Construção do Componente da Tabela):**
-  - [ ] Dentro da nova página, implementar uma tabela que busca e exibe os dados da coleção `auditLogs`, ordenados por data.
+- [x] **Tarefa 3.2 (Construção do Componente da Tabela):**
+  - [x] Dentro da nova página, implementar uma tabela que busca e exibe os dados da coleção `auditLogs`, ordenados por data.
 - [ ] **Tarefa 3.3 (Implementação de Filtros):**
   - [ ] Adicionar campos de filtro para pesquisar por e-mail do usuário, tipo de ação e um seletor de intervalo de datas.
 

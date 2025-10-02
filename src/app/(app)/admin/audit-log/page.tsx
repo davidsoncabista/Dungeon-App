@@ -1,9 +1,8 @@
-
 "use client"
 
 import { useState, useMemo } from "react";
 import { useCollectionData } from "react-firebase-hooks/firestore";
-import { getFirestore, collection, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy, where } from "firebase/firestore";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { app } from "@/lib/firebase";
@@ -13,10 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { History, ShieldAlert, User, MoreHorizontal } from "lucide-react";
+import { History, ShieldAlert, MoreHorizontal, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
 function LogRow({ log }: { log: AuditLog }) {
     return (
@@ -38,6 +38,10 @@ function LogRow({ log }: { log: AuditLog }) {
             </TableCell>
             <TableCell>
                 <Badge variant="secondary">{log.action}</Badge>
+            </TableCell>
+            <TableCell className="hidden lg:table-cell">
+                 <div className="truncate max-w-xs">{log.target?.displayName}</div>
+                 <div className="text-xs text-muted-foreground truncate max-w-xs">{log.target?.displayId}</div>
             </TableCell>
             <TableCell>
                  <Popover>
@@ -67,12 +71,26 @@ function LogRow({ log }: { log: AuditLog }) {
 
 export default function AuditLogPage() {
     const firestore = getFirestore(app);
+    const [searchTerm, setSearchTerm] = useState("");
 
     const logsRef = collection(firestore, 'auditLogs');
     const [logs, loadingLogs, errorLogs] = useCollectionData<AuditLog>(
         query(logsRef, orderBy("timestamp", "desc")), 
         { idField: 'id' }
     );
+    
+    const filteredLogs = useMemo(() => {
+        if (!logs) return [];
+        if (!searchTerm) return logs;
+        
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return logs.filter(log =>
+            log.actor.displayName?.toLowerCase().includes(lowercasedTerm) ||
+            log.actor.email?.toLowerCase().includes(lowercasedTerm) ||
+            log.action.toLowerCase().includes(lowercasedTerm) ||
+            log.target?.displayName?.toLowerCase().includes(lowercasedTerm)
+        );
+    }, [logs, searchTerm]);
 
     const renderContent = () => {
         if (loadingLogs) {
@@ -81,6 +99,7 @@ export default function AuditLogPage() {
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
             ));
@@ -89,7 +108,7 @@ export default function AuditLogPage() {
         if (errorLogs) {
             return (
                 <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                          <div className="flex items-center gap-4 p-4 bg-destructive/10 border border-destructive rounded-md">
                             <ShieldAlert className="h-8 w-8 text-destructive" />
                             <div>
@@ -102,15 +121,17 @@ export default function AuditLogPage() {
             );
         }
         
-        if (!logs || logs.length === 0) {
+        if (!filteredLogs || filteredLogs.length === 0) {
             return (
                 <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">Nenhum registro de auditoria encontrado.</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                        {searchTerm ? "Nenhum registro encontrado." : "Nenhum registro de auditoria encontrado."}
+                    </TableCell>
                 </TableRow>
             );
         }
 
-        return logs.map(log => <LogRow key={log.id} log={log} />);
+        return filteredLogs.map(log => <LogRow key={log.id} log={log} />);
     };
 
     return (
@@ -129,12 +150,23 @@ export default function AuditLogPage() {
                     <CardDescription>As últimas atividades registradas, da mais nova para a mais antiga.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Buscar por ator, ação ou alvo..."
+                            className="pl-9"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="hidden md:table-cell">Data</TableHead>
                                 <TableHead>Ator</TableHead>
                                 <TableHead>Ação</TableHead>
+                                <TableHead className="hidden lg:table-cell">Alvo</TableHead>
                                 <TableHead>Detalhes</TableHead>
                             </TableRow>
                         </TableHeader>
