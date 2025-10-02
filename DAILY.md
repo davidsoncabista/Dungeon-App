@@ -15,8 +15,8 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
   - [x] Implementar a função `createAuditLog(actor: User, action: string, details: object = {})` para registrar logs no Firestore a partir do cliente.
 
 #### História 2: Integrar o Log nas Ações
-- [ ] **Tarefa 2.1 (Log de Login):**
-  - [ ] Na lógica de `onAuthStateChanged`, após a verificação bem-sucedida do usuário, chamar `createAuditLog` com a ação `USER_LOGIN`.
+- [x] **Tarefa 2.1 (Log de Login):**
+  - [x] Na lógica de `onAuthStateChanged`, após a verificação bem-sucedida do usuário, chamar `createAuditLog` com a ação `USER_LOGIN`.
 - [ ] **Tarefa 2.2 (Log de Ações de Reserva):**
   - [ ] No `booking-modal.tsx` (criação), após o `addDoc` da reserva, chamar `createAuditLog` com a ação `CREATE_BOOKING`.
   - [ ] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
@@ -178,5 +178,3 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [x] **Refatoração da Agenda**: Timeline de 24h responsiva e com lógica "Corujão".
 - [x] **Extrato de Reservas**: Implementada a lista de reservas com filtros avançados e ordenação.
 - [x] **Ações de Edição**: Adicionado o modal de edição de reservas na lista, com controle de permissão.
-
-

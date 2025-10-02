@@ -13,6 +13,7 @@ import type { User } from "@/lib/types/user";
 import type { Notice } from "@/lib/types/notice";
 import { WelcomeModal } from "@/components/app/welcome-modal";
 import { NoticeModal } from "@/components/app/notice-modal";
+import { createAuditLog } from "@/lib/auditLogger";
 
 const adminRoutes: Record<string, string[]> = {
     'Administrador': ['/admin/system', '/admin/finance', '/admin/messages', '/admin/access-rules', '/admin/landing-editor', '/admin/rooms', '/statistics', '/users', '/admin'],
@@ -106,43 +107,44 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // 1. Espera o carregamento inicial da autenticação
-    if (authLoading) {
-      return;
-    }
+    if (authLoading) return;
     
-    // 2. Se não houver usuário autenticado, redireciona para o login
     if (!user) {
         router.replace('/login');
         return;
     }
 
-    // 3. Se o usuário está autenticado mas os dados do Firestore ainda estão carregando, espere.
-    if (userLoading) {
-        return;
+    if (userLoading) return;
+    
+    if (!currentUser) return;
+
+    // --- Log de Login ---
+    const sessionLoginKey = `login_${user.uid}_${sessionStorage.getItem('session_id')}`;
+    if (!sessionStorage.getItem(sessionLoginKey)) {
+        createAuditLog(currentUser, 'USER_LOGIN');
+        sessionStorage.setItem(sessionLoginKey, 'true');
     }
 
-    // 4. Agora temos certeza que `user` existe e `userLoading` terminou.
-    // Se `currentUser` não foi encontrado, pode ser um erro ou um usuário recém-criado.
-    // Por segurança, não fazemos nada até que `currentUser` esteja disponível.
-    if (!currentUser) {
-        return;
-    }
-
-    // 5. Com `currentUser` disponível, podemos verificar o acesso com segurança.
     const access = checkAccess(pathname, currentUser);
     if (!access.allowed && access.redirect) {
         router.replace(access.redirect);
-        return; // Para a execução para evitar abrir o modal de boas-vindas desnecessariamente
+        return;
     }
 
-    // 6. Lógica do modal de boas-vindas
     const hasSeenWelcome = localStorage.getItem(`welcome_${user.uid}`);
     if (!hasSeenWelcome && (currentUser.status === 'Pendente' || currentUser.category === 'Visitante')) {
         setIsWelcomeModalOpen(true);
     }
 
   }, [user, currentUser, authLoading, userLoading, pathname, router]);
+
+   // Gerencia um ID de sessão para a aba do navegador
+    useEffect(() => {
+        if (!sessionStorage.getItem('session_id')) {
+            sessionStorage.setItem('session_id', new Date().getTime().toString());
+        }
+    }, []);
+
 
   const handleCloseWelcomeModal = () => {
     setIsWelcomeModalOpen(false);
@@ -173,18 +175,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return <div>Error: {authError?.message || userError?.message}</div>;
   }
   
-  // Exibe o loader enquanto a autenticação ou os dados do usuário estiverem carregando.
   if (authLoading || (user && userLoading)) {
     return <FullPageLoader />;
   }
   
-  // Se o usuário não estiver autenticado (e não estiver carregando), o useEffect já terá redirecionado.
-  // Renderizar null evita um flash de conteúdo antes do redirecionamento.
   if (!user) {
     return null;
   }
   
-  // Se o usuário está autenticado mas o `currentUser` ainda não carregou, continue mostrando o loader.
   if (!currentUser) {
       return <FullPageLoader />;
   }
