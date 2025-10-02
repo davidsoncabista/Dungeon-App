@@ -47,7 +47,9 @@ const appRoutes = [
 const AccessRuleFormSchema = z.object({
   id: z.string().min(3, "O ID deve ter pelo menos 3 caracteres.").regex(/^[A-Z][a-zA-Z]*$/, "O ID deve começar com letra maiúscula e conter apenas letras (PascalCase)."),
   description: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres."),
-  pages: z.record(z.enum(["editor", "revisor"])).min(1, "É necessário conceder acesso a pelo menos uma página."),
+  pages: z.record(z.enum(["editor", "revisor"])).refine(obj => Object.keys(obj).length > 0, {
+    message: "É necessário conceder acesso a pelo menos uma página."
+  }),
 });
 
 type FormValues = z.infer<typeof AccessRuleFormSchema>;
