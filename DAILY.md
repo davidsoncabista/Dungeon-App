@@ -22,8 +22,8 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
   - [x] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
 - [x] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
   - [x] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
-- [ ] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
-  - [ ] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
+- [x] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
+  - [x] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
 
 #### História 3: Visualizador de Logs
 - [ ] **Tarefa 3.1 (Criação da Página):**
@@ -178,3 +178,5 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [x] **Refatoração da Agenda**: Timeline de 24h responsiva e com lógica "Corujão".
 - [x] **Extrato de Reservas**: Implementada a lista de reservas com filtros avançados e ordenação.
 - [x] **Ações de Edição**: Adicionado o modal de edição de reservas na lista, com controle de permissão.
+
+    

@@ -327,7 +327,8 @@ export const sendUserMessage = functions
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
     }
-    if (context.auth.token.role !== 'Administrador') {
+    const adminRoles = ['Administrador', 'Editor', 'Revisor'];
+    if (!adminRoles.includes(context.auth.token.role)) {
         throw new functions.https.HttpsError("permission-denied", "Apenas administradores podem enviar mensagens.");
     }
 
@@ -341,7 +342,10 @@ export const sendUserMessage = functions
     try {
         const senderId = context.auth.uid;
         const senderDoc = await db.collection('users').doc(senderId).get();
-        const senderName = senderDoc.data()?.name || 'Administração';
+        const senderData = senderDoc.data();
+        if (!senderData) {
+            throw new functions.https.HttpsError("not-found", "Perfil do remetente não encontrado.");
+        }
 
         const recipientDoc = await db.collection('users').doc(recipientId).get();
         const recipientName = recipientDoc.data()?.name || 'Destinatário Desconhecido';
@@ -352,9 +356,9 @@ export const sendUserMessage = functions
         await newMessageRef.set({
             id: newMessageRef.id,
             recipientId: recipientId,
-            recipientName: recipientName, // Denormalizado para facilitar a exibição
+            recipientName: recipientName,
             senderId: senderId,
-            senderName: senderName,
+            senderName: senderData.name,
             title: title,
             content: content,
             category: category,
@@ -362,7 +366,26 @@ export const sendUserMessage = functions
             read: false,
         });
 
-        console.log(`[Messages] Mensagem enviada de ${senderName} (${senderId}) para ${recipientName} (${recipientId}).`);
+        console.log(`[Messages] Mensagem enviada de ${senderData.name} (${senderId}) para ${recipientName} (${recipientId}).`);
+        
+        // 4. Log de Auditoria
+        const auditLogRef = db.collection('auditLogs').doc();
+        await auditLogRef.set({
+            actor: {
+                uid: senderId,
+                displayName: senderData.name,
+                email: senderData.email,
+                role: senderData.role,
+            },
+            action: 'SEND_MESSAGE',
+            details: {
+                messageId: newMessageRef.id,
+                recipientId: recipientId,
+                title: title,
+            },
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        
         return { success: true, messageId: newMessageRef.id };
 
     } catch (error) {
@@ -789,3 +812,5 @@ export const sendBirthdayWishes = functions
         return null;
     }
 });
+
+    
