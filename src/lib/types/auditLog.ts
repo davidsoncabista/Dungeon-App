@@ -6,6 +6,7 @@ import type { User } from "./user";
  */
 export interface AuditLog {
   id: string;
+  uid: string;
   
   /**
    * O ator que realizou a ação.

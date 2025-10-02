@@ -2,116 +2,112 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // --- Funções de Ajuda ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function getUserData(userId) {
+        return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+    
+    function isAdmin() {
+        return getUserData(request.auth.uid).role == 'Administrador';
+    }
+    
+    function isEditor() {
+        return getUserData(request.auth.uid).role == 'Editor';
+    }
 
-    // --- REGRAS GERAIS ---
-    // A coleção 'users' armazena perfis públicos e dados de associação.
+    function isRevisor() {
+        return getUserData(request.auth.uid).role == 'Revisor';
+    }
+
+    function isAtLeastRevisor() {
+        let userRole = getUserData(request.auth.uid).role;
+        return userRole in ['Administrador', 'Editor', 'Revisor'];
+    }
+
+    // --- Coleções ---
+
     match /users/{userId} {
-      // Qualquer usuário autenticado pode ler os perfis de outros usuários.
-      allow read: if request.auth != null;
-      // O próprio usuário pode atualizar seu perfil.
-      // Admins e Editores também podem atualizar perfis de outros usuários.
-      allow update: if request.auth.uid == userId || request.auth.token.role in ['Administrador', 'Editor'];
-      // Apenas admins podem criar ou deletar usuários (casos raros).
-      allow create, delete: if request.auth.token.role == 'Administrador';
+      allow read: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin() || isEditor());
+      allow delete: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn() && isAdmin();
     }
-
-    // A coleção 'rooms' é pública para leitura.
+    
     match /rooms/{roomId} {
-      allow read: if true;
-      // Apenas Admins e Editores podem modificar as salas.
-      allow write: if request.auth.token.role in ['Administrador', 'Editor'];
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isAdmin() || isEditor());
     }
-
-    // A coleção 'bookings' contém as reservas.
+    
     match /bookings/{bookingId} {
-        // Qualquer usuário autenticado pode ler os detalhes de uma reserva.
-        allow read: if request.auth != null;
-
-        // A criação é permitida se o usuário for o organizador da reserva.
-        allow create: if request.auth.uid == request.resource.data.organizerId;
-
-        // A atualização é permitida para o organizador ou para admins/editores.
-        allow update: if request.auth.uid == resource.data.organizerId || request.auth.token.role in ['Administrador', 'Editor'];
-        
-        // A exclusão é permitida para o organizador ou para admins.
-        allow delete: if request.auth.uid == resource.data.organizerId || request.auth.token.role == 'Administrador';
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isAdmin() || isEditor() || request.auth.uid == resource.data.organizerId);
+      allow delete: if isSignedIn() && (isAdmin() || isEditor() || request.auth.uid == resource.data.organizerId);
     }
     
-    // A coleção 'plans' é configurada pelo admin.
     match /plans/{planId} {
-      // Qualquer um pode ler os planos disponíveis.
-      allow read: if true;
-      // Apenas admins podem criar, editar ou deletar planos.
-      allow write: if request.auth.token.role == 'Administrador';
-    }
-    
-    // A coleção 'systemSettings' contém configurações globais.
-    match /systemSettings/{docId} {
-      allow read: if true; // Todos podem ler (ex: valor da joia).
-      allow write: if request.auth.token.role == 'Administrador';
+        allow read: if true;
+        allow write: if isSignedIn() && isAdmin();
     }
 
-    // Coleção de 'notices' (avisos).
-    match /notices/{noticeId} {
-        allow read: if true; // Avisos são públicos
-        allow write: if request.auth.token.role == 'Administrador'; // Apenas admins podem criar/editar/deletar
+    match /systemSettings/config {
+        allow read: if true;
+        allow write: if isSignedIn() && isAdmin();
     }
     
-     // Coleção de 'transactions' (transações financeiras).
+    match /notices/{noticeId} {
+        allow read: if true;
+        allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
     match /transactions/{transactionId} {
-        // O usuário pode ler suas próprias transações. Admins podem ler todas.
-        allow read: if request.auth.uid == resource.data.userId || request.auth.token.role == 'Administrador';
-        // Apenas Cloud Functions (backend) ou Admins podem criar/atualizar.
-        // A exclusão não é permitida para manter o histórico.
-        allow create, update: if request.auth.token.role == 'Administrador';
+        allow read: if isSignedIn() && (isAdmin() || isOwner(resource.data.userId));
+        allow create, update: if isSignedIn() && isAdmin();
+    }
+    
+    match /userMessages/{messageId} {
+        allow read: if isSignedIn() && (isOwner(resource.data.recipientId) || isAtLeastRevisor());
+        // A criação é feita via Cloud Function (sendUserMessage)
+        allow create: if false; 
+        allow update: if isSignedIn() && isOwner(resource.data.recipientId);
         allow delete: if false;
     }
     
-    // Coleção para mensagens diretas de usuários.
-    match /userMessages/{messageId} {
-      // O destinatário da mensagem pode lê-la.
-      // O remetente (admin) também pode ler para ver o histórico.
-      allow read: if request.auth.uid == resource.data.recipientId || request.auth.uid == resource.data.senderId;
-      // Ninguém pode editar ou deletar mensagens após o envio. Apenas Cloud Functions criam.
-      allow write: if false;
+    match /polls/{pollId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
     }
 
-    // Coleção para 'landingPageBlocks', o conteúdo da landing page.
+    match /polls/{pollId}/votes/{voteId} {
+        // A votação é feita via Cloud Function (castVote)
+        allow read: if isSignedIn() && isAtLeastRevisor();
+        allow write: if false; 
+    }
+    
     match /landingPageBlocks/{blockId} {
-        allow read: if true; // O conteúdo é público.
-        allow write: if request.auth.token.role in ['Administrador', 'Editor']; // Apenas admins e editores podem gerenciar.
+        allow read: if true; // Conteúdo público
+        allow write: if isSignedIn() && (isAdmin() || isEditor());
     }
-    
-    // Coleções de Votação
-    match /polls/{pollId} {
-      allow read: if request.auth != null; // Qualquer usuário logado pode ler os dados de uma votação.
-      allow write: if request.auth.token.role == 'Administrador'; // Apenas admins podem criar/gerenciar votações.
-      
-      match /votes/{voteId} {
-        // Usuários não podem ler os votos uns dos outros para manter o sigilo.
-        // Apenas admins podem ler todos os votos para apuração.
-        allow read: if request.auth.token.role == 'Administrador' || request.auth.uid == voteId;
-        
-        // Ninguém pode atualizar ou deletar um voto.
-        allow update, delete: if false;
-        
-        // Apenas um usuário autenticado pode criar um voto para si mesmo.
-        // A lógica de elegibilidade e status da votação é tratada na Cloud Function.
-        allow create: if request.auth.uid == voteId;
-      }
-    }
-    
-    // Coleção para 'accessRules'.
+
     match /accessRules/{ruleId} {
-      allow read: if request.auth != null; // Todos os usuários logados podem ler as definições.
-      allow write: if request.auth.token.role == 'Administrador'; // Apenas Admins podem gerenciar.
+      allow read: if isSignedIn() && isAtLeastRevisor();
+      allow create, update, delete: if isSignedIn() && isAdmin();
     }
     
-    // Coleção 'auditLogs'.
     match /auditLogs/{logId} {
-      allow read: if request.auth.token.role in ['Administrador', 'Editor', 'Revisor'];
-      allow create: if request.auth != null;
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && isAtLeastRevisor();
       allow update, delete: if false;
     }
+
   }
 }

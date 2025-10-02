@@ -200,8 +200,11 @@ export const handleBookingWrite = functions
         // Log de Auditoria
         const adminUsersSnapshot = await db.collection('users').where('role', '==', 'Administrador').limit(1).get();
         const adminActor = adminUsersSnapshot.docs[0]?.data();
-        
-        await db.collection('auditLogs').add({
+
+        const auditLogRef = db.collection('auditLogs').doc();
+        await auditLogRef.set({
+            id: auditLogRef.id,
+            uid: auditLogRef.id,
             actor: {
                 uid: adminActor?.uid || 'system',
                 displayName: adminActor?.name || 'Sistema',
@@ -393,6 +396,8 @@ export const sendUserMessage = functions
         // 4. Log de Auditoria
         const auditLogRef = db.collection('auditLogs').doc();
         await auditLogRef.set({
+            id: auditLogRef.id,
+            uid: auditLogRef.id,
             actor: {
                 uid: senderId,
                 displayName: senderData.name,
@@ -646,6 +651,8 @@ export const mercadoPagoWebhook = functions
                 // Log de Auditoria
                 const auditLogRef = db.collection('auditLogs').doc();
                 auditLogRef.set({
+                    id: auditLogRef.id,
+                    uid: auditLogRef.id,
                     actor: {
                         uid: userId,
                         displayName: userData.name,
@@ -834,6 +841,3 @@ export const sendBirthdayWishes = functions
         return null;
     }
 });
-
-    
-    
