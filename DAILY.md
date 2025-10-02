@@ -17,11 +17,11 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 #### História 2: Integrar o Log nas Ações
 - [x] **Tarefa 2.1 (Log de Login):**
   - [x] Na lógica de `onAuthStateChanged`, após a verificação bem-sucedida do usuário, chamar `createAuditLog` com a ação `USER_LOGIN`.
-- [ ] **Tarefa 2.2 (Log de Ações de Reserva):**
-  - [ ] No `booking-modal.tsx` (criação), após o `addDoc` da reserva, chamar `createAuditLog` com a ação `CREATE_BOOKING`.
-  - [ ] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
-- [ ] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
-  - [ ] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
+- [x] **Tarefa 2.2 (Log de Ações de Reserva):**
+  - [x] No `booking-modal.tsx` (criação), após o `addDoc` da reserva, chamar `createAuditLog` com a ação `CREATE_BOOKING`.
+  - [x] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
+- [x] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
+  - [x] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
 - [ ] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
   - [ ] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
 

@@ -590,6 +590,33 @@ export const mercadoPagoWebhook = functions
            }
 
            if (paymentDetails.status === "approved") {
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userData = userDoc.data();
+                if (!userData) {
+                     console.error(`[Mercado Pago Webhook] Usuário com UID ${userId} não encontrado.`);
+                     response.status(200).send("OK: Usuário não encontrado.");
+                     return;
+                }
+
+                // Log de Auditoria
+                const auditLogRef = db.collection('auditLogs').doc();
+                auditLogRef.set({
+                    actor: {
+                        uid: userId,
+                        displayName: userData.name,
+                        email: userData.email,
+                        role: userData.role,
+                    },
+                    action: 'PROCESS_PAYMENT',
+                    details: {
+                        paymentId: paymentId,
+                        amount: paymentDetails.transaction_amount,
+                        description: paymentDetails.description,
+                    },
+                    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                });
+
+
                const batch = db.batch();
                const userRef = db.collection("users").doc(userId);
 
@@ -602,9 +629,7 @@ export const mercadoPagoWebhook = functions
                          return;
                     }
                     const planData = planDoc.data()!;
-                    const userDoc = await userRef.get();
-                    const userData = userDoc.data()!;
-
+                   
                     // Cria a transação permanente no banco
                     const newTransactionRef = db.collection("transactions").doc(transactionId.replace('temp_', 'txn_'));
                     batch.set(newTransactionRef, {
