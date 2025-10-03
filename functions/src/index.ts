@@ -26,7 +26,7 @@ export const createUserDocument = functions
       avatar: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
       category: "Visitante",
       status: "Pendente",
-      role: "Convidado",
+      role: "Visitante", // CORRIGIDO: O role inicial é 'Visitante'
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       cpf: null,
       phone: null,
@@ -42,46 +42,7 @@ export const createUserDocument = functions
     }
   });
 
-export const setAdminClaim = functions
-  .region("southamerica-east1")
-  .firestore.document("users/{userId}")
-  .onUpdate(async (change, context) => {
-    const { userId } = context.params;
-    const newData = change.after.data();
-    const oldData = change.before.data();
-
-    if (newData.role === oldData.role) {
-      console.log(`[Claims] Role for user ${userId} has not changed. Skipping.`);
-      return null;
-    }
-
-    const newRole = newData.role;
-    const auth = admin.auth();
-    let claims: { [key: string]: any } = { admin: false, role: 'Membro' }; // Default claims
-
-    switch(newRole) {
-        case 'Administrador':
-          claims = { admin: true, role: 'Administrador' };
-          break;
-        case 'Editor':
-          claims = { admin: false, role: 'Editor' };
-          break;
-        case 'Revisor':
-          claims = { admin: false, role: 'Revisor' };
-          break;
-    }
-
-    try {
-        await auth.setCustomUserClaims(userId, claims);
-        console.log(`[Claims] Successfully set claims for user ${userId} to ${JSON.stringify(claims)}.`);
-        return null;
-    } catch (error) {
-      console.error(`[Claims] Error setting custom claims for user ${userId}:`, error);
-      return null;
-    }
-  });
-
-// --- NOVA FUNÇÃO DE SINCRONIZAÇÃO DE CLAIMS ---
+// --- FUNÇÃO DE SINCRONIZAÇÃO DE CLAIMS ---
 export const syncUserClaims = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
@@ -110,7 +71,7 @@ export const syncUserClaims = functions
         console.log(`[Sync Claims] Sincronizando claims para ${userId}. Firestore: '${firestoreRole}', Token: '${tokenRole}'.`);
         
         // 4. Se diferentes, atualizar
-        let newClaims: { [key: string]: any } = { role: firestoreRole || 'Convidado' };
+        let newClaims: { [key: string]: any } = { role: firestoreRole || 'Visitante' };
         if (firestoreRole === 'Administrador') {
             newClaims.admin = true;
         } else {
@@ -750,7 +711,7 @@ export const mercadoPagoWebhook = functions
                     const userUpdateData: any = {
                         category: planData.name,
                         status: "Ativo",
-                        role: "Membro", // Promove de 'Convidado' para 'Membro'
+                        role: "Membro", // Promove de 'Visitante' para 'Membro'
                     };
 
                     const today = new Date();
