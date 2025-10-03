@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Editor da Landing Page',
   description: 'Gerencie o conteúdo da página inicial de forma modular.',
 };
-"use client"
 
 import { useState, useMemo, useEffect } from "react"
 import { useCollectionData } from "react-firebase-hooks/firestore"

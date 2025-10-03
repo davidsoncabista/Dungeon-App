@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Gerenciamento de Usuários',
   description: 'Visualize e gerencie os membros da associação.',
 };
-"use client"
 
 import { MoreHorizontal, ShieldCheck, UserCog, Ban, Trash2, ArrowUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -58,16 +58,18 @@ type SortKey = 'name' | 'category';
 // --- Componentes de Modal ---
 
 // Modal para Bloquear/Desbloquear Usuário
-function BlockUserDialog({ user, onConfirm }: { user: User, onConfirm: () => void }) {
+function BlockUserDialog({ user, onConfirm, disabled }: { user: User, onConfirm: () => void, disabled: boolean }) {
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                <button className="w-full text-left">
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Ban className="mr-2 h-4 w-4" />
-                        {user.status === 'Bloqueado' ? 'Desbloquear Usuário' : 'Bloquear Usuário'}
-                    </DropdownMenuItem>
-                </button>
+                 <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()} 
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    disabled={disabled}
+                >
+                    <Ban className="mr-2 h-4 w-4" />
+                    {user.status === 'Bloqueado' ? 'Desbloquear Usuário' : 'Bloquear Usuário'}
+                </DropdownMenuItem>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -91,16 +93,18 @@ function BlockUserDialog({ user, onConfirm }: { user: User, onConfirm: () => voi
 }
 
 // Modal para Excluir Usuário
-function DeleteUserDialog({ user, onConfirm }: { user: User, onConfirm: () => void }) {
+function DeleteUserDialog({ user, onConfirm, disabled }: { user: User, onConfirm: () => void, disabled: boolean }) {
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                 <button className="w-full text-left">
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir permanentemente
-                    </DropdownMenuItem>
-                </button>
+                 <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()} 
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                    disabled={disabled}
+                 >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir permanentemente
+                </DropdownMenuItem>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -121,7 +125,7 @@ function DeleteUserDialog({ user, onConfirm }: { user: User, onConfirm: () => vo
 }
 
 // Modal para Alterar Nível de Acesso
-function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: AdminRole) => void }) {
+function EditRoleDialog({ user, onConfirm, disabled }: { user: User, onConfirm: (role: AdminRole) => void, disabled: boolean }) {
     const [selectedRole, setSelectedRole] = useState(user.role || 'Membro');
     const [isOpen, setIsOpen] = useState(false);
 
@@ -133,12 +137,10 @@ function EditRoleDialog({ user, onConfirm }: { user: User, onConfirm: (role: Adm
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <button className="w-full text-left">
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        Alterar Nível de Acesso
-                    </DropdownMenuItem>
-                </button>
+                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={disabled}>
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Alterar Nível de Acesso
+                </DropdownMenuItem>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -184,8 +186,8 @@ function UserTableRow({ user, canEdit, canDelete }: { user: User; canEdit: boole
         } catch (error: any) {
             console.error(`Erro ao executar ação: ${title}`, error);
             toast({
-                title: "Erro na Operação",
-                description: error.message || "Não foi possível completar a ação.",
+                title: "Erro de Permissão",
+                description: error.message || "Não foi possível completar a ação. Verifique suas permissões.",
                 variant: "destructive"
             });
         }
@@ -236,18 +238,9 @@ function UserTableRow({ user, canEdit, canDelete }: { user: User; canEdit: boole
                         <div className="font-medium">
                             <p>{user.name}</p>
                             <p className="text-sm text-muted-foreground md:hidden">{user.email}</p>
-                            <div className="flex flex-col items-start gap-2 mt-1 sm:hidden">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline'}>{user.category}</Badge>
-                                    {user.role && user.role !== 'Membro' && (
-                                        <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>
-                                    )}
-                                </div>
-                                <div className="sm:hidden">
-                                    <Badge variant={user.status === 'Ativo' ? 'secondary' : user.status === 'Pendente' ? 'outline' : 'destructive'} className={user.status === 'Ativo' ? 'bg-green-100 text-green-800' : ''}>
-                                        {user.status}
-                                    </Badge>
-                                </div>
+                             <div className="flex items-center gap-2 mt-1 md:hidden">
+                                <Badge variant={user.category === 'Master' ? 'default' : user.category === 'Gamer' ? 'secondary' : 'outline'}>{user.category}</Badge>
+                                {user.role && user.role !== 'Membro' && <Badge className={cn(roleBadgeClass[user.role])}>{user.role}</Badge>}
                             </div>
                         </div>
                     </div>
@@ -256,29 +249,27 @@ function UserTableRow({ user, canEdit, canDelete }: { user: User; canEdit: boole
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Ações para {user.name}</span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 {canEdit && (
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                        <DialogTrigger asChild>
-                                            <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                         <DialogTrigger asChild>
+                                            <DropdownMenuItem onSelect={e => e.preventDefault()}><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
                                         </DialogTrigger>
-                                        {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} />}
+                                        {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} disabled={!canDelete} />}
                                         <DropdownMenuSeparator />
-                                        <BlockUserDialog user={user} onConfirm={handleBlockUser} />
-                                        {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />}
+                                        <BlockUserDialog user={user} onConfirm={handleBlockUser} disabled={!canEdit} />
+                                        {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} disabled={!canDelete} />}
                                     </DropdownMenuContent>
                                 )}
                             </DropdownMenu>
                             <DialogContent className="sm:max-w-lg">
                                 <DialogHeader>
                                     <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
-                                    <DialogDescription>
-                                        Atualize as informações do membro abaixo.
-                                    </DialogDescription>
+                                    <DialogDescription>Atualize as informações do membro abaixo.</DialogDescription>
                                 </DialogHeader>
                                 <UserForm onSuccess={handleEditSuccess} onCancel={() => setIsEditModalOpen(false)} isEditMode={true} defaultValues={user} />
                             </DialogContent>
@@ -297,44 +288,44 @@ function UserTableRow({ user, canEdit, canDelete }: { user: User; canEdit: boole
                 )}
             </TableCell>
             <TableCell className="hidden sm:table-cell text-center">
-                <Badge variant={user.status === 'Ativo' ? 'secondary' : user.status === 'Pendente' ? 'outline' : 'destructive'} className={user.status === 'Ativo' ? 'bg-green-100 text-green-800' : ''}>
+                <Badge variant={user.status === 'Ativo' ? 'secondary' : user.status === 'Pendente' ? 'outline' : 'destructive'} className={cn({
+                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': user.status === 'Ativo',
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': user.status === 'Pendente',
+                    'bg-destructive/20 text-destructive dark:bg-destructive/30': user.status === 'Bloqueado',
+                })}>
                   {user.status}
                 </Badge>
             </TableCell>
             <TableCell className="hidden md:table-cell text-right">
-                <div className="flex justify-end">
-                    <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
+                <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
                                 <MoreHorizontal className="h-4 w-4" />
                                 <span className="sr-only">Toggle menu</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            {canEdit && (
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                    <DialogTrigger asChild>
-                                        <DropdownMenuItem><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
-                                    </DialogTrigger>
-                                    {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} />}
-                                    <DropdownMenuSeparator />
-                                    <BlockUserDialog user={user} onConfirm={handleBlockUser} />
-                                    {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} />}
-                                </DropdownMenuContent>
-                            )}
-                        </DropdownMenu>
-                         <DialogContent className="sm:max-w-lg">
-                            <DialogHeader>
-                                <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
-                                <DialogDescription>
-                                    Atualize as informações do membro abaixo.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <UserForm onSuccess={handleEditSuccess} onCancel={() => setIsEditModalOpen(false)} isEditMode={true} defaultValues={user} />
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        {canEdit && (
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                <DialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={e => e.preventDefault()}><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
+                                </DialogTrigger>
+                                {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} disabled={!canDelete}/>}
+                                <DropdownMenuSeparator />
+                                <BlockUserDialog user={user} onConfirm={handleBlockUser} disabled={!canEdit} />
+                                {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} disabled={!canDelete} />}
+                            </DropdownMenuContent>
+                        )}
+                    </DropdownMenu>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Editar Perfil de {user.name}</DialogTitle>
+                            <DialogDescription>Atualize as informações do membro abaixo.</DialogDescription>
+                        </DialogHeader>
+                        <UserForm onSuccess={handleEditSuccess} onCancel={() => setIsEditModalOpen(false)} isEditMode={true} defaultValues={user} />
+                    </DialogContent>
+                </Dialog>
             </TableCell>
         </TableRow>
     );

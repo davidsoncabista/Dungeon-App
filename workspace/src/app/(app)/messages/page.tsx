@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Minhas Mensagens',
   description: 'Sua caixa de entrada para comunicados importantes da administração.',
 };
-"use client"
 
 import { useMemo, useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"

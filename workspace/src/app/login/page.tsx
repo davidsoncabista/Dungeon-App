@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Login',
   description: 'Acesse o Dungeon App com sua conta Google.',
 };
-"use client"
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -95,7 +95,7 @@ export default function LoginPage() {
                 alt="Logo da Associação Dungeon Belém"
                 className="rounded-md"
                 priority
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </div>
             <CardTitle className="font-headline text-4xl">Dungeon App</CardTitle>

@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Gerenciamento de Salas',
   description: 'Crie, edite e gerencie as salas de jogo da associação.',
 };
-"use client"
 
 import { MoreHorizontal, PlusCircle, Pencil, Trash2, ShieldAlert } from "lucide-react"
 import { Badge } from "@/components/ui/badge"

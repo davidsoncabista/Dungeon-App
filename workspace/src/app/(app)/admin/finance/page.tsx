@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Gestão Financeira',
   description: 'Acompanhe e gerencie todas as transações da associação.',
 };
-"use client"
 
 import { useState, useMemo } from "react";
 import { useCollectionData } from "react-firebase-hooks/firestore";

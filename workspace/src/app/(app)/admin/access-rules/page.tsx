@@ -1,3 +1,4 @@
+"use client"
 
 import type { Metadata } from 'next';
 
@@ -5,7 +6,6 @@ export const metadata: Metadata = {
   title: 'Regras de Acesso',
   description: 'Crie e gerencie os níveis de permissão do sistema.',
 };
-"use client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,11 +52,11 @@ export default function AccessRulesPage() {
         const ruleRef = doc(firestore, "accessRules", id);
 
         if (editingRule) {
-            await updateDoc(ruleRef, ruleData);
-            toast({ title: "Sucesso!", description: `Regra "${id}" atualizada com sucesso.` });
+            await updateDoc(ruleRef, ruleData as any);
+            toast({ title: "Sucesso!", description: `Regra "${data.title}" atualizada com sucesso.` });
         } else {
             await setDoc(ruleRef, ruleData);
-            toast({ title: "Sucesso!", description: `Regra "${id}" criada com sucesso.` });
+            toast({ title: "Sucesso!", description: `Regra "${data.title}" criada com sucesso.` });
         }
         
         setIsFormModalOpen(false);
@@ -130,10 +130,15 @@ export default function AccessRulesPage() {
     return rules.map(rule => (
         <div key={rule.id} className="p-4 rounded-lg border bg-muted/50 flex justify-between items-start">
             <div>
-                <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{rule.id}</h4>
+                <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{rule.title}</h4>
                 <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
                 <div className="flex flex-wrap gap-2">
-                    {rule.pages.map(page => (<Badge key={page} variant="secondary">{page}</Badge>))}
+                    {Object.entries(rule.pages).map(([page, permission]) => (
+                        <Badge key={page} variant={permission === 'editor' ? 'default' : 'secondary'} className="capitalize">
+                            {permission === 'editor' ? <Pencil className="h-3 w-3 mr-1.5"/> : <Eye className="h-3 w-3 mr-1.5"/>}
+                            {page.split('/').pop()}
+                        </Badge>
+                    ))}
                 </div>
             </div>
              <DropdownMenu>
@@ -201,7 +206,7 @@ export default function AccessRulesPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>Esta ação é irreversível. A regra "{deletingRule?.id}" será permanentemente removida.</AlertDialogDescription>
+                <AlertDialogDescription>Esta ação é irreversível. A regra "{deletingRule?.title}" será permanentemente removida.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setDeletingRule(null)}>Cancelar</AlertDialogCancel>
