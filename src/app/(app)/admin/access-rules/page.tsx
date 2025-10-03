@@ -29,7 +29,7 @@ export default function AccessRulesPage() {
 
   const rules = useMemo(() => {
     if (!rulesData) return [];
-    return [...rulesData].sort((a, b) => a.id.localeCompare(b.id));
+    return [...rulesData].sort((a, b) => a.title.localeCompare(b.title));
   }, [rulesData]);
 
   // --- Component State ---
@@ -47,10 +47,10 @@ export default function AccessRulesPage() {
 
         if (editingRule) {
             await updateDoc(ruleRef, ruleData as any);
-            toast({ title: "Sucesso!", description: `Regra "${id}" atualizada com sucesso.` });
+            toast({ title: "Sucesso!", description: `Regra "${data.title}" atualizada com sucesso.` });
         } else {
             await setDoc(ruleRef, ruleData);
-            toast({ title: "Sucesso!", description: `Regra "${id}" criada com sucesso.` });
+            toast({ title: "Sucesso!", description: `Regra "${data.title}" criada com sucesso.` });
         }
         
         setIsFormModalOpen(false);
@@ -124,7 +124,7 @@ export default function AccessRulesPage() {
     return rules.map(rule => (
         <div key={rule.id} className="p-4 rounded-lg border bg-muted/50 flex justify-between items-start">
             <div>
-                <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{rule.id}</h4>
+                <h4 className="font-bold flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" />{rule.title}</h4>
                 <p className="text-sm text-muted-foreground mt-1 mb-2">{rule.description}</p>
                 <div className="flex flex-wrap gap-2">
                     {Object.entries(rule.pages).map(([page, permission]) => (
@@ -200,7 +200,7 @@ export default function AccessRulesPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>Esta ação é irreversível. A regra "{deletingRule?.id}" será permanentemente removida.</AlertDialogDescription>
+                <AlertDialogDescription>Esta ação é irreversível. A regra "{deletingRule?.title}" será permanentemente removida.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setDeletingRule(null)}>Cancelar</AlertDialogCancel>

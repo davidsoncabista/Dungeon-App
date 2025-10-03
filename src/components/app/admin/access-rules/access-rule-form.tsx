@@ -45,7 +45,7 @@ const appRoutes = [
 ];
 
 const AccessRuleFormSchema = z.object({
-  id: z.string().min(3, "O ID deve ter pelo menos 3 caracteres.").regex(/^[A-Z][a-zA-Z]*$/, "O ID deve começar com letra maiúscula e conter apenas letras (PascalCase)."),
+  id: z.string(),
   title: z.string().min(3, "O título deve ter pelo menos 3 caracteres."),
   description: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres."),
   pages: z.record(z.enum(["editor", "revisor"])).refine(obj => Object.keys(obj).length > 0, {
@@ -74,7 +74,9 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
   });
 
   const onSubmit = (data: FormValues) => {
-    onSave(data as AccessRule);
+    // Transforma o título em um ID camelCase se for uma nova regra
+    const id = defaultValues?.id || data.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '').replace(/^(.)/, (c) => c.toLowerCase());
+    onSave({ ...data, id } as AccessRule);
   };
   
   const handlePageAccessChange = (pageValue: string, checked: boolean | 'indeterminate') => {
@@ -96,36 +98,20 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ID da Regra</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: ModeradorDeConteudo" {...field} disabled={!!defaultValues} />
-                  </FormControl>
-                  <FormDescription className="text-xs">Identificador único (PascalCase). Não pode ser alterado.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título da Regra</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Moderador de Conteúdo" {...field} />
-                  </FormControl>
-                   <FormDescription className="text-xs">O nome amigável que será exibido no futuro.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
+        <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+            <FormItem>
+                <FormLabel>Título da Regra</FormLabel>
+                <FormControl>
+                <Input placeholder="Ex: Moderador de Conteúdo" {...field} />
+                </FormControl>
+                <FormDescription className="text-xs">O nome amigável que será exibido na lista.</FormDescription>
+                <FormMessage />
+            </FormItem>
+            )}
+        />
         <FormField
           control={form.control}
           name="description"
