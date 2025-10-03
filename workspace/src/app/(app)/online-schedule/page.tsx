@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Agenda Online',
-  description: 'Visualize a disponibilidade das salas e agende sua próxima sessão de jogo.',
-};
-
 import * as React from "react";
 import { addMonths, format, startOfMonth, subMonths, startOfDay, addDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";

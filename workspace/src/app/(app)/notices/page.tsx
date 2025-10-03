@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Mural de Avisos',
-  description: 'Fique por dentro das últimas notícias e comunicados da associação.',
-};
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"

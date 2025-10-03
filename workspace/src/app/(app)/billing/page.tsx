@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Matrícula e Cobranças',
-  description: 'Gerencie seu plano de associação e histórico de pagamentos.',
-};
-
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

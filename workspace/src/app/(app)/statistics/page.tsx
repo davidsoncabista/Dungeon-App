@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Estatísticas',
-  description: 'Análise de uso e engajamento do sistema da associação.',
-};
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Pie, PieChart, Tooltip } from "recharts"

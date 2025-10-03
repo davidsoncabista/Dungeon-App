@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Minhas Reservas',
-  description: 'Acompanhe seus agendamentos, histórico de jogos e suas cotas de uso.',
-};
-
 import { useMemo, useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"

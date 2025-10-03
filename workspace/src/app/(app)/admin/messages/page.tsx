@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Mensagens Diretas',
-  description: 'Envie e acompanhe mensagens individuais para os membros.',
-};
-
 import { useState, useMemo } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"

@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Gerenciamento de Usuários',
-  description: 'Visualize e gerencie os membros da associação.',
-};
-
 import { MoreHorizontal, ShieldCheck, UserCog, Ban, Trash2, ArrowUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

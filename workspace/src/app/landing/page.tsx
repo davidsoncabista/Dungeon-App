@@ -1,12 +1,5 @@
 "use client"
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Dungeon App - Sistema de Reservas para a Associação Dungeon Belém',
-  description: 'A plataforma oficial para membros da Associação Dungeon Belém gerenciarem reservas de salas, comunicação e participação em eventos de RPG, Board Games e Card Games.',
-};
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import * as LucideIcons from "lucide-react";
