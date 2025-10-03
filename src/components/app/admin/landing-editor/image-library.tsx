@@ -7,11 +7,33 @@ import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Upload, Copy, Trash2, Image as ImageIcon, Loader2 } from "lucide-react"
+import { Upload, Copy, Trash2, Image as ImageIcon, Loader2, Info } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Badge } from "@/components/ui/badge"
+
+const allowedDomains = [
+  'firebasestorage.googleapis.com',
+  'placehold.co',
+  'picsum.photos',
+  'images.unsplash.com',
+  'images.pexels.com',
+  'cdn.pixabay.com',
+  'freepik.com',
+  'flaticon.com',
+  'api.storyset.com',
+  'as1.ftcdn.net',
+  'media.gettyimages.com',
+  'image.shutterstock.com',
+  'static.thenounproject.com',
+  'fonts.gstatic.com',
+  'media.giphy.com',
+  'i.imgur.com',
+];
+
 
 export function ImageLibrary() {
   const { toast } = useToast()
@@ -49,6 +71,7 @@ export function ImageLibrary() {
 
   useEffect(() => {
     fetchImages()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,6 +209,33 @@ export function ImageLibrary() {
           onChange={handleImageUpload}
           disabled={isUploading}
         />
+         <div className="text-xs text-muted-foreground mt-2 text-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1 underline hover:text-primary">
+                  <Info className="h-3 w-3" />
+                  Ver domínios de imagem permitidos
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none">Domínios de Imagem Permitidos</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Você pode usar URLs de imagens dos seguintes domínios.
+                    </p>
+                  </div>
+                  <ScrollArea className="h-40">
+                    <div className="flex flex-wrap gap-2">
+                      {allowedDomains.map(domain => (
+                        <Badge key={domain} variant="secondary">{domain}</Badge>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
       </div>
 
       <ScrollArea className="h-96 rounded-md border">

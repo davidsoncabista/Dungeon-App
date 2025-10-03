@@ -1,4 +1,3 @@
-
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -11,36 +10,78 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
+      // Firebase Storage (essencial)
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      // Placeholders
       {
         protocol: 'https',
         hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
       },
+      // Bancos de Imagens Gratuitas
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/**',
+        hostname: 'images.pexels.com',
       },
       {
         protocol: 'https',
-        hostname: 'br.freepik.com',
-        port: '',
-        pathname: '/**',
-      }
+        hostname: 'cdn.pixabay.com',
+      },
+      // Freepik e ecossistema
+      {
+        protocol: 'https',
+        hostname: '**.freepik.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.flaticon.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.storyset.com',
+      },
+      // Bancos de Imagens Premium
+      {
+        protocol: 'https',
+        hostname: 'as1.ftcdn.net', // Adobe Stock
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.gettyimages.com', // Getty Images
+      },
+      {
+        protocol: 'https',
+        hostname: 'image.shutterstock.com', // Shutterstock
+      },
+      // Ícones
+      {
+        protocol: 'https',
+        hostname: 'static.thenounproject.com', // The Noun Project
+      },
+      {
+        protocol: 'https',
+        hostname: 'fonts.gstatic.com', // Google Fonts (Material Icons)
+      },
+      // GIFs
+      {
+        protocol: 'https',
+        hostname: 'media*.giphy.com',
+      },
+      // Hospedagem Genérica
+      {
+        protocol: 'https',
+        hostname: 'i.imgur.com',
+      },
     ],
   },
 };
