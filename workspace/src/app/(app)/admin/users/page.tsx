@@ -1,10 +1,3 @@
-
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Gerenciamento de Usuários',
-  description: 'Visualize e gerencie os membros da associação.',
-};
 "use client"
 
 import { MoreHorizontal, ShieldCheck, UserCog, Ban, Trash2, ArrowUpDown } from "lucide-react"
@@ -251,7 +244,11 @@ function UserTableRow({ user, canEdit, canDelete }: { user: User; canEdit: boole
                 )}
             </TableCell>
             <TableCell className="hidden sm:table-cell text-center">
-                <Badge variant={user.status === 'Ativo' ? 'secondary' : user.status === 'Pendente' ? 'outline' : 'destructive'} className={user.status === 'Ativo' ? 'bg-green-100 text-green-800' : ''}>
+                <Badge variant={user.status === 'Ativo' ? 'secondary' : user.status === 'Pendente' ? 'outline' : 'destructive'} className={cn({
+                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': user.status === 'Ativo',
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': user.status === 'Pendente',
+                    'bg-destructive/20 text-destructive dark:bg-destructive/30': user.status === 'Bloqueado',
+                })}>
                   {user.status}
                 </Badge>
             </TableCell>
