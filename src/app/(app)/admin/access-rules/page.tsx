@@ -46,7 +46,7 @@ export default function AccessRulesPage() {
         const ruleRef = doc(firestore, "accessRules", id);
 
         if (editingRule) {
-            await updateDoc(ruleRef, ruleData);
+            await updateDoc(ruleRef, ruleData as any);
             toast({ title: "Sucesso!", description: `Regra "${id}" atualizada com sucesso.` });
         } else {
             await setDoc(ruleRef, ruleData);

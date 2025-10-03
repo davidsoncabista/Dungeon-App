@@ -46,6 +46,7 @@ const appRoutes = [
 
 const AccessRuleFormSchema = z.object({
   id: z.string().min(3, "O ID deve ter pelo menos 3 caracteres.").regex(/^[A-Z][a-zA-Z]*$/, "O ID deve começar com letra maiúscula e conter apenas letras (PascalCase)."),
+  title: z.string().min(3, "O título deve ter pelo menos 3 caracteres."),
   description: z.string().min(10, "A descrição deve ter pelo menos 10 caracteres."),
   pages: z.record(z.enum(["editor", "revisor"])).refine(obj => Object.keys(obj).length > 0, {
     message: "É necessário conceder acesso a pelo menos uma página."
@@ -66,13 +67,14 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
     resolver: zodResolver(AccessRuleFormSchema),
     defaultValues: {
       id: defaultValues?.id || "",
+      title: defaultValues?.title || "",
       description: defaultValues?.description || "",
       pages: defaultValues?.pages || {},
     },
   });
 
   const onSubmit = (data: FormValues) => {
-    onSave(data);
+    onSave(data as AccessRule);
   };
   
   const handlePageAccessChange = (pageValue: string, checked: boolean | 'indeterminate') => {
@@ -94,20 +96,36 @@ export function AccessRuleForm({ onSave, onCancel, isSubmitting, defaultValues }
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>ID da Regra</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: ModeradorDeConteudo" {...field} disabled={!!defaultValues} />
-              </FormControl>
-              <FormDescription>Identificador único. Não pode ser alterado após a criação.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ID da Regra</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: ModeradorDeConteudo" {...field} disabled={!!defaultValues} />
+                  </FormControl>
+                  <FormDescription className="text-xs">Identificador único (PascalCase). Não pode ser alterado.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título da Regra</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Moderador de Conteúdo" {...field} />
+                  </FormControl>
+                   <FormDescription className="text-xs">O nome amigável que será exibido no futuro.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="description"
