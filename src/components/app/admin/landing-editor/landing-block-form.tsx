@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils"
 
 // --- Schemas ---
 const heroContentSchema = z.object({
-  badge: z.string().min(1, "Obrigatório"),
+  badge: z.string(),
   title: z.string().min(1, "Obrigatório"),
   subtitle: z.string().min(1, "Obrigatório"),
   buttonText: z.string().min(1, "Obrigatório"),
@@ -102,13 +102,15 @@ const defaultHTMLContent = {
 
 const defaultSeparatorContent = {};
 
-const getInitialValues = (defaultValues?: LandingPageBlock): Partial<FormValues> => {
+const getInitialValues = (defaultValues?: LandingPageBlock): FormValues => {
     if (defaultValues) {
         return defaultValues as FormValues;
     }
+    // Retorna um formulário 'hero' completo por padrão para evitar valores `undefined`
     return {
-        type: undefined,
-        title: "",
+        type: 'hero',
+        title: "Novo Bloco Hero",
+        content: defaultHeroContent
     };
 };
 
