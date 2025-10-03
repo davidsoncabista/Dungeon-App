@@ -62,7 +62,9 @@ const htmlContentSchema = z.object({
     html: z.string().min(1, "O conteúdo HTML é obrigatório."),
 });
 
-const separatorContentSchema = z.object({});
+const separatorContentSchema = z.object({
+    style: z.enum(['dices', 'line', 'dots']),
+});
 
 const formSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal('hero'), title: z.string().min(1, "O título do bloco é obrigatório."), content: heroContentSchema }),
@@ -100,10 +102,16 @@ const defaultHTMLContent = {
     html: "<!-- Escreva seu código HTML aqui -->\n<div class=\"text-center\">\n  <h2 class=\"text-2xl font-bold\">Seu Título</h2>\n  <p>Seu parágrafo.</p>\n</div>",
 };
 
-const defaultSeparatorContent = {};
+const defaultSeparatorContent = {
+    style: 'dices' as const,
+};
 
 const getInitialValues = (defaultValues?: LandingPageBlock): FormValues => {
     if (defaultValues) {
+        // Assegura que o 'content' de um separador antigo tenha o estilo padrão
+        if (defaultValues.type === 'separator' && !defaultValues.content.style) {
+            return { ...defaultValues, content: defaultSeparatorContent } as FormValues;
+        }
         return defaultValues as FormValues;
     }
     // Retorna um formulário 'hero' completo por padrão para evitar valores `undefined`
@@ -187,7 +195,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
   useEffect(() => {
     if (defaultValues) {
         setSelectedType(defaultValues.type);
-        form.reset(defaultValues as FormValues);
+        form.reset(getInitialValues(defaultValues));
     }
   }, [defaultValues, form]);
 
@@ -375,9 +383,31 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
             )}
 
             {selectedType === 'separator' && (
-                <div className="p-4 text-center text-muted-foreground">
-                    <p>Este bloco adicionará uma linha separadora ornamental.</p>
-                    <p className="text-sm">Nenhuma configuração adicional é necessária.</p>
+                <div className="space-y-4 p-4 border rounded-md">
+                     <h3 className="font-semibold text-lg">Opções do Separador</h3>
+                     <FormField
+                        control={form.control}
+                        name="content.style"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Estilo</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um estilo..." />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="dices">Dados (Padrão)</SelectItem>
+                                <SelectItem value="line">Linha Simples</SelectItem>
+                                <SelectItem value="dots">Pontilhado</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormDescription>Escolha a aparência visual do separador.</FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
             )}
         </ScrollArea>

@@ -67,9 +67,11 @@ export interface HTMLBlockContent {
 }
 
 /**
- * Conteúdo para o bloco 'Separator'. Não possui conteúdo.
+ * Conteúdo para o bloco 'Separator'.
  */
-export interface SeparatorBlockContent {}
+export interface SeparatorBlockContent {
+    style: 'dices' | 'line' | 'dots';
+}
 
 
 // --- Tipos de Blocos Discernidos ---

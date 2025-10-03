@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from "react";
-import { Dices } from "lucide-react";
+import { Dices, MoreHorizontal } from "lucide-react";
 
 
 // --- Dynamic Components ---
@@ -106,19 +106,33 @@ const HTMLSection = ({ block }: { block: HTMLBlock }) => (
     </section>
 );
 
-const SeparatorSection = ({ block }: { block: SeparatorBlock }) => (
-    <section className="py-12">
-        <div className="container">
-            <div className="flex items-center text-muted-foreground">
-                <div className="flex-grow border-t border-border"></div>
-                <span className="mx-4">
-                    <Dices className="h-6 w-6" />
-                </span>
-                <div className="flex-grow border-t border-border"></div>
+const SeparatorSection = ({ block }: { block: SeparatorBlock }) => {
+    const renderStyle = () => {
+        switch (block.content.style) {
+            case 'line':
+                return <div className="flex-grow border-t border-border"></div>;
+            case 'dots':
+                return <MoreHorizontal className="h-6 w-6" />;
+            case 'dices':
+            default:
+                return <Dices className="h-6 w-6" />;
+        }
+    };
+    
+    return (
+        <section className="py-12">
+            <div className="container">
+                <div className="flex items-center text-muted-foreground">
+                    <div className="flex-grow border-t border-border"></div>
+                    <span className="mx-4">
+                       {renderStyle()}
+                    </span>
+                    <div className="flex-grow border-t border-border"></div>
+                </div>
             </div>
-        </div>
-    </section>
-);
+        </section>
+    );
+};
 
 
 const BlockRenderer = ({ block }: { block: LandingPageBlock }) => {
