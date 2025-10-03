@@ -1,6 +1,17 @@
+import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import './globals.css'
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://adbelm.web.app'), // Substitua pela sua URL de produção
+  title: {
+    default: 'Dungeon App',
+    template: '%s | Dungeon App',
+  },
+  description: 'O sistema de gerenciamento para membros da Associação Dungeon Belém.',
+};
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   
