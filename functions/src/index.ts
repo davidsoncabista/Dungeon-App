@@ -81,6 +81,54 @@ export const setAdminClaim = functions
     }
   });
 
+// --- NOVA FUNÇÃO DE SINCRONIZAÇÃO DE CLAIMS ---
+export const syncUserClaims = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    // 1. Verificação de autenticação
+    if (!context.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+    const userId = context.auth.uid;
+
+    try {
+        // 2. Ler o documento do usuário
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (!userDoc.exists) {
+            console.error(`[Sync Claims] Documento do usuário ${userId} não encontrado no Firestore.`);
+            throw new functions.https.HttpsError("not-found", "Perfil de usuário não encontrado.");
+        }
+        const firestoreRole = userDoc.data()?.role;
+        const tokenRole = context.auth.token.role;
+        
+        // 3. Comparar roles
+        if (firestoreRole === tokenRole) {
+            console.log(`[Sync Claims] Claims para o usuário ${userId} já estão sincronizados. Role: ${firestoreRole}`);
+            return { success: true, message: "Claims já estão em dia." };
+        }
+        
+        console.log(`[Sync Claims] Sincronizando claims para ${userId}. Firestore: '${firestoreRole}', Token: '${tokenRole}'.`);
+        
+        // 4. Se diferentes, atualizar
+        let newClaims: { [key: string]: any } = { role: firestoreRole || 'Convidado' };
+        if (firestoreRole === 'Administrador') {
+            newClaims.admin = true;
+        } else {
+            newClaims.admin = false; // Garante que o claim 'admin' seja removido se não for mais admin
+        }
+
+        await admin.auth().setCustomUserClaims(userId, newClaims);
+
+        console.log(`[Sync Claims] Claims para o usuário ${userId} atualizados com sucesso para ${JSON.stringify(newClaims)}.`);
+        return { success: true, message: `Claims atualizados para ${firestoreRole}.` };
+
+    } catch (error) {
+        console.error(`[Sync Claims] Erro ao sincronizar claims para o usuário ${userId}:`, error);
+        throw new functions.https.HttpsError("internal", "Ocorreu um erro ao sincronizar as permissões.");
+    }
+  });
+
+
 export const handleBookingWrite = functions
   .region("southamerica-east1")
   .firestore.document("bookings/{bookingId}")

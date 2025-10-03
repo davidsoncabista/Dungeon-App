@@ -9,6 +9,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollectionData } from "react-firebase-hooks/firestore";
 import { collection, getFirestore, query, where, orderBy, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import type { User } from "@/lib/types/user";
 import type { Notice } from "@/lib/types/notice";
 import { WelcomeModal } from "@/components/app/welcome-modal";
@@ -71,6 +72,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const firestore = getFirestore(app);
+  const functions = getFunctions(app, 'southamerica-east1');
+
 
   const [currentUserData, userLoading, userError] = useCollectionData<User>(
     user && user.uid ? query(collection(firestore, 'users'), where('uid', '==', user.uid)) : null
@@ -107,36 +110,53 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    const processLogin = async (user: any) => {
+      // Sincroniza os claims primeiro
+      try {
+          const syncUserClaims = httpsCallable(functions, 'syncUserClaims');
+          await syncUserClaims();
+          console.log("[Auth] Claims sincronizados com sucesso.");
+
+          // Força a atualização do token
+          await user.getIdToken(true);
+          console.log("[Auth] Token do usuário atualizado no cliente.");
+
+      } catch (error) {
+          console.error("[Auth] Falha ao sincronizar claims ou atualizar token:", error);
+      }
+
+      if (userLoading) return; // Aguarda os dados do Firestore
+      if (!currentUser) return; // Aguarda os dados do Firestore
+
+      // --- Lógica de redirecionamento e modais ---
+      const access = checkAccess(pathname, currentUser);
+      if (!access.allowed && access.redirect) {
+          router.replace(access.redirect);
+          return;
+      }
+      
+      const hasSeenWelcome = localStorage.getItem(`welcome_${user.uid}`);
+      if (!hasSeenWelcome && (currentUser.status === 'Pendente' || currentUser.category === 'Visitante')) {
+          setIsWelcomeModalOpen(true);
+      }
+      
+      // --- Log de Login ---
+      const sessionLoginKey = `login_${user.uid}_${sessionStorage.getItem('session_id')}`;
+      if (!sessionStorage.getItem(sessionLoginKey)) {
+          createAuditLog(currentUser, 'USER_LOGIN');
+          sessionStorage.setItem(sessionLoginKey, 'true');
+      }
+    };
+
     if (authLoading) return;
     
-    if (!user) {
+    if (user) {
+        processLogin(user);
+    } else {
         router.replace('/login');
-        return;
     }
 
-    if (userLoading) return;
-    
-    if (!currentUser) return;
-
-    // --- Log de Login ---
-    const sessionLoginKey = `login_${user.uid}_${sessionStorage.getItem('session_id')}`;
-    if (!sessionStorage.getItem(sessionLoginKey)) {
-        createAuditLog(currentUser, 'USER_LOGIN');
-        sessionStorage.setItem(sessionLoginKey, 'true');
-    }
-
-    const access = checkAccess(pathname, currentUser);
-    if (!access.allowed && access.redirect) {
-        router.replace(access.redirect);
-        return;
-    }
-
-    const hasSeenWelcome = localStorage.getItem(`welcome_${user.uid}`);
-    if (!hasSeenWelcome && (currentUser.status === 'Pendente' || currentUser.category === 'Visitante')) {
-        setIsWelcomeModalOpen(true);
-    }
-
-  }, [user, currentUser, authLoading, userLoading, pathname, router]);
+  }, [user, currentUser, authLoading, userLoading, pathname, router, functions]);
 
    // Gerencia um ID de sessão para a aba do navegador
     useEffect(() => {
