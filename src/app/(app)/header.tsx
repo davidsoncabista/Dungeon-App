@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate, History } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
@@ -242,9 +242,8 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
            <DropdownMenuItem asChild>
               <Link href="/messages"><Bell className="mr-2 h-4 w-4" />Mensagens {unreadCount > 0 && <span className="ml-auto text-xs bg-destructive text-destructive-foreground rounded-full px-1.5">{unreadCount}</span>}</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configurações</span>
+          <DropdownMenuItem asChild>
+              <Link href="/settings"><Settings className="mr-2 h-4 w-4" />Configurações</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
