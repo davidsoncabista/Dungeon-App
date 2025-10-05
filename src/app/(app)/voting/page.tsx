@@ -51,6 +51,7 @@ export default function VotingPage() {
     // State
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasJustVoted, setHasJustVoted] = useState(false); // Estado local para feedback imediato
 
     // --- Firestore Data ---
     const pollQuery = user ? query(collection(firestore, 'polls'), where('status', '==', 'Aberta'), where('eligibleVoters', 'array-contains', user.uid)) : null;
@@ -72,9 +73,10 @@ export default function VotingPage() {
 
     // --- Memoized Values ---
     const hasVoted = useMemo(() => {
+        if (hasJustVoted) return true; // Usa o estado local primeiro
         if (!votes || !user) return false;
         return votes.some(v => v.id === user.uid);
-    }, [votes, user]);
+    }, [votes, user, hasJustVoted]);
 
     const getOptionValue = (option: any): string => {
         return typeof option === 'string' ? option : option.value;
@@ -87,10 +89,12 @@ export default function VotingPage() {
         try {
             const castVoteFunction = httpsCallable(functions, 'castVote');
             await castVoteFunction({ pollId: activePoll.id, selectedOption });
+            setHasJustVoted(true); // <<<< ATUALIZAÇÃO IMEDIATA
             toast({ title: "Voto Registrado!", description: "Seu voto foi computado com sucesso. Obrigado por participar!" });
         } catch (error: any) {
             console.error("Erro ao registrar voto:", error);
             if (error.code === 'functions/already-exists') {
+              setHasJustVoted(true); // Garante que a UI atualize mesmo se o erro for de duplicidade
               toast({ title: "Voto Duplicado", description: "Seu voto já foi registrado anteriormente para esta enquete.", variant: "default" });
             } else {
               toast({ title: "Erro!", description: error.message || "Não foi possível registrar seu voto.", variant: "destructive" });
