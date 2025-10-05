@@ -92,8 +92,9 @@ export default function VotingPage() {
             toast({ title: "Voto Registrado!", description: "Seu voto foi computado com sucesso. Obrigado por participar!" });
         } catch (error: any) {
             console.error("Erro ao registrar voto:", error);
-            // O erro 'already-exists' é tratado pela UI reativa, então não mostramos toast para ele.
-            if (error.code !== 'functions/already-exists') {
+            if (error.code === 'functions/already-exists') {
+              toast({ title: "Voto Duplicado", description: "Seu voto já foi registrado anteriormente para esta enquete.", variant: "default" });
+            } else {
               toast({ title: "Erro!", description: error.message || "Não foi possível registrar seu voto.", variant: "destructive" });
             }
         } finally {
