@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
@@ -74,9 +75,10 @@ export default function VotingPage() {
     // --- Memoized Values ---
     const hasVoted = useMemo(() => {
         if (hasJustVoted) return true; // Usa o estado local primeiro
+        if (loadingVotes) return false; // Aguarda o carregamento
         if (!votes || !user) return false;
         return votes.some(v => v.id === user.uid);
-    }, [votes, user, hasJustVoted]);
+    }, [votes, user, hasJustVoted, loadingVotes]);
 
     const getOptionValue = (option: any): string => {
         return typeof option === 'string' ? option : option.value;
@@ -89,13 +91,17 @@ export default function VotingPage() {
         try {
             const castVoteFunction = httpsCallable(functions, 'castVote');
             await castVoteFunction({ pollId: activePoll.id, selectedOption });
-            setHasJustVoted(true); // <<<< ATUALIZAÇÃO IMEDIATA
+            setHasJustVoted(true); 
             toast({ title: "Voto Registrado!", description: "Seu voto foi computado com sucesso. Obrigado por participar!" });
         } catch (error: any) {
             console.error("Erro ao registrar voto:", error);
             if (error.code === 'functions/already-exists') {
-              setHasJustVoted(true); // Garante que a UI atualize mesmo se o erro for de duplicidade
-              toast({ title: "Voto Duplicado", description: "Seu voto já foi registrado anteriormente para esta enquete.", variant: "default" });
+              setHasJustVoted(true); 
+              toast({ 
+                  title: "Erro: Voto Duplicado", 
+                  description: "Você já votou nesta enquete. Seu segundo voto não foi computado.", 
+                  variant: "destructive" 
+                });
             } else {
               toast({ title: "Erro!", description: error.message || "Não foi possível registrar seu voto.", variant: "destructive" });
             }
@@ -105,7 +111,7 @@ export default function VotingPage() {
     };
     
     // --- Render Logic ---
-    const isLoading = loadingAuth || loadingPolls || loadingUsers;
+    const isLoading = loadingAuth || loadingPolls || loadingUsers || loadingVotes;
 
     if (isLoading) {
         return <Skeleton className="h-96 w-full max-w-3xl mx-auto" />;
@@ -121,10 +127,6 @@ export default function VotingPage() {
                 </CardContent>
             </Card>
         );
-    }
-    
-    if (loadingVotes && !votes) {
-        return <Skeleton className="h-96 w-full max-w-3xl mx-auto" />;
     }
 
     return (
