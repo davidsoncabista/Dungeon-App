@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
@@ -14,7 +13,7 @@ import type { User } from "@/lib/types/user"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Vote as VoteIcon, ThumbsUp, BarChart3, Loader2 } from "lucide-react"
+import { Vote as VoteIcon, ThumbsUp, BarChart3, Loader2, Hourglass } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -83,25 +82,6 @@ export default function VotingPage() {
         return typeof option === 'string' ? option : option.value;
     };
     
-    const pollResults = useMemo(() => {
-        if (!activePoll || !votes) return [];
-
-        const stringOptions = activePoll.options.map(getOptionValue);
-        
-        const totalWeight = votes.reduce((sum, v) => sum + v.votingWeight, 0);
-        if (totalWeight === 0) return stringOptions.map(opt => ({ option: opt, percentage: 0 }));
-        
-        return stringOptions.map(option => {
-            const optionVotesWeight = votes
-                .filter(v => v.selectedOption === option)
-                .reduce((sum, v) => sum + v.votingWeight, 0);
-            return {
-                option,
-                percentage: (optionVotesWeight / totalWeight) * 100,
-            };
-        });
-    }, [activePoll, votes]);
-    
     // --- Handlers ---
     const handleSubmitVote = async () => {
         if (!selectedOption || !user || !activePoll) return;
@@ -155,31 +135,12 @@ export default function VotingPage() {
             </div>
             
             {hasVoted ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5"/> Resultado Parcial</CardTitle>
-                        <CardDescription>O resultado atual da votação. Seu voto já foi computado.</CardDescription>
+                 <Card>
+                    <CardHeader className="items-center text-center">
+                        <Hourglass className="h-12 w-12 text-muted-foreground" />
+                        <CardTitle>Voto Registrado com Sucesso!</CardTitle>
+                        <CardDescription>Obrigado por participar. Os resultados serão divulgados publicamente após o encerramento da votação.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {loadingVotes ? <p>Calculando resultados...</p> : pollResults.map(result => (
-                             <div key={result.option} className="space-y-1">
-                                <div className="flex justify-between items-baseline">
-                                    <span className="font-medium">{result.option}</span>
-                                    <span className="text-sm font-bold text-muted-foreground">{result.percentage.toFixed(1)}%</span>
-                                </div>
-                                <Progress value={result.percentage} />
-                            </div>
-                        ))}
-                    </CardContent>
-                    <CardFooter>
-                        <Alert>
-                            <ThumbsUp className="h-4 w-4" />
-                            <AlertTitle>Obrigado por participar!</AlertTitle>
-                            <AlertDescription>
-                                Seu voto é importante para o futuro da associação.
-                            </AlertDescription>
-                        </Alert>
-                    </CardFooter>
                 </Card>
             ) : (
                 <Card>
