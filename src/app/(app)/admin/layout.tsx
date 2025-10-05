@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       { href: "/admin/access-rules", label: "ACL", shortLabel: "ACL", icon: Eye, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/landing-editor", label: "Editor Landing", shortLabel: "Landing", icon: LayoutTemplate, roles: ["Administrador", "Editor", "Revisor"] },
       { href: "/admin/rooms", label: "Salas", shortLabel: "Salas", icon: DoorOpen, roles: ["Administrador", "Editor", "Revisor"] },
-      { href: "/admin/audit-log", label: "Auditoria", shortLabel: "Log", icon: History, roles: ["Administrador", "Editor", "Revisor"] },
+      { href: "/admin/audit-log", label: "Auditoria", shortLabel: "Log", icon: History, roles: ["Administrador", "Editor"] },
     ];
     
     return (

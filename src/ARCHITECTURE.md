@@ -15,6 +15,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Caixa de Mensagens**: Página para o usuário visualizar mensagens privadas enviadas pela administração.
 - **Página de Votação**: Uma página (`/voting`) que aparece condicionalmente para membros elegíveis quando uma votação está ativa.
 - **Área do Administrador**: Painel para gerenciamento completo do sistema, incluindo planos, usuários, salas, finanças, regras de negócio e votações.
+- **Log de Auditoria**: Uma página (`/admin/audit-log`) onde administradores podem visualizar um registro de todas as ações importantes realizadas no sistema, com filtros para facilitar a análise.
 
 ### 2. Funcionalidades do Usuário (Associado)
 - **Autenticação, Onboarding e Controle de Acesso**:
@@ -41,8 +42,9 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
     - **Transparência de Pagamento**: O usuário tem uma visão clara do status de pagamento de sua taxa de inscrição (joia) em seu perfil.
 - **Sistema de Votação**:
     - **Acesso Condicional**: Um item de menu "Votação" e a página `/voting` se tornam visíveis apenas quando há uma votação ativa para a qual o membro é elegível.
+    - **Descrição Dinâmica**: A página de votação exibe descrições detalhadas para cada proposta ou candidato, utilizando um sistema de conteúdo que permite associar perfis de membros (com foto e nome) às opções, tornando a votação mais clara e informativa.
     - **Interface de Voto**: O membro pode visualizar as opções e registrar seu voto uma única vez.
-    - **Visualização de Resultados**: Após votar ou após o encerramento da votação, o membro pode visualizar o resultado final.
+    - **Confirmação de Voto**: Após o voto, a interface é substituída por uma mensagem clara, informando que a ação foi registrada e que os resultados estarão disponíveis após o encerramento.
 
 ### 3. Funcionalidades do Administrador
 - **Níveis de Acesso**: Definir perfis de administrador (Administrador, Editor, Revisor) com permissões granulares gerenciadas por Custom Claims no Firebase.
@@ -52,7 +54,7 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
     - **Categorização**: As mensagens podem ser categorizadas como `aviso`, `advertencia`, `multa` ou `bloqueio`, facilitando a comunicação formal.
     - **Histórico**: A administração pode visualizar todas as mensagens enviadas e seus status (lida/não lida).
 - **Módulo de Votação (Admin)**:
-  - **Criação Flexível**: Interface no painel de administração (`/admin/system`) para criar votações com título, descrição e opções personalizáveis.
+  - **Criação Flexível**: Interface no painel de administração (`/admin/system`) para criar votações com título, opções e uma descrição dinâmica, permitindo adicionar múltiplos itens de conteúdo com texto e associação de perfis de membros.
   - **Controle de Votantes**: Permitir que o administrador selecione uma lista de membros "Ativos" elegíveis para cada votação, garantindo que apenas o público certo participe.
   - **Gestão do Ciclo de Vida**: Funcionalidades para iniciar e encerrar votações manualmente, dando controle total sobre o período de votação.
   - **Apuração de Votos**: O sistema calculará automaticamente os resultados finais, ponderando cada voto com base na `category` (e, consequentemente, no `votingWeight`) do membro no momento da votação.
@@ -61,35 +63,27 @@ Este documento descreve os objetivos e a arquitetura planejada para o sistema de
 - **Gerenciamento de Salas**: CRUD de salas e definição de capacidade.
 - **Gerenciamento de Usuários**: Visualizar, bloquear, aplicar multas e gerenciar níveis de acesso.
 - **Gerenciamento de Cobranças**: Controle de cobranças avulsas e visualização do histórico financeiro em `/admin/finance`.
+- **Auditoria do Sistema**:
+    - **Visualizador de Logs**: Acesso à página `/admin/audit-log` que exibe uma tabela com todas as ações críticas registradas no sistema.
+    - **Filtros Avançados**: A interface permite filtrar os logs por e-mail do ator, tipo de ação e intervalo de datas para facilitar a investigação.
 
 ## Requisitos Não-Funcionais
 
-### 1. Acessibilidade (WCAG)
-- Garantir que a aplicação seja acessível a todos os usuários, seguindo as diretrizes do WCAG (Web Content Accessibility Guidelines).
-- **Contraste de Cores**: O tema da aplicação deve garantir um contraste adequado entre texto e fundo.
-- **Navegação por Teclado**: Todos os elementos interativos (botões, links, inputs) devem ser totalmente navegáveis e operáveis utilizando apenas o teclado.
-- **Leitores de Tela**: A aplicação deve ser compatível com leitores de tela (como NVDA e VoiceOver), utilizando HTML semântico e atributos ARIA (`aria-label`, `aria-describedby`, etc.) para fornecer contexto adequado.
-- **Rótulos e Descrições**: Todos os campos de formulário e controles devem ter rótulos claros e, quando necessário, descrições.
+### 1. Sistema de Auditoria
+- **Rastreamento de Ações**: O sistema deve registrar eventos críticos em uma coleção `auditLogs` no Firestore para fins de segurança e rastreabilidade.
+- **Ações Registradas**:
+    - `USER_LOGIN`: Log de cada login bem-sucedido.
+    - `CREATE_BOOKING` / `CANCEL_BOOKING`: Logs para criação e cancelamento de reservas.
+    - `PROCESS_PAYMENT`: Log de pagamentos processados com sucesso pelo webhook.
+    - `SEND_MESSAGE`: Log de mensagens diretas enviadas pela administração.
+    - `CREATE_GUEST_CHARGE`: Log de cobranças automáticas por convidados extras.
+- **Interface de Consulta**: Fornecer uma interface para administradores (`/admin/audit-log`) onde seja possível visualizar e filtrar esses logs.
 
-### 2. API de Regras de Acesso (CRUD)
-A arquitetura do sistema está evoluindo de uma estrutura de regras estática (definida no código-fonte) para um modelo dinâmico gerenciado via banco de dados e exposto através de uma API RESTful. Isso permitirá que as permissões de cada nível de usuário (`AdminRole`) sejam modificadas em tempo de execução, sem a necessidade de um novo deploy.
+### 2. Acessibilidade (WCAG)
+- Garantir que a aplicação seja acessível a todos os usuários, seguindo as diretrizes do WCAG.
 
--   **`POST /regras`**: Cria uma nova regra de acesso.
-    -   **Payload de Requisição:** `AccessRule`
-    -   **Resposta de Sucesso (201):** A regra recém-criada.
-
--   **`GET /regras/{id}`**: Busca uma regra de acesso específica pelo seu ID.
-    -   **Parâmetro de URL:** `id` (string)
-    -   **Resposta de Sucesso (200):** O objeto `AccessRule` correspondente.
-
--   **`PUT /regras/{id}`**: Atualiza uma regra de acesso existente.
-    -   **Parâmetro de URL:** `id` (string)
-    -   **Payload de Requisição:** `Partial<AccessRule>`
-    -   **Resposta de Sucesso (200):** A regra atualizada.
-
--   **`DELETE /regras/{id}`**: Exclui uma regra de acesso.
-    -   **Parâmetro de URL:** `id` (string)
-    -   **Resposta de Sucesso (204):** Sem conteúdo.
+### 3. API de Regras de Acesso (CRUD)
+- A arquitetura do sistema evoluiu para um modelo dinâmico gerenciado via banco de dados e exposto através de uma API RESTful.
 
 #### Modelo de Dados: `AccessRule`
 O objeto `AccessRule` representa a estrutura de uma regra de acesso no banco de dados.
