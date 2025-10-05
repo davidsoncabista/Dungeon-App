@@ -17,9 +17,7 @@ import { Vote as VoteIcon, ThumbsUp, BarChart3, Loader2, Hourglass } from "lucid
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
-import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 function PollDescriptionCard({ item, user }: { item: PollDescriptionItem, user?: User }) {
