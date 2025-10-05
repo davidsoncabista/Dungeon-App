@@ -1,4 +1,3 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -279,7 +278,7 @@ export function LandingBlockForm({ onSave, onCancel, isSubmitting, defaultValues
                 
                 <div className="space-y-4">
                 <FormLabel>Painel de Funcionalidades</FormLabel>
-                {fields.map((item, index) => {
+                {Array.isArray(fields) && fields.map((item, index) => {
                     return (
                         <Card key={item.id} className="relative overflow-hidden">
                             <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => remove(index)}>

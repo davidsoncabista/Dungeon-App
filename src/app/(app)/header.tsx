@@ -131,7 +131,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
           href="/online-schedule"
           className="flex items-center gap-2 text-lg font-semibold md:text-base"
         >
-          <Image src="/logo.svg" alt="Dungeon App Logo" width={40} height={40} className="rounded-md" />
+          <Image src="/logo.svg" alt="Dungeon App Logo" width={75} height={75} className="rounded-md" />
           <span className="sr-only">Dungeon App</span>
         </Link>
         {allVisibleItems.map((item) => (
@@ -173,7 +173,7 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
               className="flex items-center gap-2 text-lg font-semibold mb-4"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <Image src="/logo.svg" alt="Dungeon App Logo" width={32} height={32} className="rounded-md" />
+              <Image src="/logo.svg" alt="Dungeon App Logo" width={75} height={75} className="rounded-md" />
               <span className="">Dungeon App</span>
             </Link>
             {allVisibleItems.map((item) => (
