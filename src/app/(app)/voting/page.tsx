@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
@@ -7,7 +8,9 @@ import { getFirestore, collection, query, where } from "firebase/firestore"
 import { auth, app } from "@/lib/firebase"
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-import type { Poll, Vote } from "@/lib/types/poll"
+import type { Poll, Vote, PollDescriptionItem } from "@/lib/types/poll"
+import type { User } from "@/lib/types/user"
+
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -18,6 +21,29 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { Progress } from "@/components/ui/progress"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+function PollDescriptionCard({ item, user }: { item: PollDescriptionItem, user?: User }) {
+    return (
+        <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-start gap-4 bg-muted/50">
+                {user && (
+                    <Avatar className="h-12 w-12 border">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                )}
+                <div className="flex-1">
+                    <CardTitle>{item.title}</CardTitle>
+                    {user && <CardDescription>{user.name}</CardDescription>}
+                </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.description}</p>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function VotingPage() {
     const [user, loadingAuth] = useAuthState(auth);
@@ -36,6 +62,16 @@ export default function VotingPage() {
 
     const votesQuery = activePoll ? query(collection(firestore, `polls/${activePoll.id}/votes`)) : null;
     const [votes, loadingVotes] = useCollectionData<Vote>(votesQuery, { idField: 'id' });
+    
+    // Query for all users to map member profiles in description
+    const usersQuery = query(collection(firestore, 'users'));
+    const [allUsers, loadingUsers] = useCollectionData<User>(usersQuery, { idField: 'uid' });
+
+    const usersMap = useMemo(() => {
+        if (!allUsers) return new Map<string, User>();
+        return new Map(allUsers.map(u => [u.uid, u]));
+    }, [allUsers]);
+
 
     // --- Memoized Values ---
     const hasVoted = useMemo(() => {
@@ -86,7 +122,7 @@ export default function VotingPage() {
     };
     
     // --- Render Logic ---
-    const isLoading = loadingAuth || loadingPolls;
+    const isLoading = loadingAuth || loadingPolls || loadingUsers;
 
     if (isLoading) {
         return <Skeleton className="h-96 w-full max-w-3xl mx-auto" />;
@@ -110,8 +146,13 @@ export default function VotingPage() {
 
     return (
         <div className="max-w-3xl mx-auto">
-            <h1 className="text-3xl font-bold tracking-tight font-headline mb-2">{activePoll.title}</h1>
-            <p className="text-muted-foreground mb-8">{activePoll.description}</p>
+            <h1 className="text-3xl font-bold tracking-tight font-headline mb-8 text-center">{activePoll.title}</h1>
+            
+            <div className="space-y-6 mb-8">
+                {Array.isArray(activePoll.description) && activePoll.description.map((item, index) => (
+                    <PollDescriptionCard key={index} item={item} user={item.memberId ? usersMap.get(item.memberId) : undefined} />
+                ))}
+            </div>
             
             {hasVoted ? (
                 <Card>
