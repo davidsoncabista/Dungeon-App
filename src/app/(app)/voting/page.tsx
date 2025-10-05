@@ -129,12 +129,6 @@ export default function VotingPage() {
         <div className="max-w-3xl mx-auto">
             <h1 className="text-3xl font-bold tracking-tight font-headline mb-8 text-center">{activePoll.title}</h1>
             
-            <div className="space-y-6 mb-8">
-                {Array.isArray(activePoll.description) && activePoll.description.map((item, index) => (
-                    <PollDescriptionCard key={index} item={item} user={item.memberId ? usersMap.get(item.memberId) : undefined} />
-                ))}
-            </div>
-            
             {hasVoted ? (
                  <Card>
                     <CardHeader className="items-center text-center">
@@ -144,34 +138,41 @@ export default function VotingPage() {
                     </CardHeader>
                 </Card>
             ) : (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Escolha sua opção</CardTitle>
-                        <CardDescription>Selecione uma das opções abaixo e confirme seu voto. Esta ação é irreversível.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ""}>
-                            <div className="space-y-2">
-                               {activePoll.options.map((option, index) => {
-                                   const optionValue = getOptionValue(option);
-                                   const uniqueKey = `${optionValue}-${index}`;
-                                   return (
-                                        <Label key={uniqueKey} htmlFor={uniqueKey} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
-                                            <RadioGroupItem value={optionValue} id={uniqueKey} />
-                                            <span className="font-semibold">{optionValue}</span>
-                                        </Label>
-                                   )
-                               })}
-                            </div>
-                        </RadioGroup>
-                    </CardContent>
-                    <CardFooter>
-                         <Button onClick={handleSubmitVote} disabled={!selectedOption || isSubmitting} className="w-full">
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            Confirmar Voto
-                        </Button>
-                    </CardFooter>
-                </Card>
+                <>
+                    <div className="space-y-6 mb-8">
+                        {Array.isArray(activePoll.description) && activePoll.description.map((item, index) => (
+                            <PollDescriptionCard key={index} item={item} user={item.memberId ? usersMap.get(item.memberId) : undefined} />
+                        ))}
+                    </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Escolha sua opção</CardTitle>
+                            <CardDescription>Selecione uma das opções abaixo e confirme seu voto. Esta ação é irreversível.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ""}>
+                                <div className="space-y-2">
+                                {activePoll.options.map((option, index) => {
+                                    const optionValue = getOptionValue(option);
+                                    const uniqueKey = `${optionValue}-${index}`;
+                                    return (
+                                            <Label key={uniqueKey} htmlFor={uniqueKey} className="flex items-center gap-4 p-4 rounded-md border has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
+                                                <RadioGroupItem value={optionValue} id={uniqueKey} />
+                                                <span className="font-semibold">{optionValue}</span>
+                                            </Label>
+                                    )
+                                })}
+                                </div>
+                            </RadioGroup>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={handleSubmitVote} disabled={!selectedOption || isSubmitting} className="w-full">
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Confirmar Voto
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </>
             )}
         </div>
     )
