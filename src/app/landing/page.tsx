@@ -17,6 +17,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from "react";
 import { Dices, MoreHorizontal } from "lucide-react";
+import { version } from "../../../package.json";
 
 
 // --- Dynamic Components ---
@@ -230,7 +231,8 @@ export default function LandingPage() {
                 >
                   davidson.dev.br
                 </a>
-              </p>
+            </p>
+            <p>Versão: {version}</p>
           </div>
         </div>
       </footer>
