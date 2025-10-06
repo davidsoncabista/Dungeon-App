@@ -49,7 +49,7 @@ interface LogEntry {
   timestamp: {
     seconds: number;
     nanoseconds: number;
-  };
+  } | null;
 }
 
 // --- Componentes ---
@@ -224,7 +224,7 @@ function HistoryLog({ sessionId }: { sessionId: string }) {
                         {loadingLogs && <p className="text-muted-foreground">Carregando histórico...</p>}
                         {logs.map((log) => (
                             <p key={log.id} className="text-gray-300">
-                                <span className="text-gray-500">[{format(log.timestamp.seconds * 1000, 'HH:mm:ss', { locale: ptBR })}]</span> {log.message}
+                                <span className="text-gray-500">[{log.timestamp ? format(log.timestamp.seconds * 1000, 'HH:mm:ss', { locale: ptBR }) : '...sending'}]</span> {log.message}
                             </p>
                         ))}
                          {!loadingLogs && logs.length === 0 && <p className="text-center text-muted-foreground pt-10">Nenhuma rolagem ainda.</p>}
@@ -443,5 +443,3 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
-
-    
