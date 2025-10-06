@@ -14,7 +14,8 @@ import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, writeBatch
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { app } from '@/lib/firebase';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-
+import { FirestorePermissionError } from '@/lib/types/Errors';
+import { errorEmitter } from '@/lib/error-emitter';
 
 // --- Tipos e Dados ---
 
@@ -54,11 +55,22 @@ function ActorCard({ actor, sessionId }: { actor: Actor; sessionId: string }) {
   const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
 
   const handleUpdate = async (data: Partial<Actor>) => {
-    await updateDoc(actorRef, data);
+    updateDoc(actorRef, data).catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: actorRef.path,
+            operation: 'update',
+            requestResourceData: data
+        }));
+    });
   };
   
   const handleRemove = async () => {
-      await deleteDoc(actorRef);
+    deleteDoc(actorRef).catch((err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: actorRef.path,
+            operation: 'delete'
+        }));
+    });
   };
 
   const addStatus = async () => {
@@ -209,7 +221,7 @@ function AmazegameContent() {
 
     const addActor = async () => {
         if (!sessionId) return;
-        const newActor: Omit<Actor, 'id'> = {
+        const newActorData: Omit<Actor, 'id'> = {
             name: 'Novo Ator',
             tier: 'D',
             initiative: 0,
@@ -220,7 +232,13 @@ function AmazegameContent() {
             statuses: [],
         };
         const actorsRef = collection(firestore, `amazegame/${sessionId}/actors`);
-        await addDoc(actorsRef, newActor);
+        addDoc(actorsRef, newActorData).catch((err) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: actorsRef.path,
+                operation: 'create',
+                requestResourceData: newActorData
+            }));
+        });
     };
 
     const rollAllInitiatives = async () => {
@@ -233,7 +251,12 @@ function AmazegameContent() {
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
             batch.update(actorRef, { initiative: total });
         });
-        await batch.commit();
+        batch.commit().catch((err) => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `amazegame/${sessionId}/actors`,
+                operation: 'update',
+            }));
+        });
     };
 
     const nextCycle = async () => {
@@ -245,7 +268,12 @@ function AmazegameContent() {
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
             batch.update(actorRef, { initiative: newInitiative, statuses: updatedStatuses });
         });
-        await batch.commit();
+        batch.commit().catch((err) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `amazegame/${sessionId}/actors`,
+                operation: 'update',
+            }));
+        });
     };
 
     const clearAll = async () => {
@@ -255,7 +283,12 @@ function AmazegameContent() {
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
             batch.delete(actorRef);
         });
-        await batch.commit();
+        batch.commit().catch((err) => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `amazegame/${sessionId}/actors`,
+                operation: 'delete'
+            }));
+        });
     };
 
     if (!sessionId || loadingActors) {
@@ -329,3 +362,5 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
+
+    
