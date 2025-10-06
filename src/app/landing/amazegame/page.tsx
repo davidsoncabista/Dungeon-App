@@ -206,7 +206,7 @@ function HistoryLog({ sessionId }: { sessionId: string }) {
     const firestore = getFirestore(app);
     const logsCollectionRef = useMemo(() => collection(firestore, `amazegame/${sessionId}/logs`), [firestore, sessionId]);
     const [logsSnapshot, loadingLogs] = useCollection(query(logsCollectionRef, orderBy('timestamp', 'asc')));
-    const logs = useMemo(() => logsSnapshot?.docs.map(doc => doc.data() as LogEntry) || [], [logsSnapshot]);
+    const logs = useMemo(() => logsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as LogEntry)) || [], [logsSnapshot]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -267,8 +267,7 @@ function AmazegameContent() {
     const addLogEntry = async (message: string) => {
         if (!sessionId) return;
         const logsRef = collection(firestore, `amazegame/${sessionId}/logs`);
-        const newLogRef = doc(logsRef);
-        await setDoc(newLogRef, { id: newLogRef.id, message, timestamp: serverTimestamp() });
+        await addDoc(logsRef, { message, timestamp: serverTimestamp() });
     };
 
     const addActor = async () => {
@@ -299,16 +298,21 @@ function AmazegameContent() {
         const batch = writeBatch(firestore);
         const tierDice: Record<Tier, number> = { S: 4, A: 6, B: 8, C: 10, D: 12 };
         
+        const logPromises: Promise<void>[] = [];
+
         actors.forEach(actor => {
             const d = tierDice[actor.tier];
             const rolls = Array.from({ length: 3 }, () => Math.floor(Math.random() * d) + 1);
             const total = rolls.reduce((a, b) => a + b, 0);
             
-            addLogEntry(`${actor.name} rolou 3d${d} (${rolls.join(' + ')}) = ${total}`);
+            logPromises.push(addLogEntry(`${actor.name} rolou 3d${d} (${rolls.join(' + ')}) = ${total}`));
             
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
             batch.update(actorRef, { initiative: total });
         });
+        
+        await Promise.all(logPromises);
+
         batch.commit().catch((err) => {
              errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: `amazegame/${sessionId}/actors`,
@@ -439,3 +443,5 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
+
+    
