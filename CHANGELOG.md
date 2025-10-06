@@ -1,4 +1,33 @@
 # Changelog
+## v1.6.2 - Correção na Sincronização de Permissões
+* **fix(auth): Garante a sincronização de permissões do usuário após o login**
+    * Implementada a função `syncUserClaims` que é chamada no frontend (`AppLayout`) após o login do usuário.
+    * Esta função compara a `role` (nível de acesso) presente no token de autenticação do Firebase com a `role` registrada no documento do usuário no Firestore.
+    * Se houver uma divergência, a função força a atualização dos *custom claims* do usuário no Firebase Auth para refletir o estado correto do banco de dados, que é a fonte da verdade.
+    * Isso corrige um bug crítico em que um usuário promovido a administrador (ou rebaixado) não tinha suas permissões atualizadas no cliente sem um novo login, causando inconsistências de acesso.
+    * O token do usuário no lado do cliente é forçado a recarregar (`getIdToken(true)`) para que as novas permissões entrem em vigor imediatamente.
+
+## v1.6.1 - Refatoração do Gerenciamento de Usuários
+* **refactor(admin): Centraliza a lógica de ações do usuário**
+    * Os componentes de diálogo para ações de administrador (`BlockUserDialog`, `DeleteUserDialog`, `EditRoleDialog`) foram extraídos da página de gerenciamento de usuários (`users/page.tsx`) e movidos para um novo componente reutilizável em `src/components/app/users/user-actions.tsx`.
+    * A lógica de renderização da linha da tabela de usuários foi movida para seu próprio componente, `UserTableRow`, que agora importa e utiliza o `UserActions`.
+    * Essa refatoração limpa a página principal, melhora a organização do código e facilita a manutenção futura do sistema de gerenciamento de usuários.
+
+## v1.6.0 - Sistema de Auditoria e Votação Aprimorada
+Esta versão introduz um sistema de auditoria completo para rastrear ações importantes e aprimora significativamente o módulo de votação, tornando-o mais informativo e interativo.
+
+* **feat(audit): Implementa um sistema de log de auditoria completo**
+    * **Rastreamento de Ações**: Todas as ações críticas (logins, criação/cancelamento de reservas, pagamentos, envio de mensagens) agora são registradas na nova coleção `auditLogs` do Firestore.
+    * **Interface de Visualização**: Criada a nova página `/admin/audit-log`, onde administradores podem visualizar, pesquisar e filtrar todos os logs de auditoria por usuário, ação ou período.
+* **feat(voting): Adiciona sistema de conteúdo dinâmico à descrição das votações**
+    * **Descrição Modular**: A descrição das votações agora suporta um formato de "blocos de conteúdo", permitindo que administradores criem descrições ricas com múltiplos tópicos e propostas.
+    * **Perfil de Membro**: É possível associar um membro (com foto e nome) a um item da descrição, ideal para eleições de cargos ou apresentação de candidatos.
+    * **Melhora na UX**: A página de votação agora renderiza esses blocos de conteúdo como cards, tornando a informação mais clara e organizada para o votante.
+* **fix(voting): Aprimora o feedback visual após o voto**
+    * Após registrar um voto, a interface da enquete é imediatamente substituída por uma mensagem de confirmação clara, informando que o voto foi computado e que os resultados serão divulgados posteriormente. Corrigido o bug que mantinha a enquete visível.
+* **fix(build): Corrige múltiplos erros de compilação do Next.js**
+    * Resolvido o erro "You are attempting to export "metadata" from a component marked with "use client"" removendo a exportação de metadados de todos os componentes de cliente.
+    * Corrigido o posicionamento da diretiva `"use client"` em diversos arquivos.
 
 ## v1.5.0 - Refatoração da Responsividade e Melhorias de UX
 

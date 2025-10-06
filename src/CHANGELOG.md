@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.6.2 - Correção na Sincronização de Permissões
+* **fix(auth): Garante a sincronização de permissões do usuário após o login**
+    * Implementada a função `syncUserClaims` que é chamada no frontend (`AppLayout`) após o login do usuário.
+    * Esta função compara a `role` (nível de acesso) presente no token de autenticação do Firebase com a `role` registrada no documento do usuário no Firestore.
+    * Se houver uma divergência, a função força a atualização dos *custom claims* do usuário no Firebase Auth para refletir o estado correto do banco de dados, que é a fonte da verdade.
+    * Isso corrige um bug crítico em que um usuário promovido a administrador (ou rebaixado) não tinha suas permissões atualizadas no cliente sem um novo login, causando inconsistências de acesso.
+    * O token do usuário no lado do cliente é forçado a recarregar (`getIdToken(true)`) para que as novas permissões entrem em vigor imediatamente.
+
+## v1.6.1 - Refatoração do Gerenciamento de Usuários
+* **refactor(admin): Centraliza a lógica de ações do usuário**
+    * Os componentes de diálogo para ações de administrador (`BlockUserDialog`, `DeleteUserDialog`, `EditRoleDialog`) foram extraídos da página de gerenciamento de usuários (`users/page.tsx`) e movidos para um novo componente reutilizável em `src/components/app/users/user-actions.tsx`.
+    * A lógica de renderização da linha da tabela de usuários foi movida para seu próprio componente, `UserTableRow`, que agora importa e utiliza o `UserActions`.
+    * Essa refatoração limpa a página principal, melhora a organização do código e facilita a manutenção futura do sistema de gerenciamento de usuários.
+
 ## v1.6.0 - Sistema de Auditoria e Votação Aprimorada
 
 Esta versão introduz um sistema de auditoria completo para rastrear ações importantes e aprimora significativamente o módulo de votação, tornando-o mais informativo e interativo.
