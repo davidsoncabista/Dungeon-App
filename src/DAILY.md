@@ -2,17 +2,33 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Foco Atual (Sprint 12)
+## Foco Atual (Sprint 13)
+
+### Foco: Polimento Final e Otimização de Performance
+**Objetivo:** Realizar os últimos ajustes finos na UX, otimizar o carregamento de imagens e preparar a aplicação para um lançamento estável.
+
+- [ ] **Tarefa 13.1 (UX/UI):**
+  - [ ] Revisar todos os modais para garantir consistência visual e de comportamento.
+  - [ ] Adicionar um feedback visual mais claro (spinner) em botões durante operações assíncronas.
+- [ ] **Tarefa 13.2 (Performance):**
+  - [ ] Otimizar o carregamento de imagens na página de usuários e no editor da landing page.
+  - [ ] Analisar e reduzir o tamanho do bundle inicial do aplicativo.
+- [ ] **Tarefa 13.3 (Documentação Final):**
+  - [ ] Revisar o `README.md` e `ARCHITECTURE.md` para garantir que toda a documentação esteja 100% alinhada com a versão final do aplicativo.
+
+---
+
+## Concluído: Sprint 12
 
 ### Foco: Melhorias de UX e Refatoração de Código
 **Objetivo:** Aprimorar a experiência do usuário em fluxos chave e refatorar componentes para maior clareza e manutenção.
 
-- [ ] **Tarefa 12.1 (UX de Pagamento):**
-  - [ ] Ao confirmar um pagamento no Mercado Pago, redirecionar o usuário para uma página de status (`/billing/status?status=success`) em vez de apenas exibir um toast.
-- [ ] **Tarefa 12.2 (UX de Onboarding):**
-  - [ ] Após um novo usuário completar o perfil, redirecioná-lo automaticamente para a página de matrícula (`/billing`) em vez de esperar que ele clique no menu.
-- [ ] **Tarefa 12.3 (Refatoração):**
-  - [ ] Simplificar o componente `UserTableRow` movendo os modais de ação (`BlockUserDialog`, `DeleteUserDialog`, `EditRoleDialog`) para um novo componente (`UserActions`).
+- [x] **Tarefa 12.1 (UX de Pagamento):**
+  - [x] Ao confirmar um pagamento no Mercado Pago, redirecionar o usuário para uma página de status (`/billing/status?status=success`) em vez de apenas exibir um toast.
+- [x] **Tarefa 12.2 (UX de Onboarding):**
+  - [x] Após um novo usuário completar o perfil, redirecioná-lo automaticamente para a página de matrícula (`/billing`) em vez de esperar que ele clique no menu.
+- [x] **Tarefa 12.3 (Refatoração):**
+  - [x] Simplificar o componente `UserTableRow` movendo os modais de ação (`BlockUserDialog`, `DeleteUserDialog`, `EditRoleDialog`) para um novo componente (`UserActions`).
 
 ---
 
