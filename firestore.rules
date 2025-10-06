@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -6,8 +7,7 @@ service cloud.firestore {
     // --- REGRAS GERAIS ---
     // A coleção 'users' armazena perfis públicos e dados de associação.
     match /users/{userId} {
-      // CORRETO: Qualquer usuário autenticado pode ler os perfis de outros usuários.
-      // Essencial para o app funcionar.
+      // Qualquer usuário autenticado pode ler os perfis de outros usuários.
       allow read: if request.auth != null;
       
       // O próprio usuário pode atualizar seu perfil.
@@ -27,7 +27,7 @@ service cloud.firestore {
 
     // A coleção 'bookings' contém as reservas.
     match /bookings/{bookingId} {
-      // CORRETO: Qualquer usuário autenticado pode ler os detalhes de uma reserva.
+      // Qualquer usuário autenticado pode ler os detalhes de uma reserva.
       allow read: if request.auth != null;
 
       // A criação é permitida se o usuário for o organizador da reserva.
@@ -42,7 +42,7 @@ service cloud.firestore {
     
     // A coleção 'plans' é configurada pelo admin.
     match /plans/{planId} {
-      // CORRETO: Qualquer um pode ler os planos disponíveis.
+      // Qualquer um pode ler os planos disponíveis.
       allow read: if true;
       // Apenas admins podem criar, editar ou deletar planos.
       allow write: if request.auth.token.role == 'Administrador';
@@ -56,10 +56,9 @@ service cloud.firestore {
 
     // Coleção de 'notices' (avisos).
     match /notices/{noticeId} {
-      // CORRETO: A leitura pública ("if true") já permite que qualquer usuário, logado ou não, veja os avisos.
-      // Isso já atende ao requisito do AppLayout.
+      // Leitura pública para que qualquer usuário veja os avisos.
       allow read: if true;
-      allow write: if request.auth.token.role == 'Administrador'; // Apenas admins podem criar/editar/deletar
+      allow write: if request.auth.token.role == 'Administrador';
     }
     
     // Coleção de 'transactions' (transações financeiras).
@@ -67,27 +66,22 @@ service cloud.firestore {
       // O usuário pode ler suas próprias transações. Admins podem ler todas.
       allow read: if request.auth.uid == resource.data.userId || request.auth.token.role == 'Administrador';
       // Apenas Cloud Functions (backend) ou Admins podem criar/atualizar.
-      // A exclusão não é permitida para manter o histórico.
       allow create, update: if request.auth.token.role == 'Administrador';
-      allow delete: if false;
+      allow delete: if false; // Não permitir exclusão para manter histórico.
     }
     
-    // --- REGRAS PARA MENSAGENS PRIVADAS (CORRIGIDO) ---
+    // --- REGRAS PARA MENSAGENS PRIVADAS ---
     match /userMessages/{messageId} {
-      // CORREÇÃO CRÍTICA: Permite a leitura apenas se o usuário for o destinatário OU o remetente.
-      // Isso conserta a falha de segurança (onde todos liam tudo) e permite que a consulta
-      // do AppLayout para mensagens não lidas funcione corretamente.
-      // Moderadores também podem ler.
+      // Leitura permitida para destinatário, remetente, ou moderadores.
       allow read: if request.auth != null && 
                       (request.auth.uid == resource.data.recipientId || 
                        request.auth.uid == resource.data.senderId ||
                        request.auth.token.role in ['Administrador', 'Editor', 'Revisor']);
 
-      // A criação de mensagens é controlada pela Cloud Function 'sendUserMessage', 
-      // então bloqueamos a criação direta para segurança.
+      // A criação é controlada pela Cloud Function 'sendUserMessage'.
       allow create: if false;
 
-      // Apenas moderadores podem editar ou apagar uma mensagem. O usuário pode atualizar (marcar como lida).
+      // O destinatário pode marcar como lida. Admins/Editores podem editar.
       allow update: if request.auth != null && 
                         (request.auth.uid == resource.data.recipientId || 
                          request.auth.token.role in ['Editor', 'Administrador']);
@@ -97,70 +91,50 @@ service cloud.firestore {
     // Coleção para 'landingPageBlocks', o conteúdo da landing page.
     match /landingPageBlocks/{blockId} {
       allow read: if true; // O conteúdo é público.
-      allow write: if request.auth.token.role in ['Administrador', 'Editor']; // Apenas admins e editores podem gerenciar.
+      allow write: if request.auth.token.role in ['Administrador', 'Editor'];
     }
     
     // Coleções de Votação
     match /polls/{pollId} {
-      // CORRETO: Qualquer usuário logado pode ler os dados de uma votação,
-      // o que é necessário para o AppLayout verificar se há votações ativas.
       allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Administrador'; // Apenas admins podem criar/gerenciar votações.
+      allow write: if request.auth.token.role == 'Administrador';
       
       match /votes/{voteId} {
-        // Apenas admins podem ler todos os votos para apuração. O usuário pode ler o próprio voto.
         allow read: if request.auth.token.role == 'Administrador' || request.auth.uid == voteId;
-        
-        // Ninguém pode atualizar ou deletar um voto.
         allow update, delete: if false;
-        
-        // Apenas um usuário autenticado pode criar um voto para si mesmo.
         allow create: if request.auth.uid == voteId;
       }
     }
     
     // Coleção para 'accessRules'.
     match /accessRules/{ruleId} {
-      // CORRETO: Qualquer usuário logado pode ler, atendendo ao requisito do AppLayout.
       allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Administrador'; // Apenas Admins podem gerenciar.
+      allow write: if request.auth.token.role == 'Administrador';
     }
     
-   // --- Funções de Ajuda (para a coleção auditLogs) ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function getUserData(userId) {
-        return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-    
-    function isAtLeastRevisor() {
-        let userRole = getUserData(request.auth.uid).role;
-        return isSignedIn() && userRole in ['Administrador', 'Editor', 'Revisor'];
-    }
-    
-    // Coleção 'auditLogs' usando a lógica da "regra nova".
+    // Coleção 'auditLogs'.
     match /auditLogs/{logId} {
-      allow create: if isSignedIn();
-      allow read: if isAtLeastRevisor();
+      allow create: if request.auth != null; // Qualquer usuário logado pode criar um log (ex: login).
+      allow read: if request.auth != null && request.auth.token.role in ['Administrador', 'Editor'];
       allow update, delete: if false;
     }
 
-    // --- REGRAS PARA O MAZE TRACKER (NOVO) ---
+    // --- REGRAS PARA O MAZE TRACKER ---
     // A coleção 'amazegame' armazena as sessões do rastreador de iniciativa.
     match /amazegame/{sessionId} {
+      // Qualquer um pode ler e escrever em qualquer documento da sessão.
+      // Isso permite a colaboração em tempo real sem necessidade de login.
+      allow read, write: if true;
+
+      // A subcoleção 'logs' armazena o histórico da sessão.
+      match /logs/{logId} {
+        allow read, write: if true;
+      }
 
       // A subcoleção 'actors' contém os personagens e monstros de uma sessão.
       match /actors/{actorId} {
-        // PERMISSÃO PÚBLICA:
-        // A aplicação foi desenhada para ser colaborativa em tempo real. Qualquer
-        // pessoa com o link da sessão (sessionId) pode ver e modificar os dados.
-        // Não há sistema de login ou proprietário da sessão, então a permissão
-        // precisa ser aberta para que a ferramenta funcione como esperado.
         allow read, write: if true;
       }
     }
-
-  } // <-- Fecha o 'match /databases'
-} // <-- Fecha o 'service cloud.firestore'
+  }
+}

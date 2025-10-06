@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useState, useMemo, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Plus, Dices, RotateCcw, Trash2, Shield, Sword, Heart, PlusCircle, MinusCircle, Tag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -16,6 +16,9 @@ import { app } from '@/lib/firebase';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { FirestorePermissionError } from '@/lib/types/Errors';
 import { errorEmitter } from '@/lib/error-emitter';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // --- Tipos e Dados ---
 
@@ -38,6 +41,15 @@ interface Actor {
   maxHp: number;
   notes: string;
   statuses: Status[];
+}
+
+interface LogEntry {
+  id: string;
+  message: string;
+  timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  };
 }
 
 const typeStyles: Record<ActorType, { bg: string; border: string; buttonBg: string; buttonBorder: string }> = {
@@ -189,6 +201,39 @@ function ActorCard({ actor, sessionId }: { actor: Actor; sessionId: string }) {
   );
 }
 
+function HistoryLog({ sessionId }: { sessionId: string }) {
+    const firestore = getFirestore(app);
+    const logsCollectionRef = useMemo(() => collection(firestore, `amazegame/${sessionId}/logs`), [firestore, sessionId]);
+    const [logsSnapshot, loadingLogs] = useCollection(query(logsCollectionRef, orderBy('timestamp', 'asc')));
+    const logs = useMemo(() => logsSnapshot?.docs.map(doc => doc.data() as LogEntry) || [], [logsSnapshot]);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    }, [logs]);
+
+    return (
+        <Card className="bg-black/50 h-full">
+            <CardHeader><CardTitle>Histórico de Rolagens</CardTitle></CardHeader>
+            <CardContent>
+                <ScrollArea className="h-[620px] text-sm font-mono" ref={scrollAreaRef}>
+                    <div className="p-4 space-y-2">
+                        {loadingLogs && <p className="text-muted-foreground">Carregando histórico...</p>}
+                        {logs.map((log) => (
+                            <p key={log.id} className="text-gray-300">
+                                <span className="text-gray-500">[{format(log.timestamp.seconds * 1000, 'HH:mm:ss', { locale: ptBR })}]</span> {log.message}
+                            </p>
+                        ))}
+                         {!loadingLogs && logs.length === 0 && <p className="text-center text-muted-foreground pt-10">Nenhuma rolagem ainda.</p>}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
+}
+
 // --- Componente de Conteúdo que usa os hooks ---
 function AmazegameContent() {
     const firestore = getFirestore(app);
@@ -197,7 +242,6 @@ function AmazegameContent() {
 
     const [sessionId, setSessionId] = useState<string | null>(null);
 
-    // Get session ID from URL or create a new one
     useEffect(() => {
         let currentSessionId = searchParams.get('session');
         if (!currentSessionId) {
@@ -218,6 +262,12 @@ function AmazegameContent() {
             return initB - initA;
         });
     }, [actors]);
+
+    const addLogEntry = async (message: string) => {
+        if (!sessionId) return;
+        const logsRef = collection(firestore, `amazegame/${sessionId}/logs`);
+        await addDoc(logsRef, { message, timestamp: serverTimestamp() });
+    };
 
     const addActor = async () => {
         if (!sessionId) return;
@@ -243,11 +293,17 @@ function AmazegameContent() {
 
     const rollAllInitiatives = async () => {
         if (!actors || actors.length === 0 || !sessionId) return;
+        await addLogEntry("Rolando iniciativas para todos...");
         const batch = writeBatch(firestore);
         const tierDice: Record<Tier, number> = { S: 4, A: 6, B: 8, C: 10, D: 12 };
+        
         actors.forEach(actor => {
             const d = tierDice[actor.tier];
-            const total = Array.from({ length: 3 }, () => Math.floor(Math.random() * d) + 1).reduce((a, b) => a + b, 0);
+            const rolls = Array.from({ length: 3 }, () => Math.floor(Math.random() * d) + 1);
+            const total = rolls.reduce((a, b) => a + b, 0);
+            
+            addLogEntry(`${actor.name} rolou 3d${d} (${rolls.join(' + ')}) = ${total}`);
+            
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
             batch.update(actorRef, { initiative: total });
         });
@@ -261,6 +317,7 @@ function AmazegameContent() {
 
     const nextCycle = async () => {
         if (!actors || actors.length === 0 || !sessionId) return;
+        await addLogEntry("Avançando para o próximo ciclo...");
         const batch = writeBatch(firestore);
         actors.forEach(actor => {
             const newInitiative = Math.max(0, actor.initiative - 10);
@@ -283,6 +340,11 @@ function AmazegameContent() {
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
             batch.delete(actorRef);
         });
+        // Também limpar logs
+        const logsRef = collection(firestore, `amazegame/${sessionId}/logs`);
+        const logsSnapshot = await getDocs(logsRef);
+        logsSnapshot.forEach(logDoc => batch.delete(logDoc.ref));
+
         batch.commit().catch((err) => {
              errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: `amazegame/${sessionId}/actors`,
@@ -303,12 +365,12 @@ function AmazegameContent() {
         <div className="bg-gray-900 min-h-screen text-white p-4 md:p-8">
             <h1 className="text-4xl font-bold text-center mb-8 font-headline">Maze Tracker</h1>
 
-            <div className="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
                 {/* Coluna Principal */}
                 <div className="space-y-4">
                     <Card className="bg-black/50">
                         <CardHeader>
-                            <div className="flex items-center justify-between gap-4">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
                                 <CardTitle>Controle de Iniciativa</CardTitle>
                                 <div className="flex items-center gap-2">
                                     <Button onClick={addActor} variant="outline" className="bg-green-600 hover:bg-green-700 border-green-800"><Plus size={18}/></Button>
@@ -321,7 +383,7 @@ function AmazegameContent() {
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Limpar Tudo?</AlertDialogTitle>
-                                                <AlertDialogDescription>Esta ação removerá todos os atores da sessão atual para todos os participantes. Não pode ser desfeito.</AlertDialogDescription>
+                                                <AlertDialogDescription>Esta ação removerá todos os atores e logs da sessão atual. Não pode ser desfeito.</AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -333,17 +395,25 @@ function AmazegameContent() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {sortedActors.map(actor => (
-                                <ActorCard key={actor.id} actor={actor} sessionId={sessionId}/>
-                            ))}
-                            {actors && actors.length === 0 && (
-                                <div className="text-center text-muted-foreground py-10">
-                                    <p>Nenhum ator na batalha.</p>
-                                    <p>Clique em "+" para começar.</p>
-                                </div>
-                            )}
+                             <ScrollArea className="h-[550px] pr-3">
+                                {sortedActors.map(actor => (
+                                    <div key={actor.id} className="mb-4">
+                                      <ActorCard actor={actor} sessionId={sessionId}/>
+                                    </div>
+                                ))}
+                                {actors && actors.length === 0 && (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <p>Nenhum ator na batalha.</p>
+                                        <p>Clique em "+" para começar.</p>
+                                    </div>
+                                )}
+                             </ScrollArea>
                         </CardContent>
                     </Card>
+                </div>
+                 {/* Coluna do Histórico */}
+                 <div>
+                    <HistoryLog sessionId={sessionId} />
                 </div>
             </div>
         </div>
