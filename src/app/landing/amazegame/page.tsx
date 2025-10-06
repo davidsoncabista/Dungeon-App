@@ -1,13 +1,20 @@
+
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { X, Plus, Dices, RotateCcw, Trash2, Shield, Sword, Heart, PlusCircle, MinusCircle, Tag } from 'lucide-react';
+import { X, Plus, Dices, RotateCcw, Trash2, Shield, Sword, Heart, PlusCircle, MinusCircle, Tag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, orderBy, onSnapshot, serverTimestamp, addDoc, getDocs, where } from 'firebase/firestore';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { app } from '@/lib/firebase';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 // --- Tipos e Dados ---
 
@@ -41,39 +48,40 @@ const typeStyles: Record<ActorType, { bg: string; border: string; buttonBg: stri
 
 // --- Componentes ---
 
-function ActorCard({ actor, onUpdate, onRemove }: { actor: Actor; onUpdate: (updatedActor: Actor) => void; onRemove: () => void; }) {
+function ActorCard({ actor, sessionId }: { actor: Actor; sessionId: string }) {
+  const firestore = getFirestore(app);
   const styles = typeStyles[actor.type];
+  const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
 
-  const handleInputChange = (field: keyof Actor, value: string | number) => {
-    onUpdate({ ...actor, [field]: value });
+  const handleUpdate = async (data: Partial<Actor>) => {
+    await updateDoc(actorRef, data);
+  };
+  
+  const handleRemove = async () => {
+      await deleteDoc(actorRef);
   };
 
-  const handleHpChange = (amount: number) => {
-    const newHp = Math.min(Math.max(0, actor.hp + amount), actor.maxHp);
-    onUpdate({ ...actor, hp: newHp });
+  const addStatus = async () => {
+    const newStatus: Status = { id: `status_${Date.now()}`, name: 'Novo Status', duration: 1 };
+    await handleUpdate({ statuses: [...actor.statuses, newStatus] });
   };
 
-  const addStatus = () => {
-    const newStatus: Status = { id: `status_${Date.now()}`, name: '', duration: 0 };
-    onUpdate({ ...actor, statuses: [...actor.statuses, newStatus] });
-  };
-
-  const updateStatus = (statusId: string, field: 'name' | 'duration', value: string | number) => {
+  const updateStatus = async (statusId: string, field: 'name' | 'duration', value: string | number) => {
     const newStatuses = actor.statuses.map(s => 
       s.id === statusId ? { ...s, [field]: value } : s
     );
-    onUpdate({ ...actor, statuses: newStatuses });
+    await handleUpdate({ statuses: newStatuses });
   };
 
-  const removeStatus = (statusId: string) => {
-    onUpdate({ ...actor, statuses: actor.statuses.filter(s => s.id !== statusId) });
+  const removeStatus = async (statusId: string) => {
+    await handleUpdate({ statuses: actor.statuses.filter(s => s.id !== statusId) });
   };
-
+  
   const toggleType = () => {
     const types: ActorType[] = ["Neutro", "Aliado", "Inimigo", "Ambiente"];
     const currentIndex = types.indexOf(actor.type);
     const nextType = types[(currentIndex + 1) % types.length];
-    onUpdate({ ...actor, type: nextType });
+    handleUpdate({ type: nextType });
   };
 
   return (
@@ -81,7 +89,7 @@ function ActorCard({ actor, onUpdate, onRemove }: { actor: Actor; onUpdate: (upd
       <CardContent className="p-4 space-y-3">
         {/* Linha Principal */}
         <div className="flex items-center gap-2">
-          <Select value={actor.tier} onValueChange={(value: Tier) => handleInputChange('tier', value)}>
+          <Select value={actor.tier} onValueChange={(value: Tier) => handleUpdate({ tier: value })}>
             <SelectTrigger className="w-20 bg-background/20 border-white/20">
               <SelectValue />
             </SelectTrigger>
@@ -91,14 +99,14 @@ function ActorCard({ actor, onUpdate, onRemove }: { actor: Actor; onUpdate: (upd
           </Select>
           <Input 
             value={actor.name} 
-            onChange={(e) => handleInputChange('name', e.target.value)} 
+            onChange={(e) => handleUpdate({ name: e.target.value })} 
             placeholder="Nome do Ator"
             className="flex-1 bg-background/20 border-white/20" 
           />
           <Input 
             type="number" 
             value={actor.initiative} 
-            onChange={(e) => handleInputChange('initiative', parseInt(e.target.value) || 0)} 
+            onChange={(e) => handleUpdate({ initiative: parseInt(e.target.value) || 0 })} 
             className="w-20 text-center bg-background/20 border-white/20"
             placeholder="Init"
           />
@@ -112,7 +120,7 @@ function ActorCard({ actor, onUpdate, onRemove }: { actor: Actor; onUpdate: (upd
               <TooltipContent><p>{actor.type}</p></TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <Button size="icon" variant="destructive" onClick={onRemove}><X size={20}/></Button>
+          <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
         </div>
 
         {/* Linha de Vida e Notas */}
@@ -121,19 +129,19 @@ function ActorCard({ actor, onUpdate, onRemove }: { actor: Actor; onUpdate: (upd
            <Input 
             type="number" 
             value={actor.hp} 
-            onChange={(e) => handleInputChange('hp', Math.min(Math.max(0, parseInt(e.target.value)), actor.maxHp))} 
+            onChange={(e) => handleUpdate({ hp: Math.min(Math.max(0, parseInt(e.target.value)), actor.maxHp) })} 
             className="w-20 text-center bg-background/20 border-white/20"
           />
           <span className="text-lg">/</span>
           <Input 
             type="number" 
             value={actor.maxHp} 
-            onChange={(e) => handleInputChange('maxHp', parseInt(e.target.value) || 0)} 
+            onChange={(e) => handleUpdate({ maxHp: parseInt(e.target.value) || 0 })} 
             className="w-20 text-center bg-background/20 border-white/20"
           />
           <Input 
             value={actor.notes}
-            onChange={(e) => handleInputChange('notes', e.target.value)}
+            onChange={(e) => handleUpdate({ notes: e.target.value })}
             placeholder="Anotações..."
             className="flex-1 bg-background/20 border-white/20"
           />
@@ -170,140 +178,141 @@ function ActorCard({ actor, onUpdate, onRemove }: { actor: Actor; onUpdate: (upd
 }
 
 // --- Componente Principal da Página ---
-
 export default function AmazegamePage() {
-  const [actors, setActors] = useState<Actor[]>([]);
-  const [history, setHistory] = useState<string[]>([]);
-  
-  const addHistory = (entry: string) => {
-    const timestamp = new Date().toLocaleTimeString('pt-BR');
-    setHistory(prev => [...prev, `[${timestamp}] ${entry}`]);
-  };
-  
-  const sortedActors = useMemo(() => {
-    return [...actors].sort((a, b) => {
-      const initA = a.initiative + (a.type === 'Inimigo' ? 0.5 : 0);
-      const initB = b.initiative + (b.type === 'Inimigo' ? 0.5 : 0);
-      return initB - initA;
-    });
-  }, [actors]);
+    const firestore = getFirestore(app);
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
-  const addActor = () => {
-    const newActor: Actor = {
-      id: `actor_${Date.now()}`,
-      name: '',
-      tier: 'D',
-      initiative: 0,
-      type: 'Neutro',
-      hp: 0,
-      maxHp: 0,
-      notes: '',
-      statuses: [],
-    };
-    setActors(prev => [...prev, newActor]);
-  };
+    const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const updateActor = (updatedActor: Actor) => {
-    setActors(prev => prev.map(a => a.id === updatedActor.id ? updatedActor : a));
-  };
-  
-  const removeActor = (actorId: string) => {
-    setActors(prev => prev.filter(a => a.id !== actorId));
-  };
-
-  const rollAllInitiatives = () => {
-    addHistory("Rolando iniciativas para todos os atores...");
-    const tierDice: Record<Tier, number> = { S: 4, A: 6, B: 8, C: 10, D: 12 };
-
-    const updatedActors = actors.map(actor => {
-      const d = tierDice[actor.tier];
-      let total = 0;
-      let rolls = [];
-      for (let i = 0; i < 3; i++) {
-        const roll = Math.floor(Math.random() * d) + 1;
-        total += roll;
-        rolls.push(roll);
-      }
-      addHistory(`${actor.name || 'Ator sem nome'} (3d${d}): ${rolls.join(' + ')} = ${total}`);
-      return { ...actor, initiative: total };
-    });
-    setActors(updatedActors);
-  };
-  
-  const nextCycle = () => {
-    addHistory("Avançando para o próximo ciclo...");
-    const updatedActors = actors.map(actor => {
-      const newInitiative = Math.max(0, actor.initiative - 10);
-      
-      const updatedStatuses = actor.statuses.map(s => ({ ...s, duration: Math.max(0, s.duration - 1) })).filter(s => {
-        if (s.duration === 0) {
-            addHistory(`Status '${s.name}' em ${actor.name || 'ator'} terminou.`);
-            return false;
+    // Get session ID from URL or create a new one
+    useEffect(() => {
+        let currentSessionId = searchParams.get('session');
+        if (!currentSessionId) {
+            currentSessionId = `session_${Date.now()}`;
+            router.replace(`/landing/amazegame?session=${currentSessionId}`);
         }
-        return true;
-      });
+        setSessionId(currentSessionId);
+    }, [searchParams, router]);
 
-      return { ...actor, initiative: newInitiative, statuses: updatedStatuses };
-    });
-    setActors(updatedActors);
-  };
+    const actorsCollectionRef = useMemo(() => sessionId ? collection(firestore, `amazegame/${sessionId}/actors`) : null, [firestore, sessionId]);
+    const [actors, loadingActors] = useCollection(actorsCollectionRef, { idField: 'id' }) as [Actor[], boolean, any];
 
-  const clearAll = () => {
-    addHistory("Limpando todos os dados.");
-    setActors([]);
-  };
+    const sortedActors = useMemo(() => {
+        if (!actors) return [];
+        return [...actors].sort((a, b) => {
+            const initA = a.initiative + (a.type === 'Inimigo' ? 0.5 : 0);
+            const initB = b.initiative + (b.type === 'Inimigo' ? 0.5 : 0);
+            return initB - initA;
+        });
+    }, [actors]);
 
-  return (
-    <div className="bg-gray-900 min-h-screen text-white p-4 md:p-8">
-      <h1 className="text-4xl font-bold text-center mb-8 font-headline">Maze Tracker</h1>
+    const addActor = async () => {
+        if (!sessionId) return;
+        const newActor: Omit<Actor, 'id'> = {
+            name: 'Novo Ator',
+            tier: 'D',
+            initiative: 0,
+            type: 'Neutro',
+            hp: 1,
+            maxHp: 1,
+            notes: '',
+            statuses: [],
+        };
+        const actorsRef = collection(firestore, `amazegame/${sessionId}/actors`);
+        await addDoc(actorsRef, newActor);
+    };
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        {/* Coluna Principal */}
-        <div className="lg:col-span-2 space-y-4">
-          <Card className="bg-black/50">
-            <CardHeader>
-                <div className="flex items-center justify-between gap-4">
-                    <CardTitle>Controle de Iniciativa</CardTitle>
-                    <div className="flex items-center gap-2">
-                        <Button onClick={addActor} variant="outline" className="bg-green-600 hover:bg-green-700 border-green-800"><Plus size={18}/></Button>
-                        <Button onClick={rollAllInitiatives} variant="outline" className="bg-blue-600 hover:bg-blue-700 border-blue-800"><Dices size={18}/></Button>
-                        <Button onClick={nextCycle} variant="outline" className="bg-yellow-600 hover:bg-yellow-700 border-yellow-800">Ciclo</Button>
-                        <Button onClick={clearAll} variant="destructive"><Trash2 size={18}/></Button>
-                    </div>
+    const rollAllInitiatives = async () => {
+        if (!actors || actors.length === 0 || !sessionId) return;
+        const batch = writeBatch(firestore);
+        const tierDice: Record<Tier, number> = { S: 4, A: 6, B: 8, C: 10, D: 12 };
+        actors.forEach(actor => {
+            const d = tierDice[actor.tier];
+            const total = Array.from({ length: 3 }, () => Math.floor(Math.random() * d) + 1).reduce((a, b) => a + b, 0);
+            const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
+            batch.update(actorRef, { initiative: total });
+        });
+        await batch.commit();
+    };
+
+    const nextCycle = async () => {
+        if (!actors || actors.length === 0 || !sessionId) return;
+        const batch = writeBatch(firestore);
+        actors.forEach(actor => {
+            const newInitiative = Math.max(0, actor.initiative - 10);
+            const updatedStatuses = actor.statuses.map(s => ({ ...s, duration: Math.max(0, s.duration - 1) })).filter(s => s.duration > 0);
+            const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
+            batch.update(actorRef, { initiative: newInitiative, statuses: updatedStatuses });
+        });
+        await batch.commit();
+    };
+
+    const clearAll = async () => {
+        if (!actors || actors.length === 0 || !sessionId) return;
+        const batch = writeBatch(firestore);
+        actors.forEach(actor => {
+            const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
+            batch.delete(actorRef);
+        });
+        await batch.commit();
+    };
+
+    if (!sessionId || loadingActors) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-900">
+                <Loader2 className="h-16 w-16 text-primary animate-spin"/>
+            </div>
+        )
+    }
+
+    return (
+        <div className="bg-gray-900 min-h-screen text-white p-4 md:p-8">
+            <h1 className="text-4xl font-bold text-center mb-8 font-headline">Maze Tracker</h1>
+
+            <div className="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
+                {/* Coluna Principal */}
+                <div className="space-y-4">
+                    <Card className="bg-black/50">
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-4">
+                                <CardTitle>Controle de Iniciativa</CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <Button onClick={addActor} variant="outline" className="bg-green-600 hover:bg-green-700 border-green-800"><Plus size={18}/></Button>
+                                    <Button onClick={rollAllInitiatives} variant="outline" className="bg-blue-600 hover:bg-blue-700 border-blue-800"><Dices size={18}/></Button>
+                                    <Button onClick={nextCycle} variant="outline" className="bg-yellow-600 hover:bg-yellow-700 border-yellow-800">Ciclo</Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                             <Button variant="destructive"><Trash2 size={18}/></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Limpar Tudo?</AlertDialogTitle>
+                                                <AlertDialogDescription>Esta ação removerá todos os atores da sessão atual para todos os participantes. Não pode ser desfeito.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={clearAll}>Sim, limpar tudo</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {sortedActors.map(actor => (
+                                <ActorCard key={actor.id} actor={actor} sessionId={sessionId}/>
+                            ))}
+                            {actors && actors.length === 0 && (
+                                <div className="text-center text-muted-foreground py-10">
+                                    <p>Nenhum ator na batalha.</p>
+                                    <p>Clique em "+" para começar.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 {sortedActors.map(actor => (
-                    <ActorCard key={actor.id} actor={actor} onUpdate={updateActor} onRemove={() => removeActor(actor.id)}/>
-                 ))}
-                 {actors.length === 0 && (
-                    <div className="text-center text-muted-foreground py-10">
-                        <p>Nenhum ator na batalha.</p>
-                        <p>Clique em "+" para começar.</p>
-                    </div>
-                 )}
-            </CardContent>
-          </Card>
+            </div>
         </div>
-        
-        {/* Coluna de Histórico */}
-        <div className="lg:col-span-1">
-             <Card className="bg-black/50 sticky top-8">
-                <CardHeader>
-                    <CardTitle>Histórico de Eventos</CardTitle>
-                    <CardDescription>Registro de rolagens e ações.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="bg-gray-900/50 p-3 rounded-md h-96 overflow-y-auto text-sm font-mono">
-                        {history.map((entry, index) => (
-                            <p key={index} className="whitespace-pre-wrap break-words">{entry}</p>
-                        ))}
-                         {history.length === 0 && <p className="text-muted-foreground">O histórico está vazio.</p>}
-                    </div>
-                </CardContent>
-             </Card>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
