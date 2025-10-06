@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -208,10 +207,10 @@ function AmazegameContent() {
     }, [searchParams, router]);
 
     const actorsCollectionRef = useMemo(() => sessionId ? collection(firestore, `amazegame/${sessionId}/actors`) : null, [firestore, sessionId]);
-    const [actors, loadingActors] = useCollection(actorsCollectionRef, { idField: 'id' }) as [Actor[], boolean, any];
+    const [actorsSnapshot, loadingActors] = useCollection(actorsCollectionRef);
+    const actors = useMemo(() => actorsSnapshot?.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Actor[] || [], [actorsSnapshot]);
 
     const sortedActors = useMemo(() => {
-        if (!actors) return [];
         return [...actors].sort((a, b) => {
             const initA = a.initiative + (a.type === 'Inimigo' ? 0.5 : 0);
             const initB = b.initiative + (b.type === 'Inimigo' ? 0.5 : 0);
@@ -362,5 +361,3 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
-
-    
