@@ -51,6 +51,15 @@ Para publicar as alterações no Firebase (App Hosting e Functions), utilize o c
 
 Certifique-se de estar autenticado na CLI do Firebase (`firebase login`).
 
+## Projeto Anexo: Maze Tracker Legacy
+
+Dentro da pasta `/public` existe o arquivo `amazegame.html`, um projeto de rastreador de iniciativa para RPG de mesa, desenvolvido em HTML, CSS e JavaScript puros. Este projeto é tratado de forma isolada do aplicativo Next.js principal.
+
+- **Propósito**: Servir como uma ferramenta nostálgica e funcional para os membros da associação, homenageando uma versão mais antiga do rastreador.
+- **Acesso**: O arquivo é servido estaticamente e pode ser acessado através da URL `/amazegame.html`.
+- **Integração**: A intenção é que um link para esta página seja adicionado dinamicamente à landing page principal através do "Editor da Landing Page" (CMS), funcionando como um "easter egg" ou uma ferramenta de acesso rápido.
+- **Desenvolvimento**: As modificações no `amazegame.html` são feitas diretamente no arquivo, sem afetar o build ou a lógica do aplicativo Next.js.
+
 ## Guia de Uso
 
 ### Para Associados
