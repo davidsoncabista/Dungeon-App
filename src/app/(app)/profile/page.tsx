@@ -10,7 +10,7 @@ import { app, auth } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getFirestore, doc, updateDoc, Timestamp, collection, query, where } from "firebase/firestore"
-import { getFunctions, httpsCallable } from "firebase/functions"
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { useDocumentData } from "react-firebase-hooks/firestore"
 import type { User, AdminRole } from "@/lib/types/user"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -20,7 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Info, Loader2, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react"
+import { CalendarIcon, Info, Loader2, RefreshCw, ShieldCheck, ShieldAlert, Upload } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -178,9 +178,11 @@ export default function ProfilePage() {
   const router = useRouter();
   const [isRefreshingClaims, setIsRefreshingClaims] = useState(false);
   const [isBirthdateCalendarOpen, setIsBirthdateCalendarOpen] = useState(false);
-
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const firestore = getFirestore(app);
+  const storage = getStorage(app);
   const userDocRef = user ? doc(firestore, "users", user.uid) : null;
   const [appUser, loadingUser, userError] = useDocumentData<User>(userDocRef);
 
@@ -222,6 +224,31 @@ export default function ProfilePage() {
   });
 
   const { isCepLoading, cepError, numberInputRef } = useCepAutocomplete(form);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0 || !userDocRef) return;
+
+    const file = event.target.files[0];
+    if (file.size > 2 * 1024 * 1024) { // Limite de 2MB
+        toast({ title: "Arquivo muito grande", description: "Por favor, selecione uma imagem com menos de 2MB.", variant: "destructive" });
+        return;
+    }
+
+    setIsUploading(true);
+    try {
+        const storageRef = ref(storage, `avatars/${user.uid}/${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        await updateDoc(userDocRef, { avatar: downloadURL });
+        toast({ title: "Sucesso!", description: "Sua foto de perfil foi atualizada." });
+    } catch (error) {
+        console.error("Erro ao fazer upload da foto:", error);
+        toast({ title: "Erro de Upload", description: "Não foi possível enviar sua foto. Tente novamente.", variant: "destructive" });
+    } finally {
+        setIsUploading(false);
+    }
+  };
 
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
@@ -661,10 +688,15 @@ export default function ProfilePage() {
                   </CardHeader>
                   <CardContent className="flex flex-col items-center gap-4">
                       <Avatar className="h-32 w-32">
-                          <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'Avatar'} data-ai-hint="person" />
+                          <AvatarImage src={appUser?.avatar || user.photoURL || ''} alt={user.displayName || 'Avatar'} data-ai-hint="person" />
                           <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
-                      <p className="text-xs text-muted-foreground text-center">Sua foto é sincronizada com a conta Google.</p>
+                      <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/png, image/jpeg" style={{ display: 'none' }}/>
+                      <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
+                         {isUploading ? "Enviando..." : "Trocar Foto"}
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">Tamanho máximo: 2MB</p>
                   </CardContent>
               </Card>
               

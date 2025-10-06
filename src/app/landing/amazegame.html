@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maze Tracker Legacy</title>
+  <style>
+    body {
+      font-family: Book Antiqua Regular, Arial, sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 10px;
+      background-color: #f4f4f4;
+    }
+
+    .flex-container{
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 60px;
+      justify-content: center;
+      width: 90%;
+      max-width: 1200px;
+    }
+
+    .container {
+      flex: 1 1 500px;
+      min-width: 300px;
+      max-width: 600px;
+      height: 720px;
+      /*margin:auto;*/
+      padding-top: 7px;
+    }
+
+    .historico {
+      padding: 7px 7px 0 7px;
+      height: 720px;           /* Altura fixa da div */
+      /*margin:auto;*/
+      overflow-y: auto;        /* Cria uma barra de rolagem vertical se necessário */
+      /*border: 1px solid #000;  /* Apenas para visualizar os limites */
+      /*padding: 10px;*/
+      max-width: 586px;
+      min-width: 300px;
+      flex: 1 1 500px;
+    }
+
+    .botao-pequeno {
+      width: 45px;
+      min-width: 45px;             /* Largura */
+      border-radius: 8px;      /* Cantos arredondados */
+      border: 2px #000 solid;         
+      background-color: #505050; /* Cor inicial */
+      font-size: 20px;         /* Tamanho do texto */
+      height: 30px;
+      box-sizing: border-box;
+      cursor: pointer;         /* Muda o cursor para "mãozinha" */
+      /* 🔑 Alinhamento vertical com os inputs */
+      
+      vertical-align: middle;
+      
+    }
+
+    .botao-imagem {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    .imagem-do-botao {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      vertical-align: middle;
+    }
+
+    .imagem {
+      width: 20px;
+      height: 20px;
+      padding-top: 5px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .top-buttons {
+      margin: 10px;
+      text-align: center;
+      display: flex;
+      gap:8px;
+      justify-content: space-between; /* Deixa o conteúdo nas extremidades */
+      align-items: center;            /* Alinha verticalmente */
+    }
+
+    .espaco {
+      flex-grow: 1; /* Ocupa o espaço vazio entre os botões */
+    }
+
+    .linha{
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+      color: white;
+    }
+
+    .botao-cabecalio {
+      font-family: Book Antiqua Regular;
+      text-shadow: 0px 0px 4px black;
+      padding-right: 12px;
+      padding-left: 12px;
+      padding-top: 3px;
+      padding-bottom: 3px;
+      font-size: 1em;
+      border-radius: 6px;
+      background: linear-gradient(to bottom, #4a4b4a, #333333);
+      color: white;
+      cursor: pointer;
+      border: 2px solid #242424;
+    }
+
+    .botao-cabecalio:hover {
+      background: linear-gradient(to bottom, #6d6d6d, #333333);
+    }
+
+    .ator {
+      background-color: #505050;
+      padding: 10px;
+      padding-top: 7px;
+      padding-bottom: 12.5px;
+      margin-bottom: 0px;
+      border: 2px solid #bebebe;
+      position: relative;
+      color: #000;
+    }
+
+    .listaAtos {
+      height: 620px;           /* Altura fixa da div */
+      overflow-y: auto;        /* Cria uma barra de rolagem vertical se necessário */
+      border: none;  /* Apenas para visualizar os limites */
+      padding: 0px;
+    }
+
+
+
+    .vida {
+      border: none;
+      border-bottom: 1px solid white;
+      color: white;
+      outline: none;
+      text-align: center;
+      background: transparent;
+      padding: 0px 4px;
+      font-size: 1em;
+      width: 30px; /* ou auto */
+    }
+
+    input::-webkit-inner-spin-button,
+    input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    /*
+    .sem-setas {
+      -moz-appearance: textfield;
+    }*/
+
+    .anotacao {
+      border: none;
+      flex-grow: 1;
+      border-bottom: 1px solid white;
+      color: white;
+      outline: none;
+      min-width: 0;
+      background: transparent;
+      padding: 0px 4px;
+      font-size: 1em;
+    }
+
+    .cabecalio {
+      display: flex;
+      gap: 5px;
+      text-align: center;
+      display: flex;
+      justify-content: space-between; /* Deixa o conteúdo nas extremidades */
+      align-items: center;            
+      border-top: 4px solid white;
+      padding-left: 13px;
+      padding-right: 38px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+
+    .nome {
+      font-family: Book Antiqua Regular;
+      text-indent: 6px;
+      flex-grow: 1;
+      color: white;
+      margin: 0px;
+      height: 30px;
+      box-sizing: border-box;
+      padding: 0px;
+      min-width: 0;
+      font-size: 15pt;
+      background-color: #363233;
+      border: 2px solid #242424;
+      border-radius: 3px;
+    }
+
+    .iniciativa {
+      font-family: Book Antiqua Regular;
+      color: white;
+      margin: 0px;
+      padding: 2.5px;
+      width: 40px;
+      height: 30px;
+      box-sizing: border-box;
+      min-width: 40px;
+      font-size: 15pt;
+      text-align: center;
+      background-color: #363233;
+      border: 2px solid #242424;
+      border-radius: 3px;
+    }
+
+    .tier {
+      appearance: none;   
+      font-family: Book Antiqua Regular;
+      color: white;
+      padding-left: 16px;
+      margin: 0px;
+      height: 30px;
+      box-sizing: border-box;
+      width: 50px;
+      min-width: 50px;
+      font-size: 19px;
+      background-color: #363233;
+      border-radius: 6px;
+      border: 2px solid #242424;
+      cursor: pointer;
+      background: linear-gradient(to bottom, #4a4b4a, #333333);
+      
+    }
+
+    .tier:hover {
+      background: linear-gradient(to bottom, #6d6d6d, #333333);
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      margin-top: 5px;
+      margin-bottom: 10px;
+    }
+
+    .duracao {
+      font-family: Book Antiqua Regular;
+      font-size: 13pt;
+      text-align: center;
+      color: white;
+      border: 2px solid #242424;
+      height: 25px;
+      box-sizing: border-box;
+      width: 37px; /* ou auto */
+      border-radius: 3px;
+      background-color: #363233;
+    }
+
+    .statusReal {
+      border: none;
+      border-bottom: 1px solid white;
+      color: white;
+      outline: none;
+      height: 24px;
+      box-sizing: border-box;
+      background: transparent;
+      padding-top: 7px;
+      font-size: 1em;
+      flex-grow: 1;
+      min-width: 0; /* ou auto */
+    }
+
+    ::selection {
+      background: #bb851081;
+      color: #f5e4be;
+    }
+
+    .tier option {
+      background-color: #444;
+      color: white;
+    }
+
+    .status-container {
+      padding-top: 2px;
+      
+    }
+  </style>
+</head>
+<body style="background-color: #505050;">
+  <h1 style="font-family: Cinzel">Maze Tracker Legacy</h1>
+  <div class="flex-container">
+    <div class="container" style="background-color: #000000;">
+      
+      <div class="top-buttons">
+        <button onclick="addAtor()" class="botao-cabecalio" style="font-family: Fira Code;">+</button>
+        <button onclick="rolarTodasIniciativas()" class="botao-cabecalio">R</button>
+        <div class="espaco"></div>
+        <button onclick="zeraIniciativa()" class="botao-cabecalio">Ciclo</button>
+        <button onclick="limparDados()" class="botao-cabecalio">Limpar</button>
+      </div>
+      <div class="cabecalio">
+        
+        <div style="width: 50px; min-width: 50px; ">Teste</div>
+        
+        <div class="espaco">Nome do Ator</div>
+        
+        <div style="width: 40px; min-width: 40px; ">Init.</div>
+        
+        <div style="width: 45px; min-width: 45px; ">Tipo</div>
+        
+      </div>
+      <div id="listaAtos"  class="listaAtos"></div>
+      
+    </div>
+    <div class="historico" style="background-color: #000000;"></div>
+  </div>
+  
+  
+
+  <script>
+    let idCounter = 0;
+    let countInit = false
+
+    function addAtor() {
+      const lista = document.getElementById('listaAtos');
+
+      const ator = document.createElement('div');
+
+      ator.classList.add('ator');
+      ator.dataset.id = idCounter++;
+      ator.dataset.ciclo = 1;
+      ator.dataset.tipo = "Neutro"
+      ator.dataset.initReal = '';
+      ator.dataset.vidaTotal = '';
+      ator.dataset.vidaAtual = '';
+
+      ator.innerHTML = `
+        <div class="linha">
+          <select class="tier">
+            <option value="D">D</option>
+            <option value="C">C</option>
+            <option value="B">B</option>
+            <option value="A">A</option>
+            <option value="S">S</option>
+          </select>
+          <input type="text" class="nome">
+          <input type="text" class="iniciativa" oninput="validarNumeroComSinal(this)">
+          <button class="botao-pequeno" onclick="trocarTipo(this)"></button>
+          <button onclick="removerAtor(this.parentElement)" class="botao-imagem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="imagem-do-botao lucide lucide-x-circle"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
+          </button>
+        </div>
+        <div class="linha" style="margin-top: 5px" >
+          Vida: <input type="text" class="vida atual" onblur="somar(this)" > /
+          <input type="text" class="vida total" onblur="somarTotal(this)">
+          Anot.: <input type="text" class="anotacao">
+          <button onclick="adicionarStatus(this)" class="botao-imagem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#50C878" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="imagem-do-botao lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>
+          </button>
+        </div>
+        <div class="status-container"></div>
+        
+      `;
+
+
+      // Adiciona os eventos para reorganizar apenas ao terminar de digitar ou sair do campo
+      const inputVida = ator.querySelectorAll('.vida');
+      const inputIniciativa = ator.querySelector('.iniciativa');
+
+      inputVida.forEach(input => {
+        input.value = 0
+        input.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter') {
+            this.blur();
+          }
+        });
+
+        input.addEventListener('focus', function () {
+          this.select();
+        });
+
+        input.addEventListener('input', e => validarNumeroComSinal(e.target));
+
+      });
+
+      // Quando clica no campo, seleciona o texto automaticamente
+      inputIniciativa.addEventListener('focus', function () {
+        this.select();
+      });
+
+      // Reorganiza ao sair do campo
+      inputIniciativa.addEventListener('blur', function () {
+        //this.dataset.initReal
+        //alert(this.value)
+        if ((this.value)[0] == '+' ||(this.value)[0] == '-' ) {
+          const initOculta = parseInt(this.parentElement.parentElement.dataset.initReal) || 0
+          this.value = initOculta + parseInt(this.value)
+        }
+        this.parentElement.parentElement.dataset.initReal = parseInt(this.value)
+        ordenarLista(false);
+      });
+
+      // Reorganiza se pressionar Enter
+      inputIniciativa.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+          this.blur(); // Sai do campo após confirmar
+      }
+      });
+
+      lista.appendChild(ator);
+    }
+
+    function somar(vida){
+      const vidaVisual = parseInt(vida.value)
+      const vidaOculta = parseInt(vida.parentElement.parentElement.dataset.vidaAtual) || 0
+      const vidaOcultaTotal = parseInt(vida.parentElement.parentElement.dataset.vidaTotal) || 0
+      const vidaSomada = vidaOculta + vidaVisual
+      if(!vida.value){
+        vida.value = vidaOculta
+      }else{
+        if(vidaVisual>vidaOcultaTotal){
+          vida.value = vidaOcultaTotal
+        }else{
+          if ((vida.value)[0] == '+' ||(vida.value)[0] == '-' ) {
+            vida.value = (vidaSomada >= vidaOcultaTotal ? vidaOcultaTotal : vidaSomada) < 0 ? 0 : vidaSomada
+          }
+        }
+        vida.parentElement.parentElement.dataset.vidaAtual = parseInt(vida.value)
+      }
+
+    }
+
+    function somarTotal(vida){
+      const vidaOculta = parseInt(vida.parentElement.parentElement.dataset.vidaAtual) || 0
+      const vidaOcultaTotal = parseInt(vida.parentElement.parentElement.dataset.vidaTotal) || 0
+      const vidaSomada = vidaOcultaTotal + parseInt(vida.value)
+      if(!vida.value){
+        vida.value = vidaOcultaTotal
+      }else{
+        if ((vida.value)[0] == '+' ||(vida.value)[0] == '-' ) {
+          vida.value = vidaSomada < 0 ? 0 : vidaSomada
+          if(vidaSomada<vidaOculta){
+            vida.parentElement.querySelector('.atual').value = String(vida.value)
+            vida.parentElement.parentElement.dataset.vidaAtual = vida.value
+          }
+        }
+        vida.parentElement.parentElement.dataset.vidaTotal = parseInt(vida.value)
+      }
+    }
+
+    function validarNumeroComSinal(input) {
+      // Remove qualquer caractere que não seja dígito, + ou -
+      // input.value = input.value.replace(/[^0-9+-]/g, '');
+
+      // Se quiser limitar o + e - apenas no início, use esta versão:
+      input.value = input.value.replace(/(?!^[-+])[^0-9]/g, '');
+    }
+    function limparDados(){
+      const atores = document.querySelectorAll('.ator');
+      const status = document.querySelectorAll('.status');
+      status.forEach(stat => {
+        stat.remove()
+      });
+      atores.forEach(ator => {
+        ator.querySelector('.tier').value = 'D';
+        ator.querySelector('.nome').value = '';
+        ator.querySelector('.iniciativa').value = '';
+        ator.dataset.initReal = ''
+        ator.dataset.tipo = "Ambiente"
+        trocarTipo(ator.querySelector('.botao-pequeno'))
+        ator.querySelectorAll('.vida').forEach(input => input.value = '0');
+        ator.dataset.vidaAtual = 0
+        ator.dataset.vidaTotal = 0
+        ator.querySelector('.anotacao').value = '';
+      });
+    }
+
+    function adicionarStatus(botao) {
+      
+      const container = botao.parentElement.parentElement.querySelector('.status-container');
+
+      const linha = document.createElement('div');
+      linha.classList.add('status');
+      linha.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="gold" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="imagem lucide lucide-tag"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"></path><circle cx="8.5" cy="8.5" r=".5" fill="currentColor"></circle></svg>
+        <input type="text" class = "statusReal">
+        <input type="number" class="duracao"> 
+        <button onclick="removerAtor(this)" class="botao-imagem">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="imagem-do-botao lucide lucide-minus-circle"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg>
+        </button>
+      `;
+
+      container.appendChild(linha);
+    }
+
+    function trocarTipo(botao){
+      const ator = botao.parentElement.parentElement
+      const tipo = ator.dataset.tipo
+      if(tipo == "Neutro"){
+        ator.dataset.tipo = "Aliado"
+        botao.style.background = '#19d600'; // muda para Verde
+        botao.style.borderColor = '#0c7c00'
+        ator.style.backgroundColor = '#095302'
+        ator.style.borderColor = '#19d600'
+
+      }else if(tipo == "Aliado"){
+        ator.dataset.tipo = "Inimigo"
+        botao.style.background = '#ff0000'; // muda para vermelho
+        botao.style.borderColor = '#b50000'
+        ator.style.backgroundColor = '#710000'
+        ator.style.borderColor = '#d60000'
+
+      }else if(tipo == "Inimigo"){
+        ator.dataset.tipo = "Ambiente"
+        botao.style.background = '#ffff00'; // muda para Amarelo
+        botao.style.borderColor = '#c3c31b'
+        ator.style.backgroundColor = '#5f5f49'
+        ator.style.borderColor = '#bebe1e'
+        
+
+      }else {
+        ator.dataset.tipo = "Neutro"
+        botao.style.background = '#505050'; // muda para Cinza
+        botao.style.borderColor = '#000000'
+        ator.style.backgroundColor = '#505050'
+        ator.style.borderColor = '#bebebe'
+
+      }
+      ordenarLista(false)
+    }
+
+    function removerAtor(botao){
+      botao.parentElement.remove()
+    }
+
+
+    function rolarTodasIniciativas() {
+      documentarHist("Rolando Iniciativas")
+      const atores = document.querySelectorAll('.ator');
+
+      atores.forEach(ator => {
+        const tier = ator.querySelector('.tier').value;
+        const iniciativaInput = ator.querySelector('.iniciativa');
+        let valor = rolarDadoPorTier(ator.querySelector('.nome').value , tier);
+        ator.dataset.initReal = valor
+        iniciativaInput.value = String(valor);
+      });
+
+      ordenarLista(true);
+
+      atores.forEach(ator => {
+        const iniciativaInput = ator.querySelector('.iniciativa');
+        let valor = iniciativaInput.value
+        
+        //valor-= valor%10
+        iniciativaInput.value = valor
+        ator.dataset.ciclo = valor
+      });
+      countInit = true
+    }
+
+    function rolarDadoPorTier(nome, tier) {
+      
+      const dados = { S: 4, A: 6, B: 8, C: 10, D: 12 };
+      const max = dados[tier] || 6;
+      let result = 0
+      let dadoText = nome +` rolou 3d${max}(`
+      let valor
+
+      for(i=1;i<=3;i++){
+        valor = Math.floor(Math.random() * max) + 1
+        result+= valor
+        if(i<3){
+          dadoText+= `${valor} + `
+        }else{
+          dadoText+= `${valor} = ${result})`
+        }
+      }
+      
+      documentarHist(dadoText)
+      return  result;
+    }
+
+    function ordenarLista(firstRoll) {
+      const lista = document.getElementById('listaAtos');
+      const atores = Array.from(lista.children);
+
+
+
+      atores.sort((a, b) => {
+        const aVal = parseInt(a.dataset.ciclo) || 0;
+        const bVal = parseInt(b.dataset.ciclo) || 0;
+        return bVal - aVal; // Ordem decrescente
+      });
+      
+      if(firstRoll){
+        atores.sort((a, b) => {
+          const aVal = parseInt(a.dataset.initReal) || 0;
+          const bVal = parseInt(b.dataset.initReal) || 0;
+          return (aVal + (a.dataset.tipo == "Inimigo" ? 0.5 : 0)) - (bVal + (b.dataset.tipo == "Inimigo" ? 0.5 : 0)); // Ordem decrescente
+        });
+      }else{
+        atores.sort((a, b) => {
+          const aVal = parseInt(a.dataset.initReal) || 0;
+          const bVal = parseInt(b.dataset.initReal) || 0;
+          return aVal - bVal; // Ordem decrescente
+        });
+      }
+      atores.forEach(ator => {
+        ator.dataset.ciclo = ator.dataset.initReal
+        lista.appendChild(ator);
+      });
+    }
+
+    function zeraIniciativa(){
+      const inputsStatus = document.querySelectorAll(".duracao");
+      const inputsInit = document.querySelectorAll(".iniciativa"); // seleciona todos os inputs com classe "vida"
+     
+      inputsStatus.forEach(input => {
+        if(input.value!=null){
+          let valorAtual = parseInt(input.value)
+          valorAtual -= 10
+          if(valorAtual<=0){
+            documentarHist(`Status ${input.parentElement.querySelector('.statusReal').value} de ${input.parentElement.parentElement.parentElement.querySelector('.nome').value} chegou ao fim`)
+            removerAtor(input)
+            }else{
+            input.value = valorAtual;
+          }
+        }
+      });
+
+        inputsInit.forEach(input => {
+        const valorAtual = parseInt(input.value) || 0; // transforma o valor em número
+        input.value = Math.max(0, valorAtual - valorAtual%10 - (countInit ? 0 : 10));     // reduz 10, sem deixar negativo
+        input.parentElement.parentElement.dataset.ciclo = input.value/10 + 1
+        input.parentElement.parentElement.dataset.initReal = input.value
+      });
+      countInit = false
+    }
+
+    function documentarHist(texto){
+      const data = new Date()
+      const hora = String(data.getHours()).padStart(2, '0')
+      const min = String(data.getMinutes()).padStart(2, '0')
+      const sec = String(data.getSeconds()).padStart(2, '0')
+      const dataText = "("+hora + ":" + min + ":" +sec +")"
+      const hist = document.querySelector(".historico");
+      hist.innerHTML += dataText + ": " + texto + "<br>"
+      hist.scrollTop = hist.scrollHeight;
+    }
+  </script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>

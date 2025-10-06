@@ -1,19 +1,36 @@
 rules_version = '2';
 
+// As regras são aplicadas ao Firebase Storage
 service firebase.storage {
+  // A 'bucket' corresponde ao bucket padrão do seu projeto no Cloud Storage
   match /b/{bucket}/o {
-    match /landing-page-media/{imageId} {
-      // Qualquer um pode ler
-      allow get, list: if true;
 
-      // Permite criar e atualizar (upload/substituição)
-      // se o usuário estiver logado E o arquivo for menor que 5MB.
-      allow create, update: if request.auth != null &&
-                               request.resource.size < 5 * 1024 * 1024;
+    // --- Regras para Avatares de Usuário ---
+    // A pasta /avatars/ é onde as fotos de perfil serão armazenadas.
+    // O {userId} corresponde ao UID do usuário autenticado.
+    match /avatars/{userId}/{allPaths=**} {
+      // PERMISSÃO DE LEITURA (read):
+      // Qualquer pessoa (autenticada ou não) pode ler (visualizar) as fotos de perfil.
+      // Isso é necessário para que as fotos apareçam publicamente no app.
+      allow read;
 
-      // Permite excluir
-      // se o usuário estiver logado (não há verificação de tamanho aqui).
-      allow delete: if request.auth != null;
+      // PERMISSÃO DE ESCRITA (write):
+      // Apenas o usuário autenticado que seja "dono" daquele diretório pode escrever (fazer upload ou excluir).
+      // A condição `request.auth.uid == userId` garante isso.
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // --- Regras para Mídia da Landing Page ---
+    // A pasta /landing-page-media/ armazena as imagens usadas no editor da landing page.
+    match /landing-page-media/{allPaths=**} {
+        // PERMISSÃO DE LEITURA (read):
+        // Qualquer pessoa pode ler as imagens, pois elas serão exibidas na página pública.
+        allow read;
+
+        // PERMISSÃO DE ESCRITA (write):
+        // Apenas usuários com um Custom Claim de `role` definido como 'Administrador' ou 'Editor'
+        // podem fazer upload ou excluir imagens nesta pasta.
+        allow write: if request.auth != null && (request.auth.token.role == 'Administrador' || request.auth.token.role == 'Editor');
     }
   }
 }
