@@ -56,13 +56,13 @@ service cloud.firestore {
 
     // Coleção de 'notices' (avisos).
     match /notices/{noticeId} {
-        // CORRETO: A leitura pública ("if true") já permite que qualquer usuário, logado ou não, veja os avisos.
-        // Isso já atende ao requisito do AppLayout.
-        allow read: if true;
-        allow write: if request.auth.token.role == 'Administrador'; // Apenas admins podem criar/editar/deletar
+      // CORRETO: A leitura pública ("if true") já permite que qualquer usuário, logado ou não, veja os avisos.
+      // Isso já atende ao requisito do AppLayout.
+      allow read: if true;
+      allow write: if request.auth.token.role == 'Administrador'; // Apenas admins podem criar/editar/deletar
     }
     
-      // Coleção de 'transactions' (transações financeiras).
+    // Coleção de 'transactions' (transações financeiras).
     match /transactions/{transactionId} {
       // O usuário pode ler suas próprias transações. Admins podem ler todas.
       allow read: if request.auth.uid == resource.data.userId || request.auth.token.role == 'Administrador';
@@ -79,9 +79,9 @@ service cloud.firestore {
       // do AppLayout para mensagens não lidas funcione corretamente.
       // Moderadores também podem ler.
       allow read: if request.auth != null && 
-                   (request.auth.uid == resource.data.recipientId || 
-                    request.auth.uid == resource.data.senderId ||
-                    request.auth.token.role in ['Administrador', 'Editor', 'Revisor']);
+                      (request.auth.uid == resource.data.recipientId || 
+                       request.auth.uid == resource.data.senderId ||
+                       request.auth.token.role in ['Administrador', 'Editor', 'Revisor']);
 
       // A criação de mensagens é controlada pela Cloud Function 'sendUserMessage', 
       // então bloqueamos a criação direta para segurança.
@@ -89,8 +89,8 @@ service cloud.firestore {
 
       // Apenas moderadores podem editar ou apagar uma mensagem. O usuário pode atualizar (marcar como lida).
       allow update: if request.auth != null && 
-                     (request.auth.uid == resource.data.recipientId || 
-                      request.auth.token.role in ['Editor', 'Administrador']);
+                        (request.auth.uid == resource.data.recipientId || 
+                         request.auth.token.role in ['Editor', 'Administrador']);
       allow delete: if request.auth.token.role in ['Editor', 'Administrador'];
     }
 
@@ -145,6 +145,21 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow read: if isAtLeastRevisor();
       allow update, delete: if false;
+    }
+
+    // --- REGRAS PARA O MAZE TRACKER (NOVO) ---
+    // A coleção 'amazegame' armazena as sessões do rastreador de iniciativa.
+    match /amazegame/{sessionId} {
+
+      // A subcoleção 'actors' contém os personagens e monstros de uma sessão.
+      match /actors/{actorId} {
+        // PERMISSÃO PÚBLICA:
+        // A aplicação foi desenhada para ser colaborativa em tempo real. Qualquer
+        // pessoa com o link da sessão (sessionId) pode ver e modificar os dados.
+        // Não há sistema de login ou proprietário da sessão, então a permissão
+        // precisa ser aberta para que a ferramenta funcione como esperado.
+        allow read, write: if true;
+      }
     }
 
   } // <-- Fecha o 'match /databases'
