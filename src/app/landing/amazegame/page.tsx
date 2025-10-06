@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -177,8 +177,8 @@ function ActorCard({ actor, sessionId }: { actor: Actor; sessionId: string }) {
   );
 }
 
-// --- Componente Principal da Página ---
-export default function AmazegamePage() {
+// --- Componente de Conteúdo que usa os hooks ---
+function AmazegameContent() {
     const firestore = getFirestore(app);
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -190,7 +190,7 @@ export default function AmazegamePage() {
         let currentSessionId = searchParams.get('session');
         if (!currentSessionId) {
             currentSessionId = `session_${Date.now()}`;
-            router.replace(`/landing/amazegame?session=${currentSessionId}`);
+            router.replace(`/landing/amazegame?session=${currentSessionId}`, { scroll: false });
         }
         setSessionId(currentSessionId);
     }, [searchParams, router]);
@@ -315,4 +315,17 @@ export default function AmazegamePage() {
             </div>
         </div>
     );
+}
+
+// --- Componente Principal da Página ---
+export default function AmazegamePage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen bg-gray-900">
+                <Loader2 className="h-16 w-16 text-primary animate-spin"/>
+            </div>
+        }>
+            <AmazegameContent />
+        </Suspense>
+    )
 }
