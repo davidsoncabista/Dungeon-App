@@ -20,7 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarIcon, Info, Loader2, RefreshCw, ShieldCheck, ShieldAlert, Upload } from "lucide-react"
+import { CalendarIcon, Info, Loader2, Upload, ShieldCheck, ShieldAlert } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format, parseISO } from "date-fns"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -29,6 +29,7 @@ import { ptBR } from "date-fns/locale"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
+import { CropImageDialog } from "@/components/app/profile/crop-image-dialog"
 
 
 const gameTypes = [
@@ -176,10 +177,13 @@ export default function ProfilePage() {
   const [user, loadingAuth, authError] = useAuthState(auth);
   const { toast } = useToast();
   const router = useRouter();
-  const [isRefreshingClaims, setIsRefreshingClaims] = useState(false);
   const [isBirthdateCalendarOpen, setIsBirthdateCalendarOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State for image cropping
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
 
   const firestore = getFirestore(app);
   const storage = getStorage(app);
@@ -225,19 +229,27 @@ export default function ProfilePage() {
 
   const { isCepLoading, cepError, numberInputRef } = useCepAutocomplete(form);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0 || !userDocRef) return;
-
-    const file = event.target.files[0];
-    if (file.size > 2 * 1024 * 1024) { // Limite de 2MB
-        toast({ title: "Arquivo muito grande", description: "Por favor, selecione uma imagem com menos de 2MB.", variant: "destructive" });
-        return;
+   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            setImageSrc(reader.result?.toString() || null);
+            setIsCropDialogOpen(true);
+        });
+        reader.readAsDataURL(file);
     }
+   };
+  
+   const handleAvatarUpload = async (croppedImageBlob: Blob | null) => {
+    if (!croppedImageBlob || !userDocRef) return;
 
     setIsUploading(true);
+    setIsCropDialogOpen(false);
     try {
-        const storageRef = ref(storage, `avatars/${user.uid}/${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
+        const fileName = `${user.uid}.webp`;
+        const storageRef = ref(storage, `avatars/${fileName}`);
+        const snapshot = await uploadBytes(storageRef, croppedImageBlob);
         const downloadURL = await getDownloadURL(snapshot.ref);
 
         await updateDoc(userDocRef, { avatar: downloadURL });
@@ -247,8 +259,11 @@ export default function ProfilePage() {
         toast({ title: "Erro de Upload", description: "Não foi possível enviar sua foto. Tente novamente.", variant: "destructive" });
     } finally {
         setIsUploading(false);
+        setImageSrc(null);
+        if(fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
 
   const onSubmit = async (data: z.infer<typeof profileFormSchema>) => {
     if (!userDocRef) return;
@@ -274,7 +289,6 @@ export default function ProfilePage() {
         }
       };
 
-      // Se for o primeiro preenchimento, muda o status para Ativo e categoria para Visitante
       if (isFirstUpdate) {
         dataToSave.status = 'Ativo';
         dataToSave.category = 'Visitante';
@@ -354,386 +368,398 @@ export default function ProfilePage() {
 
 
   return (
-    <div className="grid gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Meu Perfil</h1>
-        <p className="text-muted-foreground">Gerencie suas informações pessoais, de jogo e de associação.</p>
-      </div>
+    <>
+      <CropImageDialog 
+        isOpen={isCropDialogOpen}
+        onOpenChange={setIsCropDialogOpen}
+        imageSrc={imageSrc}
+        onConfirm={handleAvatarUpload}
+        onCancel={() => {
+            setImageSrc(null);
+            if(fileInputRef.current) fileInputRef.current.value = "";
+        }}
+      />
+      <div className="grid gap-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Meu Perfil</h1>
+          <p className="text-muted-foreground">Gerencie suas informações pessoais, de jogo e de associação.</p>
+        </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-8 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-8">
-             {appUser?.status === 'Pendente' && (
-                <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Cadastro Incompleto!</AlertTitle>
-                    <AlertDescription>
-                        Para ter acesso ao sistema, por favor, complete seu cadastro abaixo. Os campos marcados com * são obrigatórios.
-                    </AlertDescription>
-                </Alert>
-            )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-8 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-8">
+              {appUser?.status === 'Pendente' && (
+                  <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Cadastro Incompleto!</AlertTitle>
+                      <AlertDescription>
+                          Para ter acesso ao sistema, por favor, complete seu cadastro abaixo. Os campos marcados com * são obrigatórios.
+                      </AlertDescription>
+                  </Alert>
+              )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações Pessoais</CardTitle>
-                <CardDescription>Estes dados são usados para identificação e comunicação.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome Completo *</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="nickname"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Apelido (Opcional)</FormLabel>
-                      <FormControl><Input placeholder="Como a galera te conhece?" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormItem>
-                        <FormLabel>E-mail</FormLabel>
-                        <FormControl><Input type="email" value={user.email || ""} disabled /></FormControl>
-                        <FormDescription className="text-xs">O e-mail não pode ser alterado.</FormDescription>
-                    </FormItem>
-                     <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefone *</FormLabel>
-                          <FormControl>
-                            <Input 
-                                placeholder="(91) 99999-9999" 
-                                {...field} 
-                                onChange={(e) => {
-                                    const { value } = e.target;
-                                    e.target.value = phoneMask(value);
-                                    field.onChange(e);
-                                }}
-                                maxLength={15}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                </div>
-                 <FormField
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Pessoais</CardTitle>
+                  <CardDescription>Estes dados são usados para identificação e comunicação.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
                     control={form.control}
-                    name="birthdate"
+                    name="name"
                     render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                        <FormLabel>Data de Nascimento *</FormLabel>
-                        <Popover open={isBirthdateCalendarOpen} onOpenChange={setIsBirthdateCalendarOpen}>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                )}
-                                >
-                                {field.value ? (
-                                    format(field.value, "PPP", { locale: ptBR })
-                                ) : (
-                                    <span>Escolha uma data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={(date) => {
-                                  field.onChange(date);
-                                  setIsBirthdateCalendarOpen(false);
-                                }}
-                                disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                                locale={ptBR}
-                                captionLayout="dropdown-buttons"
-                                fromYear={1920}
-                                toYear={new Date().getFullYear()}
-                            />
-                            </PopoverContent>
-                        </Popover>
+                      <FormItem>
+                        <FormLabel>Nome Completo *</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Endereço</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <FormField
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nickname"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Apelido (Opcional)</FormLabel>
+                        <FormControl><Input placeholder="Como a galera te conhece?" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormItem>
+                          <FormLabel>E-mail</FormLabel>
+                          <FormControl><Input type="email" value={user.email || ""} disabled /></FormControl>
+                          <FormDescription className="text-xs">O e-mail não pode ser alterado.</FormDescription>
+                      </FormItem>
+                      <FormField
                         control={form.control}
-                        name="cep"
+                        name="phone"
                         render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>CEP *</FormLabel>
-                                <div className="relative">
-                                    <FormControl>
-                                        <Input placeholder="00000-000" maxLength={9} {...field} />
-                                    </FormControl>
-                                    {isCepLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />}
-                                </div>
-                                {cepError && <p className="text-sm font-medium text-destructive">{cepError}</p>}
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                       <FormField
-                            control={form.control}
-                            name="street"
-                            render={({ field }) => (
-                                <FormItem className="col-span-3 sm:col-span-2">
-                                    <FormLabel>Logradouro *</FormLabel>
-                                    <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="number"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Número *</FormLabel>
-                                    <FormControl><Input ref={numberInputRef} {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <FormField
-                        control={form.control}
-                        name="complement"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Complemento (Opcional)</FormLabel>
-                                <FormControl><Input placeholder="Apto, Bloco, etc." {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="neighborhood"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Bairro *</FormLabel>
-                                <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                       <FormField
-                            control={form.control}
-                            name="city"
-                            render={({ field }) => (
-                                <FormItem className="col-span-3 sm:col-span-2">
-                                    <FormLabel>Cidade *</FormLabel>
-                                    <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="state"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>UF *</FormLabel>
-                                    <FormControl><Input disabled={isCepLoading} maxLength={2} {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
-             <Card>
-              <CardHeader>
-                <CardTitle>Documentos</CardTitle>
-                <CardDescription>Necessário para membros associados. Seus dados estão seguros.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="cpf"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CPF *</FormLabel>
-                          <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="rg"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>RG (Opcional)</FormLabel>
-                          <FormControl><Input placeholder="00.000.000-0" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Preferências de Jogo (Opcional)</CardTitle>
-                    <CardDescription>Nos diga o que você mais gosta de jogar!</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <FormField
-                        control={form.control}
-                        name="socialMedia"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Rede Social</FormLabel>
-                            <FormControl><Input placeholder="Link para seu perfil (Instagram, etc.)" {...field} /></FormControl>
+                          <FormItem>
+                            <FormLabel>Telefone *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                  placeholder="(91) 99999-9999" 
+                                  {...field} 
+                                  onChange={(e) => {
+                                      const { value } = e.target;
+                                      e.target.value = phoneMask(value);
+                                      field.onChange(e);
+                                  }}
+                                  maxLength={15}
+                              />
+                            </FormControl>
                             <FormMessage />
-                            </FormItem>
+                          </FormItem>
                         )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="gameTypes"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Quais tipos de jogo você curte?</FormLabel>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                                {gameTypes.map((item) => (
-                                    <FormField
-                                    key={item.id}
-                                    control={form.control}
-                                    name="gameTypes"
-                                    render={({ field }) => {
-                                        return (
-                                        <FormItem
-                                            key={item.id}
-                                            className="flex flex-row items-center space-x-3 space-y-0"
-                                        >
-                                            <FormControl>
-                                            <Checkbox
-                                                checked={field.value?.includes(item.id)}
-                                                onCheckedChange={(checked) => {
-                                                return checked
-                                                    ? field.onChange([...(field.value || []), item.id])
-                                                    : field.onChange(
-                                                        field.value?.filter(
-                                                        (value) => value !== item.id
-                                                        )
-                                                    )
-                                                }}
-                                            />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">
-                                            {item.label}
-                                            </FormLabel>
-                                        </FormItem>
-                                        )
-                                    }}
-                                    />
-                                ))}
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                      />
+                  </div>
+                  <FormField
+                      control={form.control}
+                      name="birthdate"
+                      render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                          <FormLabel>Data de Nascimento *</FormLabel>
+                          <Popover open={isBirthdateCalendarOpen} onOpenChange={setIsBirthdateCalendarOpen}>
+                              <PopoverTrigger asChild>
+                              <FormControl>
+                                  <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                  )}
+                                  >
+                                  {field.value ? (
+                                      format(field.value, "PPP", { locale: ptBR })
+                                  ) : (
+                                      <span>Escolha uma data</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                              </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={(date) => {
+                                    field.onChange(date);
+                                    setIsBirthdateCalendarOpen(false);
+                                  }}
+                                  disabled={(date) =>
+                                  date > new Date() || date < new Date("1900-01-01")
+                                  }
+                                  initialFocus
+                                  locale={ptBR}
+                                  captionLayout="dropdown-buttons"
+                                  fromYear={1920}
+                                  toYear={new Date().getFullYear()}
+                              />
+                              </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                  />
                 </CardContent>
-            </Card>
+              </Card>
 
-            <div className="flex justify-end">
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Salvando..." : "Salvar Alterações"}
-                </Button>
-            </div>
-          </div>
-          
-          <div className="md:col-span-1 space-y-8">
               <Card>
                   <CardHeader>
-                      <CardTitle>Foto de Perfil</CardTitle>
+                      <CardTitle>Endereço</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex flex-col items-center gap-4">
-                      <Avatar className="h-32 w-32">
-                          <AvatarImage src={appUser?.avatar || user.photoURL || ''} alt={user.displayName || 'Avatar'} data-ai-hint="person" />
-                          <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/png, image/jpeg" style={{ display: 'none' }}/>
-                      <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
-                         {isUploading ? "Enviando..." : "Trocar Foto"}
-                      </Button>
-                      <p className="text-xs text-muted-foreground text-center">Tamanho máximo: 2MB</p>
+                  <CardContent className="space-y-4">
+                      <FormField
+                          control={form.control}
+                          name="cep"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>CEP *</FormLabel>
+                                  <div className="relative">
+                                      <FormControl>
+                                          <Input placeholder="00000-000" maxLength={9} {...field} />
+                                      </FormControl>
+                                      {isCepLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />}
+                                  </div>
+                                  {cepError && <p className="text-sm font-medium text-destructive">{cepError}</p>}
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <FormField
+                              control={form.control}
+                              name="street"
+                              render={({ field }) => (
+                                  <FormItem className="col-span-3 sm:col-span-2">
+                                      <FormLabel>Logradouro *</FormLabel>
+                                      <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                          <FormField
+                              control={form.control}
+                              name="number"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>Número *</FormLabel>
+                                      <FormControl><Input ref={numberInputRef} {...field} /></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                      </div>
+                      <FormField
+                          control={form.control}
+                          name="complement"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Complemento (Opcional)</FormLabel>
+                                  <FormControl><Input placeholder="Apto, Bloco, etc." {...field} /></FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="neighborhood"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Bairro *</FormLabel>
+                                  <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <FormField
+                              control={form.control}
+                              name="city"
+                              render={({ field }) => (
+                                  <FormItem className="col-span-3 sm:col-span-2">
+                                      <FormLabel>Cidade *</FormLabel>
+                                      <FormControl><Input disabled={isCepLoading} {...field} /></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                          <FormField
+                              control={form.control}
+                              name="state"
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>UF *</FormLabel>
+                                      <FormControl><Input disabled={isCepLoading} maxLength={2} {...field} /></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                      </div>
                   </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5" />
-                        Minha Posição na Guilda
-                    </CardTitle>
+                  <CardTitle>Documentos</CardTitle>
+                  <CardDescription>Necessário para membros associados. Seus dados estão seguros.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                   {appUser ? (
-                       <>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Nível de Acesso</span>
-                                <Badge className={cn("text-base", roleBadgeClass[appUser.role])}>{appUser.role}</Badge>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Status da Conta</span>
-                                <Badge variant={appUser.status === 'Ativo' ? 'secondary' : 'outline'} className={cn({
-                                    'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': appUser.status === 'Ativo',
-                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': appUser.status === 'Pendente',
-                                    'bg-destructive/20 text-destructive dark:bg-destructive/30': appUser.status === 'Bloqueado',
-                                })}>{appUser.status}</Badge>
-                            </div>
-                       </>
-                   ) : (
-                       <div className="space-y-4">
-                           <Skeleton className="h-6 w-full rounded-full"/>
-                           <Skeleton className="h-6 w-full rounded-full"/>
-                       </div>
-                   )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="cpf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CPF *</FormLabel>
+                            <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="rg"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>RG (Opcional)</FormLabel>
+                            <FormControl><Input placeholder="00.000.000-0" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                  </div>
                 </CardContent>
               </Card>
-          </div>
-        </form>
-      </Form>
-    </div>
+
+              <Card>
+                  <CardHeader>
+                      <CardTitle>Preferências de Jogo (Opcional)</CardTitle>
+                      <CardDescription>Nos diga o que você mais gosta de jogar!</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <FormField
+                          control={form.control}
+                          name="socialMedia"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>Rede Social</FormLabel>
+                              <FormControl><Input placeholder="Link para seu perfil (Instagram, etc.)" {...field} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="gameTypes"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>Quais tipos de jogo você curte?</FormLabel>
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                                  {gameTypes.map((item) => (
+                                      <FormField
+                                      key={item.id}
+                                      control={form.control}
+                                      name="gameTypes"
+                                      render={({ field }) => {
+                                          return (
+                                          <FormItem
+                                              key={item.id}
+                                              className="flex flex-row items-center space-x-3 space-y-0"
+                                          >
+                                              <FormControl>
+                                              <Checkbox
+                                                  checked={field.value?.includes(item.id)}
+                                                  onCheckedChange={(checked) => {
+                                                  return checked
+                                                      ? field.onChange([...(field.value || []), item.id])
+                                                      : field.onChange(
+                                                          field.value?.filter(
+                                                          (value) => value !== item.id
+                                                          )
+                                                      )
+                                                  }}
+                                              />
+                                              </FormControl>
+                                              <FormLabel className="font-normal">
+                                              {item.label}
+                                              </FormLabel>
+                                          </FormItem>
+                                          )
+                                      }}
+                                      />
+                                  ))}
+                                  </div>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                  </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+              </div>
+            </div>
+            
+            <div className="md:col-span-1 space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Foto de Perfil</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center gap-4">
+                        <Avatar className="h-32 w-32">
+                            <AvatarImage src={appUser?.avatar || user.photoURL || ''} alt={user.displayName || 'Avatar'} data-ai-hint="person" />
+                            <AvatarFallback>{(user.displayName || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" style={{ display: 'none' }}/>
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
+                          {isUploading ? "Enviando..." : "Trocar Foto"}
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">Tamanho máximo: 2MB</p>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                          <ShieldCheck className="h-5 w-5" />
+                          Minha Posição na Guilda
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {appUser ? (
+                        <>
+                              <div className="flex justify-between items-center text-sm">
+                                  <span className="text-muted-foreground">Nível de Acesso</span>
+                                  <Badge className={cn("text-base", roleBadgeClass[appUser.role])}>{appUser.role}</Badge>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                  <span className="text-muted-foreground">Status da Conta</span>
+                                  <Badge variant={appUser.status === 'Ativo' ? 'secondary' : 'outline'} className={cn({
+                                      'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': appUser.status === 'Ativo',
+                                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': appUser.status === 'Pendente',
+                                      'bg-destructive/20 text-destructive dark:bg-destructive/30': appUser.status === 'Bloqueado',
+                                  })}>{appUser.status}</Badge>
+                              </div>
+                        </>
+                    ) : (
+                        <div className="space-y-4">
+                            <Skeleton className="h-6 w-full rounded-full"/>
+                            <Skeleton className="h-6 w-full rounded-full"/>
+                        </div>
+                    )}
+                  </CardContent>
+                </Card>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </>
   )
 }
