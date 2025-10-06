@@ -2,36 +2,34 @@
 
 Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da arquitetura em tarefas menores e gerenciáveis.
 
-## Foco Atual (Sprint 11 - Revisada)
+## Foco Atual (Sprint 12)
+
+### Foco: Melhorias de UX e Refatoração de Código
+**Objetivo:** Aprimorar a experiência do usuário em fluxos chave e refatorar componentes para maior clareza e manutenção.
+
+- [ ] **Tarefa 12.1 (UX de Pagamento):**
+  - [ ] Ao confirmar um pagamento no Mercado Pago, redirecionar o usuário para uma página de status (`/billing/status?status=success`) em vez de apenas exibir um toast.
+- [ ] **Tarefa 12.2 (UX de Onboarding):**
+  - [ ] Após um novo usuário completar o perfil, redirecioná-lo automaticamente para a página de matrícula (`/billing`) em vez de esperar que ele clique no menu.
+- [ ] **Tarefa 12.3 (Refatoração):**
+  - [ ] Simplificar o componente `UserTableRow` movendo os modais de ação (`BlockUserDialog`, `DeleteUserDialog`, `EditRoleDialog`) para um novo componente (`UserActions`).
+
+---
+
+## Concluído: Sprint 11
 
 ### Foco: Sistema de Auditoria Pragmático
-**Objetivo:** Integrar a criação de logs diretamente nas funções e ações existentes do sistema, aproveitando a estrutura de código atual para um desenvolvimento mais rápido e simples.
+**Objetivo:** Integrar a criação de logs diretamente nas funções e ações existentes do sistema.
 
-#### História 1: Preparação do Ambiente
-- [x] **Tarefa 1.1 (Firestore):**
-  - [x] Simplificar as `firestore.rules`: Permitir que qualquer usuário autenticado (`request.auth != null`) possa `create` documentos em `auditLogs`, mas apenas `Administrador`, `Editor` e `Revisor` possam `read`.
-- [x] **Tarefa 1.2 (Helper no Frontend):**
-  - [x] Criar o arquivo `src/lib/auditLogger.ts`.
-  - [x] Implementar a função `createAuditLog(actor: User, action: string, details: object = {})` para registrar logs no Firestore a partir do cliente.
-
-#### História 2: Integrar o Log nas Ações
-- [x] **Tarefa 2.1 (Log de Login):**
-  - [x] Na lógica de `onAuthStateChanged`, após a verificação bem-sucedida do usuário, chamar `createAuditLog` com a ação `USER_LOGIN`.
-- [x] **Tarefa 2.2 (Log de Ações de Reserva):**
-  - [x] No `booking-modal.tsx` (criação), após o `addDoc` da reserva, chamar `createAuditLog` com a ação `CREATE_BOOKING`.
-  - [x] No `edit-booking-modal.tsx` (cancelamento), antes do `deleteDoc`, chamar `createAuditLog` com a ação `CANCEL_BOOKING`.
-- [x] **Tarefa 2.3 (Log de Pagamento na Cloud Function):**
-  - [x] Na Cloud Function `mercadoPagoWebhook`, dentro da verificação `paymentDetails.status === "approved"`, adicionar a lógica para criar um documento diretamente na coleção `auditLogs` com a ação `PROCESS_PAYMENT`.
-- [x] **Tarefa 2.4 (Log de Envio de Mensagem na Cloud Function):**
-  - [x] Na Cloud Function `sendUserMessage`, após a criação da mensagem, adicionar a lógica para criar um documento na coleção `auditLogs` com a ação `SEND_MESSAGE`.
-
-#### História 3: Visualizador de Logs
-- [ ] **Tarefa 3.1 (Criação da Página):**
-  - [ ] Criar a nova página `/admin/audit-log/page.tsx`.
-- [ ] **Tarefa 3.2 (Construção do Componente da Tabela):**
-  - [ ] Dentro da nova página, implementar uma tabela que busca e exibe os dados da coleção `auditLogs`, ordenados por data.
-- [ ] **Tarefa 3.3 (Implementação de Filtros):**
-  - [ ] Adicionar campos de filtro para pesquisar por e-mail do usuário, tipo de ação e um seletor de intervalo de datas.
+- [x] **Tarefa 1.1 (Preparação do Ambiente):**
+  - [x] Ajustadas as `firestore.rules` para permitir a criação de logs.
+  - [x] Criado o helper `src/lib/auditLogger.ts` para centralizar a criação de logs no frontend.
+- [x] **Tarefa 2.2 (Integração de Logs):**
+  - [x] Adicionado log de `USER_LOGIN` no `AppLayout`.
+  - [x] Adicionado logs de `CREATE_BOOKING` e `CANCEL_BOOKING` nos modais de reserva.
+  - [x] Adicionado logs de `PROCESS_PAYMENT` e `SEND_MESSAGE` nas respectivas Cloud Functions.
+- [x] **Tarefa 3.3 (Visualizador de Logs):**
+  - [x] Criada a nova página `/admin/audit-log` com tabela e filtros para visualização dos registros de auditoria.
 
 ---
 
@@ -117,7 +115,7 @@ Este documento detalha as etapas de desenvolvimento, quebrando os objetivos da a
 - [x] **Melhoria no Fluxo de Onboarding**:
   - [x] Implementado um modal de boas-vindas no primeiro login após o cadastro, guiando o usuário sobre os próximos passos (completar perfil e se matricular).
 - [x] **Refinamento da Agenda Online**:
-  - [x] Reintroduzida a visualização de agenda por dia/semana, permitindo ao usuário alternar entre a visão de calendário mensal e uma timeline detalhada.
+  - [x] Reintroduzida a visualização de agenda por dia/semana, permitindo ao usuário alternar entre la visão de calendário mensal e uma timeline detalhada.
 - [x-refactor] **Centralização de Ferramentas Admin**:
   - [x] Movido o card de 'Enviar Novo Aviso' da página de avisos para a página de administração.
 - [x] **Polimento Geral da UI/UX**:
