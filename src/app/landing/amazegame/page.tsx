@@ -52,18 +52,19 @@ interface LogEntry {
   };
 }
 
-const typeStyles: Record<ActorType, { bg: string; border: string; buttonBg: string; buttonBorder: string }> = {
-  Aliado: { bg: 'bg-green-900/50', border: 'border-green-500', buttonBg: 'bg-green-500', buttonBorder: 'border-green-700' },
-  Inimigo: { bg: 'bg-red-900/50', border: 'border-red-500', buttonBg: 'bg-red-500', buttonBorder: 'border-red-700' },
-  Neutro: { bg: 'bg-gray-800/50', border: 'border-gray-500', buttonBg: 'bg-gray-500', buttonBorder: 'border-gray-700' },
-  Ambiente: { bg: 'bg-yellow-900/50', border: 'border-yellow-500', buttonBg: 'bg-yellow-500', buttonBorder: 'border-yellow-700' },
-};
-
 // --- Componentes ---
 
 function ActorCard({ actor, sessionId }: { actor: Actor; sessionId: string }) {
   const firestore = getFirestore(app);
+  
+  const typeStyles: Record<ActorType, { bg: string; border: string; buttonBg: string; buttonBorder: string }> = {
+    Aliado: { bg: 'bg-green-900/50', border: 'border-green-500', buttonBg: 'bg-green-500', buttonBorder: 'border-green-700' },
+    Inimigo: { bg: 'bg-red-900/50', border: 'border-red-500', buttonBg: 'bg-red-500', buttonBorder: 'border-red-700' },
+    Neutro: { bg: 'bg-gray-800/50', border: 'border-gray-500', buttonBg: 'bg-gray-500', buttonBorder: 'border-gray-700' },
+    Ambiente: { bg: 'bg-yellow-900/50', border: 'border-yellow-500', buttonBg: 'bg-yellow-500', buttonBorder: 'border-yellow-700' },
+  };
   const styles = typeStyles[actor.type];
+
   const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
 
   const handleUpdate = async (data: Partial<Actor>) => {
@@ -266,7 +267,8 @@ function AmazegameContent() {
     const addLogEntry = async (message: string) => {
         if (!sessionId) return;
         const logsRef = collection(firestore, `amazegame/${sessionId}/logs`);
-        await addDoc(logsRef, { message, timestamp: serverTimestamp() });
+        const newLogRef = doc(logsRef);
+        await setDoc(newLogRef, { id: newLogRef.id, message, timestamp: serverTimestamp() });
     };
 
     const addActor = async () => {
@@ -353,7 +355,7 @@ function AmazegameContent() {
         });
     };
 
-    if (!sessionId || loadingActors) {
+    if (!sessionId) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-900">
                 <Loader2 className="h-16 w-16 text-primary animate-spin"/>
@@ -396,12 +398,17 @@ function AmazegameContent() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                              <ScrollArea className="h-[550px] pr-3">
+                                {loadingActors && (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <Loader2 className="h-8 w-8 animate-spin mx-auto"/>
+                                    </div>
+                                )}
                                 {sortedActors.map(actor => (
                                     <div key={actor.id} className="mb-4">
                                       <ActorCard actor={actor} sessionId={sessionId}/>
                                     </div>
                                 ))}
-                                {actors && actors.length === 0 && (
+                                {actors && actors.length === 0 && !loadingActors && (
                                     <div className="text-center text-muted-foreground py-10">
                                         <p>Nenhum ator na batalha.</p>
                                         <p>Clique em "+" para começar.</p>
