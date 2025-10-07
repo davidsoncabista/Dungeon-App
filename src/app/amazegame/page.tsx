@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, Suspense, useRef } from 'react';
@@ -373,16 +372,21 @@ function AmazegameContent() {
             if (initDiff !== 0) {
                 return initDiff; // Ordena do menor para o maior
             }
-            // Regra de desempate: Inimigo tem prioridade
-            if (a.type === 'Inimigo' && b.type !== 'Inimigo') {
-                return -1; // 'a' vem antes
+    
+            // Regra de desempate especial para o primeiro ciclo após rolagem
+            if (isFirstCycleAfterRoll) {
+                if (a.type === 'Aliado' && b.type !== 'Aliado') return -1; // 'a' (aliado) vem antes
+                if (b.type === 'Aliado' && a.type !== 'Aliado') return 1;  // 'b' (aliado) vem antes
+            } else {
+                // Regra de desempate padrão para outros ciclos: Inimigo tem prioridade
+                if (a.type === 'Inimigo' && b.type !== 'Inimigo') return -1; // 'a' (inimigo) vem antes
+                if (b.type === 'Inimigo' && a.type !== 'Inimigo') return 1;  // 'b' (inimigo) vem antes
             }
-            if (b.type === 'Inimigo' && a.type !== 'Inimigo') {
-                return 1; // 'b' vem antes
-            }
-            return 0; // Mantém a ordem se ambos são/não são inimigos
+            
+            // Se ainda houver empate, ordena pelo nome para manter consistência
+            return a.name.localeCompare(b.name);
         });
-    }, [actors]);
+    }, [actors, isFirstCycleAfterRoll]);
 
     const addLogEntry = async (message: string) => {
         if (!sessionId) return;
