@@ -227,7 +227,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
             </div>
             {/* Vida */}
             <div className="flex flex-1 items-center gap-2">
-                <Heart className="h-5 w-5 text-red-400" />
+                <Heart className="hidden sm:block h-5 w-5 text-red-400" />
                 <Input 
                   type="text" 
                   value={hpInputValue} 
@@ -602,5 +602,3 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
-
-    
