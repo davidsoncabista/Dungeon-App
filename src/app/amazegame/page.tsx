@@ -347,7 +347,7 @@ function AmazegameContent() {
         let currentSessionId = searchParams.get('session');
         if (!currentSessionId) {
             currentSessionId = `session_${Date.now()}`;
-            router.replace(`/landing/amazegame?session=${currentSessionId}`, { scroll: false });
+            router.replace(`/amazegame?session=${currentSessionId}`, { scroll: false });
         }
         setSessionId(currentSessionId);
     }, [searchParams, router]);
