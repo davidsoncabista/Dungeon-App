@@ -44,6 +44,16 @@
       ]
     },
     {
+      "collectionGroup": "logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "polls",
       "queryScope": "COLLECTION",
       "fields": [
