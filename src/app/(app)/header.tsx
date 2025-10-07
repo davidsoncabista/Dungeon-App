@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate, History } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate, History, Home } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
@@ -197,6 +197,12 @@ export function AppHeader({ user, currentUserData }: AppHeaderProps) {
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial" />
         <ThemeToggle />
+        <Button variant="ghost" size="icon" className="rounded-full" asChild>
+            <Link href="/landing">
+              <Home className="h-5 w-5" />
+              <span className="sr-only">Página Inicial</span>
+            </Link>
+        </Button>
         <Button variant="ghost" size="icon" className="rounded-full" asChild>
             <Link href="/notices">
               <Megaphone className="h-5 w-5" />
