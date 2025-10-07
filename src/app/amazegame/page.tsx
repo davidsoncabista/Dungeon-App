@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Plus, Dices, RotateCcw, Trash2, Shield, Sword, Heart, PlusCircle, MinusCircle, Tag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, orderBy, onSnapshot, serverTimestamp, addDoc, getDocs, where } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, orderBy, onSnapshot, serverTimestamp, addDoc, getDocs, where, Timestamp } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { app } from '@/lib/firebase';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -41,6 +41,7 @@ interface Actor {
   maxHp: number;
   notes: string;
   statuses: Status[];
+  initiativeTimestamp: Timestamp | null;
 }
 
 interface LogEntry {
@@ -84,7 +85,12 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
   const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
 
   const handleUpdate = async (data: Partial<Actor>) => {
-    updateDoc(actorRef, data).catch((err) => {
+    const dataToUpdate = { ...data };
+    // Se a iniciativa está sendo mudada, atualize o timestamp
+    if ('initiative' in dataToUpdate) {
+        (dataToUpdate as any).initiativeTimestamp = serverTimestamp();
+    }
+    updateDoc(actorRef, dataToUpdate).catch((err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: actorRef.path,
             operation: 'update',
@@ -364,26 +370,11 @@ function AmazegameContent() {
     }, [searchParams, router]);
 
     const actorsCollectionRef = useMemo(() => sessionId ? collection(firestore, `amazegame/${sessionId}/actors`) : null, [firestore, sessionId]);
-    const [actorsSnapshot, loadingActors] = useCollection(actorsCollectionRef);
+    const q = useMemo(() => actorsCollectionRef ? query(actorsCollectionRef, orderBy('initiative', 'asc'), orderBy('initiativeTimestamp', 'asc')) : null, [actorsCollectionRef]);
+    const [actorsSnapshot, loadingActors] = useCollection(q);
     const actors = useMemo(() => actorsSnapshot?.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Actor[] || [], [actorsSnapshot]);
 
-    const sortedActors = useMemo(() => {
-        return [...actors].sort((a, b) => {
-            const initDiff = a.initiative - b.initiative;
-            if (initDiff !== 0) {
-                return initDiff; // Ordena do menor para o maior
-            }
-    
-            // Regra de desempate especial para o primeiro ciclo após rolagem
-            if (isFirstCycleAfterRoll) {
-                if (a.type === 'Aliado' && b.type !== 'Aliado') return -1; // 'a' (aliado) vem antes
-                if (b.type === 'Aliado' && a.type !== 'Aliado') return 1;  // 'b' (aliado) vem antes
-            }
-            
-            // Se ainda houver empate, ordena pelo nome para manter consistência
-            return a.name.localeCompare(b.name);
-        });
-    }, [actors, isFirstCycleAfterRoll]);
+    const sortedActors = actors; // A ordenação já vem do Firestore
 
     const addLogEntry = async (message: string) => {
         if (!sessionId) return;
@@ -403,19 +394,27 @@ function AmazegameContent() {
             maxHp: 10,
             notes: '',
             statuses: [],
+            initiativeTimestamp: null
         };
         const actorsRef = collection(firestore, `amazegame/${sessionId}/actors`);
-        const newDoc = await addDoc(actorsRef, newActorData).catch((err) => {
+        const newDocRef = doc(actorsRef); // Gera um ID antes
+        
+        const finalData = {
+            ...newActorData,
+            id: newDocRef.id,
+            initiativeTimestamp: serverTimestamp() // Define o timestamp na criação
+        };
+
+        setDoc(newDocRef, finalData).catch((err) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: actorsRef.path,
                 operation: 'create',
                 requestResourceData: newActorData
             }));
         });
-        if(newDoc) {
-            await addLogEntry(`Ator "${newActorName}" foi adicionado.`);
-            setActorCounter(prev => prev + 1);
-        }
+        
+        await addLogEntry(`Ator "${newActorName}" foi adicionado.`);
+        setActorCounter(prev => prev + 1);
     };
 
     const rollAllInitiatives = async () => {
@@ -434,7 +433,7 @@ function AmazegameContent() {
             logPromises.push(addLogEntry(`${actor.name} rolou 3d${d} (${rolls.join(' + ')}) = ${total}`));
             
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
-            batch.update(actorRef, { initiative: total });
+            batch.update(actorRef, { initiative: total, initiativeTimestamp: serverTimestamp() });
         });
         
         await Promise.all(logPromises);
@@ -472,7 +471,7 @@ function AmazegameContent() {
                     return s.duration > 0;
                 });
             const actorRef = doc(firestore, `amazegame/${sessionId}/actors`, actor.id);
-            batch.update(actorRef, { initiative: newInitiative, statuses: updatedStatuses });
+            batch.update(actorRef, { initiative: newInitiative, statuses: updatedStatuses, initiativeTimestamp: serverTimestamp() });
         });
         
         await Promise.all(statusLogPromises);
