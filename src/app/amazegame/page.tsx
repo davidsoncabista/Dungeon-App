@@ -198,7 +198,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
   return (
     <Card className={cn("text-white transition-colors duration-300", styles.bg, styles.border)}>
       <CardContent className="p-4 space-y-3">
-        {/* Linha 1: Nome */}
+        {/* Linha 1: Nome e Remover */}
         <div className="flex items-center gap-2">
            <Input 
             value={actor.name} 
@@ -206,11 +206,12 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
             placeholder="Nome do Ator"
             className="flex-1 bg-background/20 border-white/20 font-bold text-lg" 
           />
+          <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
         </div>
         
-        {/* Linha 2 & 3: Iniciativa, Tipo, Tier, Remover */}
+        {/* Container para Iniciativa, Vida e Classe */}
         <div className="flex flex-col sm:flex-row gap-2">
-            {/* Iniciativa e Tipo */}
+            {/* Iniciativa */}
             <div className="flex flex-1 items-center gap-2">
                 <span className="text-sm font-semibold w-20 text-center">Iniciativa</span>
                  <Input 
@@ -223,18 +224,31 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                     className="flex-1 text-center bg-background/20 border-white/20"
                     placeholder="Init"
                 />
-                <TooltipProvider>
-                    <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button size="icon" variant="outline" onClick={toggleType} className={cn("w-12 h-10 transition-colors duration-300", styles.buttonBg, styles.buttonBorder, 'hover:opacity-80')}>
-                        {actor.type === 'Aliado' ? <Shield size={20}/> : actor.type === 'Inimigo' ? <Sword size={20}/> : <Dices size={20}/>}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>{actor.type}</p></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
             </div>
-            {/* Tier e Remover */}
+            {/* Vida */}
+            <div className="flex flex-1 items-center gap-2">
+                <Heart className="h-5 w-5 text-red-400" />
+                <Input 
+                  type="text" 
+                  value={hpInputValue} 
+                  onChange={(e) => setHpInputValue(e.target.value)}
+                  onBlur={(e) => handleHpChange(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                  onFocus={(e) => e.target.select()}
+                  className="w-full text-center bg-background/20 border-white/20"
+                />
+                <span className="text-lg">/</span>
+                <Input 
+                  type="text" 
+                  value={maxHpInputValue} 
+                  onChange={(e) => setMaxHpInputValue(e.target.value)}
+                  onBlur={(e) => handleMaxHpChange(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                  onFocus={(e) => e.target.select()}
+                  className="w-full text-center bg-background/20 border-white/20"
+                />
+            </div>
+            {/* Classe e Tipo */}
              <div className="flex flex-1 items-center gap-2">
                 <span className="text-sm font-semibold w-20 text-center">Classe</span>
                 <Select value={actor.tier} onValueChange={(value: Tier) => handleUpdate({ tier: value })}>
@@ -245,32 +259,17 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                     {['D', 'C', 'B', 'A', 'S'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
+                 <TooltipProvider>
+                    <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button size="icon" variant="outline" onClick={toggleType} className={cn("w-12 h-10 transition-colors duration-300", styles.buttonBg, styles.buttonBorder, 'hover:opacity-80')}>
+                        {actor.type === 'Aliado' ? <Shield size={20}/> : actor.type === 'Inimigo' ? <Sword size={20}/> : <Dices size={20}/>}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{actor.type}</p></TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
-        </div>
-
-        {/* Linha 4: Vida */}
-        <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-red-400" />
-            <Input 
-              type="text" 
-              value={hpInputValue} 
-              onChange={(e) => setHpInputValue(e.target.value)}
-              onBlur={(e) => handleHpChange(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-              onFocus={(e) => e.target.select()}
-              className="w-20 text-center bg-background/20 border-white/20"
-            />
-            <span className="text-lg">/</span>
-            <Input 
-              type="text" 
-              value={maxHpInputValue} 
-              onChange={(e) => setMaxHpInputValue(e.target.value)}
-              onBlur={(e) => handleMaxHpChange(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-              onFocus={(e) => e.target.select()}
-              className="w-20 text-center bg-background/20 border-white/20"
-            />
         </div>
 
         {/* Linha 5: Notas */}
