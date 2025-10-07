@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, Suspense, useRef } from 'react';
@@ -377,10 +378,6 @@ function AmazegameContent() {
             if (isFirstCycleAfterRoll) {
                 if (a.type === 'Aliado' && b.type !== 'Aliado') return -1; // 'a' (aliado) vem antes
                 if (b.type === 'Aliado' && a.type !== 'Aliado') return 1;  // 'b' (aliado) vem antes
-            } else {
-                // Regra de desempate padrão para outros ciclos: Inimigo tem prioridade
-                if (a.type === 'Inimigo' && b.type !== 'Inimigo') return -1; // 'a' (inimigo) vem antes
-                if (b.type === 'Inimigo' && a.type !== 'Inimigo') return 1;  // 'b' (inimigo) vem antes
             }
             
             // Se ainda houver empate, ordena pelo nome para manter consistência
