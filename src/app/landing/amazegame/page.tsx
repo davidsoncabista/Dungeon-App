@@ -359,9 +359,9 @@ function AmazegameContent() {
 
     const sortedActors = useMemo(() => {
         return [...actors].sort((a, b) => {
-            const initA = a.initiative + (a.type === 'Inimigo' ? -0.5 : 0);
-            const initB = b.initiative + (b.type === 'Inimigo' ? -0.5 : 0);
-            return initB - initA; // Ordena do maior para o menor
+            const initA = a.initiative + (a.type === 'Inimigo' ? 0.5 : 0);
+            const initB = b.initiative + (b.type === 'Inimigo' ? 0.5 : 0);
+            return initA - initB; // Ordena do menor para o maior
         });
     }, [actors]);
 
@@ -577,3 +577,5 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
+
+    
