@@ -300,7 +300,6 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
   );
 }
 
-// CORREÇÃO: Componente HistoryLog movido para o nível superior
 function HistoryLog({ sessionId }: { sessionId: string }) {
     const firestore = getFirestore(app);
     const logsCollectionRef = useMemo(() => collection(firestore, `amazegame/${sessionId}/logs`), [firestore, sessionId]);
@@ -360,9 +359,18 @@ function AmazegameContent() {
 
     const sortedActors = useMemo(() => {
         return [...actors].sort((a, b) => {
-            const initA = a.initiative + (a.type === 'Inimigo' ? 0.5 : 0);
-            const initB = b.initiative + (b.type === 'Inimigo' ? 0.5 : 0);
-            return initA - initB; // Ordena do menor para o maior
+            const initDiff = a.initiative - b.initiative;
+            if (initDiff !== 0) {
+                return initDiff; // Ordena do menor para o maior
+            }
+            // Regra de desempate: Inimigo tem prioridade
+            if (a.type === 'Inimigo' && b.type !== 'Inimigo') {
+                return -1; // 'a' vem antes
+            }
+            if (b.type === 'Inimigo' && a.type !== 'Inimigo') {
+                return 1; // 'b' vem antes
+            }
+            return 0; // Mantém a ordem se ambos são/não são inimigos
         });
     }, [actors]);
 
