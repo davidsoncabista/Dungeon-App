@@ -319,15 +319,9 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
 function HistoryLog({ sessionId }: { sessionId: string }) {
     const firestore = getFirestore(app);
     const logsCollectionRef = useMemo(() => collection(firestore, `amazegame/${sessionId}/logs`), [firestore, sessionId]);
-    const [logsSnapshot, loadingLogs] = useCollection(query(logsCollectionRef, orderBy('timestamp', 'asc')));
+    const [logsSnapshot, loadingLogs] = useCollection(query(logsCollectionRef, orderBy('timestamp', 'desc')));
     const logs = useMemo(() => logsSnapshot?.docs.map(doc => ({ ...doc.data(), id: doc.id }) as LogEntry) || [], [logsSnapshot]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-        }
-    }, [logs]);
 
     return (
         <Card className="bg-black/50 h-full">
