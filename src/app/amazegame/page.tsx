@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, Suspense, useRef } from 'react';
@@ -197,46 +198,58 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
   return (
     <Card className={cn("text-white transition-colors duration-300", styles.bg, styles.border)}>
       <CardContent className="p-4 space-y-3">
-        {/* Linha Principal */}
+        {/* Linha 1: Nome */}
         <div className="flex items-center gap-2">
-          <Select value={actor.tier} onValueChange={(value: Tier) => handleUpdate({ tier: value })}>
-            <SelectTrigger className="w-20 bg-background/20 border-white/20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {['D', 'C', 'B', 'A', 'S'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Input 
+           <Input 
             value={actor.name} 
             onChange={(e) => handleUpdate({ name: e.target.value })} 
             placeholder="Nome do Ator"
-            className="flex-1 bg-background/20 border-white/20" 
+            className="flex-1 bg-background/20 border-white/20 font-bold text-lg" 
           />
-          <Input 
-            type="text" 
-            value={initiativeInputValue}
-            onChange={(e) => setInitiativeInputValue(e.target.value)}
-            onBlur={(e) => handleInitiativeChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-            onFocus={(e) => e.target.select()}
-            className="w-20 text-center bg-background/20 border-white/20"
-            placeholder="Init"
-          />
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" variant="outline" onClick={toggleType} className={cn("w-12 h-10 transition-colors duration-300", styles.buttonBg, styles.buttonBorder, 'hover:opacity-80')}>
-                  {actor.type === 'Aliado' ? <Shield size={20}/> : actor.type === 'Inimigo' ? <Sword size={20}/> : <Dices size={20}/>}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>{actor.type}</p></TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
+        </div>
+        
+        {/* Linha 2 & 3: Iniciativa, Tipo, Tier, Remover */}
+        <div className="flex flex-col sm:flex-row gap-2">
+            {/* Iniciativa e Tipo */}
+            <div className="flex flex-1 items-center gap-2">
+                <span className="text-sm font-semibold w-20 text-center">Iniciativa</span>
+                 <Input 
+                    type="text" 
+                    value={initiativeInputValue}
+                    onChange={(e) => setInitiativeInputValue(e.target.value)}
+                    onBlur={(e) => handleInitiativeChange(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                    onFocus={(e) => e.target.select()}
+                    className="flex-1 text-center bg-background/20 border-white/20"
+                    placeholder="Init"
+                />
+                <TooltipProvider>
+                    <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button size="icon" variant="outline" onClick={toggleType} className={cn("w-12 h-10 transition-colors duration-300", styles.buttonBg, styles.buttonBorder, 'hover:opacity-80')}>
+                        {actor.type === 'Aliado' ? <Shield size={20}/> : actor.type === 'Inimigo' ? <Sword size={20}/> : <Dices size={20}/>}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{actor.type}</p></TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
+            {/* Tier e Remover */}
+             <div className="flex flex-1 items-center gap-2">
+                <span className="text-sm font-semibold w-20 text-center">Classe</span>
+                <Select value={actor.tier} onValueChange={(value: Tier) => handleUpdate({ tier: value })}>
+                    <SelectTrigger className="flex-1 bg-background/20 border-white/20">
+                    <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {['D', 'C', 'B', 'A', 'S'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
+            </div>
         </div>
 
-        {/* Linha de Vida e Notas */}
+        {/* Linha 4: Vida */}
         <div className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-red-400" />
             <Input 
@@ -258,7 +271,11 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
               onFocus={(e) => e.target.select()}
               className="w-20 text-center bg-background/20 border-white/20"
             />
-            <Input 
+        </div>
+
+        {/* Linha 5: Notas */}
+        <div className="flex items-center gap-2">
+             <Input 
               value={actor.notes}
               onChange={(e) => handleUpdate({ notes: e.target.value })}
               placeholder="Anotações..."
@@ -267,7 +284,8 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
             <Button size="icon" variant="ghost" onClick={addStatus} className="hover:bg-green-500/20"><PlusCircle className="text-green-400" /></Button>
         </div>
 
-        {/* Container de Status */}
+
+        {/* Linha 6: Container de Status */}
         <div className="space-y-2">
             {actor.statuses.map(status => (
                 <div key={status.id} className="flex items-center gap-2">
@@ -347,7 +365,7 @@ function AmazegameContent() {
         let currentSessionId = searchParams.get('session');
         if (!currentSessionId) {
             currentSessionId = `session_${Date.now()}`;
-            router.replace(`/landing/amazegame?session=${currentSessionId}`, { scroll: false });
+            router.replace(`/amazegame?session=${currentSessionId}`, { scroll: false });
         }
         setSessionId(currentSessionId);
     }, [searchParams, router]);
@@ -585,3 +603,5 @@ export default function AmazegamePage() {
         </Suspense>
     )
 }
+
+    
