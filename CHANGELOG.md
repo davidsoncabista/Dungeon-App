@@ -11,6 +11,9 @@ Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabi
     * Em telas maiores, os campos de Iniciativa, Vida e Classe (Tier) são agrupados de forma inteligente para otimizar o espaço horizontal.
 * **fix(amazegame): Corrige erro de consulta no carregamento da sessão**
     * Resolvido um erro crítico de runtime (`Cannot read properties of null`) que ocorria ao carregar o `Maze Tracker` se a consulta ao Firestore fosse executada antes do ID da sessão estar disponível.
+* **feat(books): Cria a infraestrutura da Biblioteca de Conteúdo**
+    * Criada a nova página `/books`, que servirá como um repositório central para exibir e dar acesso a aplicações, livros de regras e sistemas proprietários criados pelos membros da comunidade.
+    * A página já está acessível no menu principal para todos os usuários logados com contas ativas e inclui a estrutura inicial e o botão de gerenciamento para Administradores e Editores, preparando o terreno para a adição de futuros conteúdos.
 
 ## v1.6.2 - Correção na Sincronização de Permissões
 * **fix(auth): Garante a sincronização de permissões do usuário após o login**
@@ -432,3 +435,4 @@ Melhorias significativas no backend para automatizar processos e aumentar a segu
 
 
     
+

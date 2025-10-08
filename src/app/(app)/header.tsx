@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate, History, Home } from "lucide-react"
+import { Bell, User, Settings, LogOut, PanelLeft, Dices, Swords, BookMarked, BarChart3, Users as UsersIcon, DoorOpen, CreditCard, ShieldCheck, Megaphone, CalendarDays, MessageSquare, Vote, Eye, LayoutTemplate, History, Home, Library } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
@@ -35,6 +35,7 @@ import Image from "next/image"
 const navItems = [
   { href: "/online-schedule", label: "Agenda", icon: CalendarDays, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/my-bookings", label: "Reservas", icon: BookMarked, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
+  { href: "/books", label: "Biblioteca", icon: Library, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/billing", label: "Cobranças", icon: CreditCard, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
   { href: "/voting", label: "Votação", icon: Vote, roles: ["Membro", "Revisor", "Editor", "Administrador"] },
 ];
