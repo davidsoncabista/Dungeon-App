@@ -14,6 +14,9 @@ Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabi
 * **feat(books): Cria a infraestrutura da Biblioteca de Conteúdo**
     * Criada a nova página `/books`, que servirá como um repositório central para exibir e dar acesso a aplicações, livros de regras e sistemas proprietários criados pelos membros da comunidade.
     * A página já está acessível no menu principal para todos os usuários logados com contas ativas e inclui a estrutura inicial e o botão de gerenciamento para Administradores e Editores, preparando o terreno para a adição de futuros conteúdos.
+* **feat(books): Implementa o layout responsivo da página da Biblioteca**
+    * A nova página `/books` agora conta com um layout de grade responsivo (3 colunas em desktop, 2 em tablets, 1 em mobile).
+    * Os cards de conteúdo foram estruturados com uma área de descrição de altura fixa e rolagem para textos longos, garantindo a consistência visual do layout em todas as resoluções.
 
 ## v1.6.2 - Correção na Sincronização de Permissões
 * **fix(auth): Garante a sincronização de permissões do usuário após o login**
@@ -435,4 +438,5 @@ Melhorias significativas no backend para automatizar processos e aumentar a segu
 
 
     
+
 
