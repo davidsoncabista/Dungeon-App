@@ -8,8 +8,9 @@ import { auth, app } from "@/lib/firebase"
 import type { User } from "@/lib/types/user"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Library, PlusCircle, Wrench, Download } from "lucide-react"
+import { Library, Wrench, Download } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { BookFormDialog } from "@/components/app/books/book-form-dialog"
 
 // Placeholder data for demonstration
 const placeholderContent = [
@@ -47,6 +48,11 @@ export default function BooksPage() {
 
     const canManage = currentUser?.role === "Administrador" || currentUser?.role === "Editor"
 
+    const handleSave = (data: any) => {
+        // Lógica para salvar os dados no Firestore será implementada aqui
+        console.log("Salvando:", data)
+    }
+
     return (
         <div className="flex flex-col h-full">
             {/* Cabeçalho Fixo */}
@@ -62,10 +68,12 @@ export default function BooksPage() {
                         </p>
                     </div>
                     {canManage && (
-                        <Button disabled>
-                            <Wrench className="mr-2 h-4 w-4" />
-                            Gerenciar Conteúdo
-                        </Button>
+                       <BookFormDialog onSave={handleSave}>
+                           <Button>
+                               <Wrench className="mr-2 h-4 w-4" />
+                               Gerenciar Conteúdo
+                           </Button>
+                       </BookFormDialog>
                     )}
                 </div>
             </div>

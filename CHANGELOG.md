@@ -3,6 +3,17 @@
 
 Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabilidade e corrigindo regras de negócio críticas para o gerenciamento de iniciativa em combate.
 
+* **feat(books): Implementa o modal de criação e edição para o conteúdo da Biblioteca**
+    * Adicionado o componente de modal (`Dialog`) que será utilizado para criar e editar os cards de conteúdo da página da Biblioteca.
+    * O modal contém um formulário com campos para "Título", "Descrição (HTML)", "Texto do Botão" e "Link de Destino", estabelecendo a interface para que os administradores gerenciem o conteúdo da Biblioteca.
+* **feat(books): Implementa o layout responsivo da página da Biblioteca**
+    * A nova página `/books` agora conta com um layout de grade responsivo (3 colunas em desktop, 2 em tablets, 1 em mobile).
+    * Os cards de conteúdo foram estruturados com uma área de descrição de altura fixa e rolagem para textos longos, garantindo a consistência visual do layout em todas as resoluções.
+* **feat(books): Cria a infraestrutura da Biblioteca de Conteúdo**
+    * Criada a nova página `/books`, que servirá como um repositório central para exibir e dar acesso a aplicações, livros de regras e sistemas proprietários criados pelos membros da comunidade.
+    * A página já está acessível no menu principal para todos os usuários logados com contas ativas e inclui a estrutura inicial e o botão de gerenciamento para Administradores e Editores, preparando o terreno para a adição de futuros conteúdos.
+* **feat(amazegame): Torna o Maze Tracker exclusivo para membros**
+    * A rota do "Maze Tracker" foi movida para `/app/amazegame`, restringindo o acesso apenas a usuários autenticados e com cadastro completo, garantindo que seja uma ferramenta exclusiva da comunidade.
 * **feat(amazegame): Implementa desempate de iniciativa com timestamp**
     * Adicionado um campo `initiativeTimestamp` a cada ator. Agora, quando dois atores têm o mesmo valor de iniciativa, a prioridade é dada àquele que recebeu o valor primeiro.
     * Isso garante uma ordem de turno estável e justa, eliminando a dependência de dados mutáveis como o nome do ator para o desempate.
@@ -11,12 +22,6 @@ Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabi
     * Em telas maiores, os campos de Iniciativa, Vida e Classe (Tier) são agrupados de forma inteligente para otimizar o espaço horizontal.
 * **fix(amazegame): Corrige erro de consulta no carregamento da sessão**
     * Resolvido um erro crítico de runtime (`Cannot read properties of null`) que ocorria ao carregar o `Maze Tracker` se a consulta ao Firestore fosse executada antes do ID da sessão estar disponível.
-* **feat(books): Cria a infraestrutura da Biblioteca de Conteúdo**
-    * Criada a nova página `/books`, que servirá como um repositório central para exibir e dar acesso a aplicações, livros de regras e sistemas proprietários criados pelos membros da comunidade.
-    * A página já está acessível no menu principal para todos os usuários logados com contas ativas e inclui a estrutura inicial e o botão de gerenciamento para Administradores e Editores, preparando o terreno para a adição de futuros conteúdos.
-* **feat(books): Implementa o layout responsivo da página da Biblioteca**
-    * A nova página `/books` agora conta com um layout de grade responsivo (3 colunas em desktop, 2 em tablets, 1 em mobile).
-    * Os cards de conteúdo foram estruturados com uma área de descrição de altura fixa e rolagem para textos longos, garantindo a consistência visual do layout em todas as resoluções.
 
 ## v1.6.2 - Correção na Sincronização de Permissões
 * **fix(auth): Garante a sincronização de permissões do usuário após o login**
@@ -107,7 +112,7 @@ Esta versão trouxe otimizações de performance e melhorias visuais na experiê
 * **chore(profile): Remove card de diagnóstico de acesso**
     * O card de teste "Diagnóstico de Acesso", utilizado durante o desenvolvimento para depuração de permissões, foi removido da interface de produção.
 
-## v1.4.1 - Automação de Permissões e Refatoração de Regras
+## v1d.4.1 - Automação de Permissões e Refatoração de Regras
 
 Melhorias significativas no backend para automatizar processos e aumentar a segurança.
 
@@ -438,5 +443,6 @@ Melhorias significativas no backend para automatizar processos e aumentar a segu
 
 
     
+
 
 
