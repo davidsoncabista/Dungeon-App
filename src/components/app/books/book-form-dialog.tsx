@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, type ReactNode } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -24,7 +24,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { PlusCircle } from "lucide-react"
 
 // Esquema de validação para um item da biblioteca
 const bookItemSchema = z.object({
@@ -40,27 +39,38 @@ interface BookFormDialogProps {
   onSave: (data: BookFormValues) => void;
   children: React.ReactNode;
   defaultValues?: Partial<BookFormValues>;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
 }
 
-export function BookFormDialog({ onSave, children, defaultValues }: BookFormDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function BookFormDialog({ onSave, children, defaultValues, isOpen, setIsOpen }: BookFormDialogProps) {
   
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookItemSchema),
-    defaultValues: defaultValues || {
+    defaultValues: {
       title: "",
       description: "",
       actionText: "Acessar",
-      actionLink: "https://",
+      actionLink: "",
     },
   });
 
   const isEditMode = !!defaultValues;
 
+  useEffect(() => {
+    if (isOpen) {
+        form.reset(defaultValues || {
+            title: "",
+            description: "",
+            actionText: "Acessar",
+            actionLink: "",
+        });
+    }
+  }, [isOpen, defaultValues, form]);
+
+
   const handleSubmit = (data: BookFormValues) => {
     onSave(data);
-    form.reset();
-    setIsOpen(false);
   };
 
   return (

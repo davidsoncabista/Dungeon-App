@@ -1,8 +1,11 @@
 # Changelog
-## v1.7.0 - Melhorias no Maze Tracker e Correção de Bugs
+## v1.8.0 - Implementação da Biblioteca de Conteúdo
 
-Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabilidade e corrigindo regras de negócio críticas para o gerenciamento de iniciativa em combate.
+Esta versão introduz a seção "Biblioteca", um novo espaço para centralizar ferramentas e documentos importantes para a comunidade.
 
+* **feat(books): Implementa o CRUD de conteúdo da Biblioteca**
+    * A página `/books` agora é totalmente dinâmica, com a lógica completa de CRUD (Criar, Ler, Atualizar, Excluir) implementada.
+    * Administradores e Editores podem gerenciar o conteúdo através de um modal, com as operações sendo salvas diretamente no Firestore. A segurança é garantida por meio de Regras de Segurança.
 * **feat(books): Implementa o modal de criação e edição para o conteúdo da Biblioteca**
     * Adicionado o componente de modal (`Dialog`) que será utilizado para criar e editar os cards de conteúdo da página da Biblioteca.
     * O modal contém um formulário com campos para "Título", "Descrição (HTML)", "Texto do Botão" e "Link de Destino", estabelecendo a interface para que os administradores gerenciem o conteúdo da Biblioteca.
@@ -12,6 +15,11 @@ Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabi
 * **feat(books): Cria a infraestrutura da Biblioteca de Conteúdo**
     * Criada a nova página `/books`, que servirá como um repositório central para exibir e dar acesso a aplicações, livros de regras e sistemas proprietários criados pelos membros da comunidade.
     * A página já está acessível no menu principal para todos os usuários logados com contas ativas e inclui a estrutura inicial e o botão de gerenciamento para Administradores e Editores, preparando o terreno para a adição de futuros conteúdos.
+
+## v1.7.0 - Melhorias no Maze Tracker e Correção de Bugs
+
+Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabilidade e corrigindo regras de negócio críticas para o gerenciamento de iniciativa em combate.
+
 * **feat(amazegame): Torna o Maze Tracker exclusivo para membros**
     * A rota do "Maze Tracker" foi movida para `/app/amazegame`, restringindo o acesso apenas a usuários autenticados e com cadastro completo, garantindo que seja uma ferramenta exclusiva da comunidade.
 * **feat(amazegame): Implementa desempate de iniciativa com timestamp**
@@ -112,7 +120,7 @@ Esta versão trouxe otimizações de performance e melhorias visuais na experiê
 * **chore(profile): Remove card de diagnóstico de acesso**
     * O card de teste "Diagnóstico de Acesso", utilizado durante o desenvolvimento para depuração de permissões, foi removido da interface de produção.
 
-## v1d.4.1 - Automação de Permissões e Refatoração de Regras
+## v1.4.1 - Automação de Permissões e Refatoração de Regras
 
 Melhorias significativas no backend para automatizar processos e aumentar a segurança.
 
@@ -432,17 +440,3 @@ Melhorias significativas no backend para automatizar processos e aumentar a segu
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
-
-
-
-
-    
-
-
-
-
-
-    
-
-
-
