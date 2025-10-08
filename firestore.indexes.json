@@ -1,6 +1,25 @@
 {
   "indexes": [
     {
+      "collectionGroup": "actors",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "initiative",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "initiativeTimestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
       "collectionGroup": "bookings",
       "queryScope": "COLLECTION",
       "fields": [
