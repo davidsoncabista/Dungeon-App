@@ -16,7 +16,7 @@ Esta versão introduz a seção "Biblioteca", um novo espaço para centralizar f
     * Criada a nova página `/books`, que servirá como um repositório central para exibir e dar acesso a aplicações, livros de regras e sistemas proprietários criados pelos membros da comunidade.
     * A página já está acessível no menu principal para todos os usuários logados com contas ativas e inclui a estrutura inicial e o botão de gerenciamento para Administradores e Editores, preparando o terreno para a adição de futuros conteúdos.
 
-## v1.7.0 - Melhorias no Maze Tracker e Correção de Bugs
+## v1.7.5 - Melhorias no Maze Tracker e Correção de Bugs
 
 Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabilidade e corrigindo regras de negócio críticas para o gerenciamento de iniciativa em combate.
 

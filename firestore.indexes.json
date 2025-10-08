@@ -11,13 +11,8 @@
         {
           "fieldPath": "initiativeTimestamp",
           "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     },
     {
       "collectionGroup": "bookings",
@@ -30,13 +25,8 @@
         {
           "fieldPath": "date",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     },
     {
       "collectionGroup": "bookings",
@@ -49,13 +39,8 @@
         {
           "fieldPath": "date",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     },
     {
       "collectionGroup": "landingPageBlocks",
@@ -68,13 +53,8 @@
         {
           "fieldPath": "order",
           "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     },
     {
       "collectionGroup": "polls",
@@ -87,13 +67,8 @@
         {
           "fieldPath": "eligibleVoters",
           "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "ASCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     },
     {
       "collectionGroup": "transactions",
@@ -106,13 +81,8 @@
         {
           "fieldPath": "createdAt",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     },
     {
       "collectionGroup": "userMessages",
@@ -125,20 +95,14 @@
         {
           "fieldPath": "createdAt",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
         }
-      ],
-      "density": "SPARSE_ALL"
+      ]
     }
   ],
   "fieldOverrides": [
     {
       "collectionGroup": "logs",
       "fieldPath": "timestamp",
-      "ttl": false,
       "indexes": [
         {
           "order": "ASCENDING",
