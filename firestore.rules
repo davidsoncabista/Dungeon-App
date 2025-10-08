@@ -4,137 +4,150 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- REGRAS GERAIS ---
-    // A coleção 'users' armazena perfis públicos e dados de associação.
-    match /users/{userId} {
-      // Qualquer usuário autenticado pode ler os perfis de outros usuários.
-      allow read: if request.auth != null;
-      
-      // O próprio usuário pode atualizar seu perfil.
-      // Admins e Editores também podem atualizar perfis de outros usuários.
-      allow update: if request.auth.uid == userId || request.auth.token.role in ['Administrador', 'Editor'];
-      
-      // Apenas admins podem criar ou deletar usuários (casos raros).
-      allow create, delete: if request.auth.token.role == 'Administrador';
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // A coleção 'rooms' é pública para leitura.
-    match /rooms/{roomId} {
-      allow read: if true;
-      // Apenas Admins e Editores podem modificar as salas.
-      allow write: if request.auth.token.role in ['Administrador', 'Editor'];
-    }
-
-    // A coleção 'bookings' contém as reservas.
-    match /bookings/{bookingId} {
-      // Qualquer usuário autenticado pode ler os detalhes de uma reserva.
-      allow read: if request.auth != null;
-
-      // A criação é permitida se o usuário for o organizador da reserva.
-      allow create: if request.auth.uid == request.resource.data.organizerId;
-
-      // A atualização é permitida para o organizador ou para admins/editores.
-      allow update: if request.auth.uid == resource.data.organizerId || request.auth.token.role in ['Administrador', 'Editor'];
-      
-      // A exclusão é permitida para o organizador ou para admins.
-      allow delete: if request.auth.uid == resource.data.organizerId || request.auth.token.role == 'Administrador';
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
     
-    // A coleção 'plans' é configurada pelo admin.
-    match /plans/{planId} {
-      // Qualquer um pode ler os planos disponíveis.
-      allow read: if true;
-      // Apenas admins podem criar, editar ou deletar planos.
-      allow write: if request.auth.token.role == 'Administrador';
+    function getUserData() {
+        // Retorna os dados do documento do usuário que está fazendo a requisição.
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
     
-    // A coleção 'systemSettings' contém configurações globais.
-    match /systemSettings/{docId} {
-      allow read: if true; // Todos podem ler (ex: valor da joia).
-      allow write: if request.auth.token.role == 'Administrador';
+    function isAdmin() {
+        // Verifica se o 'role' do usuário é 'Administrador'.
+        return getUserData().role == 'Administrador';
+    }
+    
+    function isEditor() {
+        // Verifica se o 'role' é 'Editor' ou superior.
+        return getUserData().role == 'Editor' || isAdmin();
+    }
+    
+    function isRevisor() {
+        // Verifica se o 'role' é 'Revisor' ou superior.
+        return getUserData().role == 'Revisor' || isEditor();
     }
 
-    // Coleção de 'notices' (avisos).
-    match /notices/{noticeId} {
-      // Leitura pública para que qualquer usuário veja os avisos.
-      allow read: if true;
-      allow write: if request.auth.token.role == 'Administrador';
-    }
-    
-    // Coleção de 'transactions' (transações financeiras).
-    match /transactions/{transactionId} {
-      // O usuário pode ler suas próprias transações. Admins podem ler todas.
-      allow read: if request.auth.uid == resource.data.userId || request.auth.token.role == 'Administrador';
-      // Apenas Cloud Functions (backend) ou Admins podem criar/atualizar.
-      allow create, update: if request.auth.token.role == 'Administrador';
-      allow delete: if false; // Não permitir exclusão para manter histórico.
-    }
-    
-    // --- REGRAS PARA MENSAGENS PRIVADAS ---
-    match /userMessages/{messageId} {
-      // Leitura permitida para destinatário, remetente, ou moderadores.
-      allow read: if request.auth != null && 
-                      (request.auth.uid == resource.data.recipientId || 
-                       request.auth.uid == resource.data.senderId ||
-                       request.auth.token.role in ['Administrador', 'Editor', 'Revisor']);
-
-      // A criação é controlada pela Cloud Function 'sendUserMessage'.
-      allow create: if false;
-
-      // O destinatário pode marcar como lida. Admins/Editores podem editar.
-      allow update: if request.auth != null && 
-                        (request.auth.uid == resource.data.recipientId || 
-                         request.auth.token.role in ['Editor', 'Administrador']);
-      allow delete: if request.auth.token.role in ['Editor', 'Administrador'];
-    }
-
-    // Coleção para 'landingPageBlocks', o conteúdo da landing page.
-    match /landingPageBlocks/{blockId} {
-      allow read: if true; // O conteúdo é público.
-      allow write: if request.auth.token.role in ['Administrador', 'Editor'];
-    }
-    
-    // Coleções de Votação
-    match /polls/{pollId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Administrador';
-      
-      match /votes/{voteId} {
-        allow read: if request.auth.token.role == 'Administrador' || request.auth.uid == voteId;
-        allow update, delete: if false;
-        allow create: if request.auth.uid == voteId;
-      }
-    }
-    
-    // Coleção para 'accessRules'.
+    // --- Access Rules ---
     match /accessRules/{ruleId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.token.role == 'Administrador';
+      // Qualquer usuário logado pode ler as regras.
+      allow read: if isSignedIn();
+      // Apenas Admins podem criar, editar ou deletar regras de acesso.
+      allow write: if isAdmin();
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      // Qualquer usuário logado pode ler perfis de outros usuários.
+      allow read: if isSignedIn();
+      // O próprio usuário ou um Admin pode atualizar um perfil.
+      allow update: if isOwner(userId) || isAdmin();
+      // Apenas Admins podem criar ou deletar usuários diretamente (criação principal via function).
+      allow create, delete: if isAdmin();
     }
     
-    // Coleção 'auditLogs'.
-    match /auditLogs/{logId} {
-      allow create: if request.auth != null; // Qualquer usuário logado pode criar um log (ex: login).
-      allow read: if request.auth != null && request.auth.token.role in ['Administrador', 'Editor'];
-      allow update, delete: if false;
+    // --- Rooms Collection ---
+    match /rooms/{roomId} {
+        // Qualquer usuário logado pode ver as salas.
+        allow read: if isSignedIn();
+        // Apenas Admins e Editores podem criar, editar ou deletar salas.
+        allow write: if isEditor();
+    }
+    
+    // --- Bookings Collection ---
+    match /bookings/{bookingId} {
+      // Usuário precisa estar logado para ler as reservas.
+      allow read: if isSignedIn();
+      // Usuário pode criar uma reserva se estiver logado e for o organizador.
+      allow create: if isSignedIn() && request.resource.data.organizerId == request.auth.uid;
+      // Usuário pode atualizar ou deletar se for o organizador ou um Editor/Admin.
+      allow update, delete: if isSignedIn() && (request.resource.data.organizerId == request.auth.uid || isEditor());
     }
 
-    // --- REGRAS PARA O MAZE TRACKER ---
-    // A coleção 'amazegame' armazena as sessões do rastreador de iniciativa.
-    match /amazegame/{sessionId} {
-      // Qualquer um pode ler e escrever em qualquer documento da sessão.
-      // Isso permite a colaboração em tempo real sem necessidade de login.
-      allow read, write: if true;
+    // --- Notices Collection (Avisos) ---
+    match /notices/{noticeId} {
+        // Todos os usuários logados podem ler os avisos.
+        allow read: if isSignedIn();
+        // Apenas admins podem criar/editar/deletar avisos.
+        allow write: if isAdmin();
+    }
 
-      // A subcoleção 'logs' armazena o histórico da sessão.
-      match /logs/{logId} {
-        allow read, write: if true;
-      }
+    // --- Plans & System Settings Collections ---
+    match /plans/{planId} {
+        // Todos os usuários logados podem ler os planos (necessário para a pág. de matrícula).
+        allow read: if isSignedIn();
+        // Apenas admins podem gerenciar os planos.
+        allow write: if isAdmin();
+    }
+     match /systemSettings/{settingId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+    }
 
-      // A subcoleção 'actors' contém os personagens e monstros de uma sessão.
-      match /actors/{actorId} {
-        allow read, write: if true;
-      }
+    // --- Transactions Collection ---
+    match /transactions/{transactionId} {
+        // Usuário só pode ver as próprias transações. Admin/Editor/Revisor podem ver todas.
+        allow read: if isSignedIn() && (isOwner(resource.data.userId) || isRevisor());
+        // Apenas Admins podem criar/atualizar transações (ex: cobrança manual).
+        allow write: if isAdmin();
+    }
+    
+    // --- User Messages (Mensagens Diretas) ---
+    match /userMessages/{messageId} {
+        // Usuário pode ler mensagens onde ele é o destinatário. Admin/Editor podem ler todas.
+        allow read: if isSignedIn() && (isOwner(resource.data.recipientId) || isEditor());
+        // Apenas Admins/Editores podem enviar (criar) mensagens.
+        allow create: if isEditor();
+        // O destinatário pode marcar como lida. Admins não podem deletar.
+        allow update: if isOwner(resource.data.recipientId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow delete: if false; // Mensagens não devem ser deletadas pelos usuários.
+    }
+    
+    // --- Polls (Votações) ---
+    match /polls/{pollId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin(); // Apenas Admins criam/gerenciam votações
+        
+        // Regra para a subcoleção de votos
+        match /votes/{voteId} {
+            // Apenas quem é elegível pode ler os votos (impede ver quem votou em quê, mas permite contagem via CF)
+            allow read: if isSignedIn() && get(/databases/$(database)/documents/polls/$(pollId)).data.eligibleVoters.hasAny([request.auth.uid]);
+            // Apenas o próprio usuário pode criar seu voto. Não pode editar/deletar.
+            allow create: if isOwner(voteId);
+            allow update, delete: if false;
+        }
+    }
+    
+    // --- Landing Page Blocks ---
+    match /landingPageBlocks/{blockId} {
+        // Leitura pública para que a landing page funcione para visitantes não logados.
+        allow read: if true;
+        // Apenas Admins e Editores podem gerenciar o conteúdo da landing page.
+        allow write: if isEditor();
+    }
+
+    // --- Audit Logs ---
+    match /auditLogs/{logId} {
+        allow read: if isEditor();
+        allow write: if false; // Logs são criados apenas pelo backend (Cloud Functions)
+    }
+
+    // --- Maze Game Sessions ---
+    match /amazegame/{sessionId}/{document=**} {
+        allow read, write: if isSignedIn(); // Qualquer usuário logado pode interagir com o Maze Tracker
+    }
+
+    // --- Biblioteca de Conteúdo ---
+    match /books/{bookId} {
+        // Leitura pública para todos os visitantes e usuários.
+        allow read: if true;
+        // Escrita restrita a Administradores e Editores.
+        allow write: if isEditor();
     }
   }
 }
