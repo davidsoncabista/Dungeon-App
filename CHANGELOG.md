@@ -1,4 +1,17 @@
 # Changelog
+## v1.7.0 - Melhorias no Maze Tracker e Correção de Bugs
+
+Esta versão foca em aprimorar a ferramenta `Maze Tracker`, melhorando sua usabilidade e corrigindo regras de negócio críticas para o gerenciamento de iniciativa em combate.
+
+* **feat(amazegame): Implementa desempate de iniciativa com timestamp**
+    * Adicionado um campo `initiativeTimestamp` a cada ator. Agora, quando dois atores têm o mesmo valor de iniciativa, a prioridade é dada àquele que recebeu o valor primeiro.
+    * Isso garante uma ordem de turno estável e justa, eliminando a dependência de dados mutáveis como o nome do ator para o desempate.
+* **refactor(amazegame): Otimiza layout do card de ator**
+    * A interface do card de ator foi completamente redesenhada para melhorar a usabilidade em telas menores, organizando os campos em linhas distintas (Nome, Iniciativa, Vida, etc.).
+    * Em telas maiores, os campos de Iniciativa, Vida e Classe (Tier) são agrupados de forma inteligente para otimizar o espaço horizontal.
+* **fix(amazegame): Corrige erro de consulta no carregamento da sessão**
+    * Resolvido um erro crítico de runtime (`Cannot read properties of null`) que ocorria ao carregar o `Maze Tracker` se a consulta ao Firestore fosse executada antes do ID da sessão estar disponível.
+
 ## v1.6.2 - Correção na Sincronização de Permissões
 * **fix(auth): Garante a sincronização de permissões do usuário após o login**
     * Implementada a função `syncUserClaims` que é chamada no frontend (`AppLayout`) após o login do usuário.
