@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, Suspense, useRef } from 'react';
@@ -58,7 +57,6 @@ interface LogEntry {
 function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId: string; addLogEntry: (message: string) => Promise<void> }) {
   const firestore = getFirestore(app);
   
-  // Estado local para os inputs para permitir a funcionalidade da calculadora
   const [initiativeInputValue, setInitiativeInputValue] = useState(String(actor.initiative));
   const [hpInputValue, setHpInputValue] = useState(String(actor.hp));
   const [maxHpInputValue, setMaxHpInputValue] = useState(String(actor.maxHp));
@@ -86,7 +84,6 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
 
   const handleUpdate = async (data: Partial<Actor>) => {
     const dataToUpdate = { ...data };
-    // Se a iniciativa está sendo mudada, atualize o timestamp
     if ('initiative' in dataToUpdate) {
         (dataToUpdate as any).initiativeTimestamp = serverTimestamp();
     }
@@ -204,58 +201,53 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
   return (
     <Card className={cn("text-white transition-colors duration-300", styles.bg, styles.border)}>
       <CardContent className="p-4 space-y-3">
-        {/* Linha 1: Nome e Remover */}
         <div className="flex items-center gap-2">
-           <Input 
-            value={actor.name} 
-            onChange={(e) => handleUpdate({ name: e.target.value })} 
-            placeholder="Nome do Ator"
-            className="flex-1 bg-background/20 border-white/20 font-bold text-lg" 
-          />
-          <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
+            <Input 
+                value={actor.name} 
+                onChange={(e) => handleUpdate({ name: e.target.value })} 
+                placeholder="Nome do Ator"
+                className="flex-1 bg-background/20 border-white/20 font-bold text-lg" 
+            />
+            <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
         </div>
         
-        {/* Container para Iniciativa, Vida e Classe */}
         <div className="flex flex-col sm:flex-row gap-2">
-            {/* Iniciativa */}
             <div className="flex flex-1 items-center gap-2">
                 <span className="text-sm font-semibold w-20 text-center">Iniciativa</span>
-                 <Input 
-                    type="text" 
-                    value={initiativeInputValue}
-                    onChange={(e) => setInitiativeInputValue(e.target.value)}
-                    onBlur={(e) => handleInitiativeChange(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                    onFocus={(e) => e.target.select()}
-                    className="flex-1 text-center bg-background/20 border-white/20"
-                    placeholder="Init"
-                />
+                    <Input 
+                        type="text" 
+                        value={initiativeInputValue}
+                        onChange={(e) => setInitiativeInputValue(e.target.value)}
+                        onBlur={(e) => handleInitiativeChange(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                        onFocus={(e) => e.target.select()}
+                        className="flex-1 text-center bg-background/20 border-white/20"
+                        placeholder="Init"
+                    />
             </div>
-            {/* Vida */}
             <div className="flex flex-1 items-center gap-2">
                 <Heart className="hidden sm:block h-5 w-5 text-red-400" />
                 <Input 
-                  type="text" 
-                  value={hpInputValue} 
-                  onChange={(e) => setHpInputValue(e.target.value)}
-                  onBlur={(e) => handleHpChange(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                  onFocus={(e) => e.target.select()}
-                  className="w-full text-center bg-background/20 border-white/20"
+                    type="text" 
+                    value={hpInputValue} 
+                    onChange={(e) => setHpInputValue(e.target.value)}
+                    onBlur={(e) => handleHpChange(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                    onFocus={(e) => e.target.select()}
+                    className="w-full text-center bg-background/20 border-white/20"
                 />
                 <span className="text-lg">/</span>
                 <Input 
-                  type="text" 
-                  value={maxHpInputValue} 
-                  onChange={(e) => setMaxHpInputValue(e.target.value)}
-                  onBlur={(e) => handleMaxHpChange(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                  onFocus={(e) => e.target.select()}
-                  className="w-full text-center bg-background/20 border-white/20"
+                    type="text" 
+                    value={maxHpInputValue} 
+                    onChange={(e) => setMaxHpInputValue(e.target.value)}
+                    onBlur={(e) => handleMaxHpChange(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                    onFocus={(e) => e.target.select()}
+                    className="w-full text-center bg-background/20 border-white/20"
                 />
             </div>
-            {/* Classe e Tipo */}
-             <div className="flex flex-1 items-center gap-2">
+            <div className="flex flex-1 items-center gap-2">
                 <span className="text-sm font-semibold w-20 text-center">Classe</span>
                 <Select value={actor.tier} onValueChange={(value: Tier) => handleUpdate({ tier: value })}>
                     <SelectTrigger className="flex-1 bg-background/20 border-white/20">
@@ -265,7 +257,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                     {['D', 'C', 'B', 'A', 'S'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                 <TooltipProvider>
+                <TooltipProvider>
                     <Tooltip>
                     <TooltipTrigger asChild>
                         <Button size="icon" variant="outline" onClick={toggleType} className={cn("w-12 h-10 transition-colors duration-300", styles.buttonBg, styles.buttonBorder, 'hover:opacity-80')}>
@@ -278,19 +270,16 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
             </div>
         </div>
 
-        {/* Linha 5: Notas */}
         <div className="flex items-center gap-2">
-             <Input 
-              value={actor.notes}
-              onChange={(e) => handleUpdate({ notes: e.target.value })}
-              placeholder="Anotações..."
-              className="flex-1 bg-background/20 border-white/20"
+            <Input 
+                value={actor.notes}
+                onChange={(e) => handleUpdate({ notes: e.target.value })}
+                placeholder="Anotações..."
+                className="flex-1 bg-background/20 border-white/20"
             />
             <Button size="icon" variant="ghost" onClick={addStatus} className="hover:bg-green-500/20"><PlusCircle className="text-green-400" /></Button>
         </div>
 
-
-        {/* Linha 6: Container de Status */}
         <div className="space-y-2">
             {actor.statuses.map(status => (
                 <div key={status.id} className="flex items-center gap-2">
@@ -349,8 +338,6 @@ function HistoryLog({ sessionId }: { sessionId: string }) {
     );
 }
 
-
-// --- Componente de Conteúdo que usa os hooks ---
 function AmazegameContent() {
     const firestore = getFirestore(app);
     const searchParams = useSearchParams();
@@ -370,11 +357,18 @@ function AmazegameContent() {
     }, [searchParams, router]);
 
     const actorsCollectionRef = useMemo(() => sessionId ? collection(firestore, `amazegame/${sessionId}/actors`) : null, [firestore, sessionId]);
-    const q = useMemo(() => actorsCollectionRef ? query(actorsCollectionRef, orderBy('initiative', 'asc'), orderBy('initiativeTimestamp', 'asc')) : null, [actorsCollectionRef]);
-    const [actorsSnapshot, loadingActors] = useCollection(q);
+    
+    const q = useMemo(() => 
+        actorsCollectionRef 
+            ? query(actorsCollectionRef, orderBy('initiative', 'asc'), orderBy('initiativeTimestamp', 'asc')) 
+            : null, 
+    [actorsCollectionRef]);
+    
+    const [actorsSnapshot, loadingActors, error] = useCollection(q);
+    
     const actors = useMemo(() => actorsSnapshot?.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Actor[] || [], [actorsSnapshot]);
 
-    const sortedActors = actors; // A ordenação já vem do Firestore
+    const sortedActors = actors;
 
     const addLogEntry = async (message: string) => {
         if (!sessionId) return;
@@ -397,12 +391,12 @@ function AmazegameContent() {
             initiativeTimestamp: null
         };
         const actorsRef = collection(firestore, `amazegame/${sessionId}/actors`);
-        const newDocRef = doc(actorsRef); // Gera um ID antes
+        const newDocRef = doc(actorsRef);
         
         const finalData = {
             ...newActorData,
             id: newDocRef.id,
-            initiativeTimestamp: serverTimestamp() // Define o timestamp na criação
+            initiativeTimestamp: serverTimestamp()
         };
 
         setDoc(newDocRef, finalData).catch((err) => {
@@ -525,7 +519,6 @@ function AmazegameContent() {
             <h1 className="text-4xl font-bold text-center mb-8 font-headline">Maze Tracker</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {/* Coluna Principal */}
                 <div className="space-y-4 lg:col-span-2">
                     <Card className="bg-black/50">
                         <CardHeader>
@@ -560,6 +553,7 @@ function AmazegameContent() {
                                         <Loader2 className="h-8 w-8 animate-spin mx-auto"/>
                                     </div>
                                 )}
+                                {error && <p className="text-red-500 text-center py-10">Erro: {error.message}</p>}
                                 {sortedActors.map(actor => (
                                     <div key={actor.id} className="mb-4">
                                       <ActorCard actor={actor} sessionId={sessionId} addLogEntry={addLogEntry}/>
@@ -575,7 +569,6 @@ function AmazegameContent() {
                         </CardContent>
                     </Card>
                 </div>
-                 {/* Coluna do Histórico */}
                  <div>
                     <HistoryLog sessionId={sessionId} />
                 </div>
@@ -584,7 +577,6 @@ function AmazegameContent() {
     );
 }
 
-// --- Componente Principal da Página ---
 export default function AmazegamePage() {
     return (
         <Suspense fallback={
