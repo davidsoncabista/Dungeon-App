@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye, CheckCircle } from "lucide-react";
+import { Check, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye, CheckCircle, Banknote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
@@ -182,13 +182,19 @@ const SubscribeView = () => {
                  <DialogFooter className="flex flex-col gap-2">
                     {preferenceId ? (
                         <div id="wallet-container">
-                            <Wallet key={preferenceId} initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                            <Wallet key={preferenceId} initialization={{ preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                         </div>
                     ) : (
-                        <Button onClick={handleMercadoPagoSubscription} disabled={isGeneratingPayment}>
-                            {isGeneratingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            Pagar com Mercado Pago
-                        </Button>
+                        <div className="grid grid-cols-2 gap-2">
+                             <Button onClick={handleMercadoPagoSubscription} disabled={isGeneratingPayment} className="w-full">
+                                {isGeneratingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Mercado Pago
+                            </Button>
+                             <Button disabled={true} className="w-full">
+                                <Banknote className="mr-2 h-4 w-4" />
+                                Banco do Brasil
+                            </Button>
+                        </div>
                     )}
                      <Button variant="ghost" onClick={() => { setSelectedPlan(null); setPreferenceId(null); }}>Cancelar</Button>
                 </DialogFooter>
@@ -329,7 +335,10 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                                 <DropdownMenuItem onSelect={e => e.preventDefault()}><Eye className="mr-2 h-4 w-4" />Ver Detalhes</DropdownMenuItem>
                             </TransactionDetailsDialog>
                              {t.status === "Pendente" && (
-                                <DropdownMenuItem onClick={() => handleMercadoPagoPayment(t)}>Pagar com Mercado Pago</DropdownMenuItem>
+                                <>
+                                    <DropdownMenuItem onClick={() => handleMercadoPagoPayment(t)}>Pagar com Mercado Pago</DropdownMenuItem>
+                                    <DropdownMenuItem disabled>Pagar com Banco do Brasil</DropdownMenuItem>
+                                </>
                              )}
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -422,7 +431,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                     )}
                     {preferenceId && (
                         <div id="wallet-dialog-container">
-                             <Wallet key={preferenceId} initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                             <Wallet key={preferenceId} initialization={{ preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                         </div>
                     )}
                 </div>
