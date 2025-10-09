@@ -42,7 +42,7 @@ const checkAccess = (pathname: string, user: User | null): { allowed: boolean, r
         return { allowed: false, redirect: '/profile' };
     }
 
-    const publicLoggedInRoutes = ["/profile", "/billing", "/my-bookings", "/messages", "/notices"];
+    const publicLoggedInRoutes = ["/profile", "/billing", "/my-bookings", "/messages", "/notices", "/books"];
     
     // REGRA 2: MATRÍCULA PENDENTE (VISITANTE)
     if (category === 'Visitante' && !publicLoggedInRoutes.includes(pathname)) {
