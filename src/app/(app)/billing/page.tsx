@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo, useState, useEffect } from "react";
@@ -7,7 +8,7 @@ import { Check, ShieldAlert, FileText, Award, Loader2, Info, MoreHorizontal, Eye
 import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
-import { getFirestore, doc, updateDoc, collection, query, orderBy, where, setDoc } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, collection, query, orderBy, where, setDoc, serverTimestamp, addDoc, getDoc } from "firebase/firestore";
 import { getFunctions, httpsCallable, HttpsCallable } from "firebase/functions";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
@@ -32,12 +33,15 @@ import { errorEmitter } from "@/lib/error-emitter";
 const SubscribeView = () => {
     const { toast } = useToast();
     const functions = getFunctions(app, 'southamerica-east1');
+    const firestore = getFirestore(app);
+    const [user] = useAuthState(auth);
 
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [preferenceId, setPreferenceId] = useState<string | null>(null);
     const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+    const [qrCodeData, setQrCodeData] = useState<{ qrCode: string, location: string } | null>(null);
+
     
-    const firestore = getFirestore(app);
     const plansRef = collection(firestore, 'plans');
     const plansQuery = query(plansRef, orderBy("price"));
     const [plans, loadingPlans, errorPlans] = useCollectionData<Plan>(plansQuery, { idField: 'id' });
@@ -55,52 +59,59 @@ const SubscribeView = () => {
         }
     }, []);
 
-    const callPaymentFunction = async (callable: HttpsCallable, payload: any, paymentType: 'Mercado Pago' | 'Banco do Brasil') => {
+    const callPaymentFunction = async (gateway: 'Mercado Pago' | 'Banco do Brasil') => {
+        if (!selectedPlan || !user) return;
         setIsGeneratingPayment(true);
-        setPreferenceId(null); // Limpa o ID de preferência antigo
+        setPreferenceId(null);
+        setQrCodeData(null);
+
         try {
+            // 1. Criar a transação no Firestore PRIMEIRO
+            const newTransactionRef = doc(collection(firestore, "transactions"));
+            const transactionData = {
+                id: newTransactionRef.id,
+                uid: newTransactionRef.id,
+                userId: user.uid,
+                userName: user.displayName || 'Usuário',
+                description: `Taxa de Inscrição + 1ª Mensalidade (${selectedPlan.name})`,
+                amount: (selectedPlan.price || 0) + (registrationFee || 0),
+                status: "Pendente" as TransactionStatus,
+                type: "Inicial" as const,
+                createdAt: serverTimestamp(),
+            };
+            await setDoc(newTransactionRef, transactionData);
+            
+            // 2. Chamar a função de pagamento correspondente
+            let callable: HttpsCallable;
+            const payload = { transactionId: newTransactionRef.id, planId: selectedPlan.id };
+
+            if (gateway === 'Mercado Pago') {
+                callable = httpsCallable(functions, 'createMercadoPagoPayment');
+            } else {
+                callable = httpsCallable(functions, 'createBancoDoBrasilPixPayment');
+            }
+            
             const result = await callable(payload);
-            const data = result.data as { preferenceId?: string, qrCode?: string };
+            const data = result.data as { preferenceId?: string; qrCode?: string; location?: string };
 
             if (data.preferenceId) { // Mercado Pago
                 setPreferenceId(data.preferenceId);
-            } else if(data.qrCode) { // Banco do Brasil
-                // Lógica para exibir QR Code do BB
-                console.log("QR Code BB:", data.qrCode);
-                toast({ title: "PIX Gerado (BB)", description: "Implementar exibição do QR Code." });
-                setSelectedPlan(null); // Fecha o modal após gerar
+            } else if (data.qrCode && data.location) { // Banco do Brasil
+                setQrCodeData({ qrCode: data.qrCode, location: data.location });
             } else {
                 throw new Error("Resposta inesperada da função de pagamento.");
             }
+
         } catch (error: any) {
-            console.error(`Erro ao criar pagamento com ${paymentType}:`, error);
-            const firestoreError = new FirestorePermissionError({
-                path: `/plans/${payload.planId}`,
-                operation: 'get', // A função provavelmente lê o plano
-                requestResourceData: payload
-            });
-            errorEmitter.emit('permission-error', firestoreError);
+            console.error(`Erro ao criar pagamento com ${gateway}:`, error);
             toast({
-                title: `Erro ao Gerar Cobrança (${paymentType})`,
+                title: `Erro ao Gerar Cobrança (${gateway})`,
                 description: error.message || 'Ocorreu um erro desconhecido.',
                 variant: 'destructive'
             });
         } finally {
             setIsGeneratingPayment(false);
         }
-    };
-    
-    const handleMercadoPagoSubscription = () => {
-        if (!selectedPlan) return;
-        const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
-        callPaymentFunction(createMercadoPagoPayment, { planId: selectedPlan.id }, 'Mercado Pago');
-    };
-    
-    const handleBancoDoBrasilSubscription = () => {
-        if (!selectedPlan) return;
-        // const createBancoDoBrasilPixPayment = httpsCallable(functions, 'createBancoDoBrasilPixPayment');
-        // callPaymentFunction(createBancoDoBrasilPixPayment, { planId: selectedPlan.id }, 'Banco do Brasil');
-        toast({ title: "Em Breve", description: "O pagamento com Banco do Brasil será habilitado em breve."});
     };
 
     const getPlanFeatures = (plan: Plan) => {
@@ -154,6 +165,12 @@ const SubscribeView = () => {
         ));
     }
 
+    const handleCloseDialog = () => {
+        setSelectedPlan(null);
+        setPreferenceId(null);
+        setQrCodeData(null);
+    }
+    
     return (
         <>
         <div className="flex flex-col items-center justify-center min-h-full text-center p-4">
@@ -176,7 +193,7 @@ const SubscribeView = () => {
             <p className="text-xs text-muted-foreground mt-8">O pagamento é processado de forma segura. Em caso de dúvidas, contate a administração.</p>
         </div>
 
-        <Dialog open={!!selectedPlan} onOpenChange={(isOpen) => { if (!isOpen) { setSelectedPlan(null); setPreferenceId(null); } }}>
+        <Dialog open={!!selectedPlan} onOpenChange={(isOpen) => { if (!isOpen) handleCloseDialog() }}>
              <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Confirmar Matrícula - Plano {selectedPlan?.name}</DialogTitle>
@@ -205,19 +222,25 @@ const SubscribeView = () => {
                         <div id="wallet-container">
                             <Wallet key={preferenceId} initialization={{ preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                         </div>
+                    ) : qrCodeData ? (
+                        <div className="flex flex-col items-center gap-4">
+                            <Image src={`data:image/png;base64,${qrCodeData.qrCode}`} alt="QR Code PIX" width={200} height={200} />
+                            <p className="text-sm text-muted-foreground">Escaneie o QR Code com o app do seu banco.</p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-2">
-                             <Button onClick={handleMercadoPagoSubscription} disabled={isGeneratingPayment} className="w-full">
+                             <Button onClick={() => callPaymentFunction('Mercado Pago')} disabled={isGeneratingPayment} className="w-full">
                                 {isGeneratingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                 Mercado Pago
                             </Button>
-                             <Button onClick={handleBancoDoBrasilSubscription} disabled={isGeneratingPayment || true} className="w-full">
+                             <Button onClick={() => callPaymentFunction('Banco do Brasil')} disabled={isGeneratingPayment} className="w-full">
+                                {isGeneratingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                 <Banknote className="mr-2 h-4 w-4" />
                                 Banco do Brasil
                             </Button>
                         </div>
                     )}
-                     <Button variant="ghost" onClick={() => { setSelectedPlan(null); setPreferenceId(null); }}>Cancelar</Button>
+                     <Button variant="ghost" onClick={handleCloseDialog}>Cancelar</Button>
                 </DialogFooter>
              </DialogContent>
         </Dialog>
@@ -236,6 +259,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     
     const [paymentTransaction, setPaymentTransaction] = useState<Transaction | null>(null);
     const [preferenceId, setPreferenceId] = useState<string | null>(null);
+    const [qrCodeData, setQrCodeData] = useState<{ qrCode: string; location: string } | null>(null);
     const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
 
     const transactionsRef = collection(firestore, 'transactions');
@@ -260,6 +284,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
              toast({ title: "Pagamento Cancelado", description: "O processo de pagamento foi cancelado.", variant: 'destructive' });
              setPaymentTransaction(null);
              setPreferenceId(null);
+             setQrCodeData(null);
             router.replace('/billing');
         }
     }, [searchParams, toast, router]);
@@ -282,7 +307,8 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     const handlePayment = async (transaction: Transaction, gateway: 'Mercado Pago' | 'Banco do Brasil') => {
         setPaymentTransaction(transaction);
         setIsGeneratingPayment(true);
-        setPreferenceId(null); // Sempre limpa o ID antigo
+        setPreferenceId(null); 
+        setQrCodeData(null);
 
         let callable: HttpsCallable;
         let payload: any = { transactionId: transaction.id };
@@ -295,15 +321,12 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
 
         try {
             const result = await callable(payload);
-            const data = result.data as { preferenceId?: string, qrCode?: string };
+            const data = result.data as { preferenceId?: string, qrCode?: string, location?: string };
 
             if (data.preferenceId) { // Mercado Pago
                 setPreferenceId(data.preferenceId);
             } else if (data.qrCode) { // Banco do Brasil
-                // TODO: Implementar modal para exibir QR Code do BB
-                console.log("QR Code BB:", data.qrCode);
-                toast({ title: "PIX Gerado (BB)", description: "Funcionalidade de exibir QR Code em implementação." });
-                setPaymentTransaction(null); // Fecha o modal após gerar
+                setQrCodeData({ qrCode: data.qrCode, location: data.location as string });
             } else {
                 throw new Error("Resposta inválida da função de pagamento.");
             }
@@ -375,7 +398,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                              {t.status === "Pendente" && (
                                 <>
                                     <DropdownMenuItem onClick={() => handlePayment(t, 'Mercado Pago')}>Pagar com Mercado Pago</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handlePayment(t, 'Banco do Brasil')} disabled>Pagar com Banco do Brasil</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePayment(t, 'Banco do Brasil')}>Pagar com Banco do Brasil</DropdownMenuItem>
                                 </>
                              )}
                         </DropdownMenuContent>
@@ -383,6 +406,12 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 </TableCell>
             </TableRow>
         ));
+    };
+
+    const handleCloseDialog = () => {
+        setPaymentTransaction(null);
+        setPreferenceId(null);
+        setQrCodeData(null);
     };
     
     return (
@@ -452,7 +481,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                 </div>
             </div>
         </div>
-        <Dialog open={!!paymentTransaction} onOpenChange={(isOpen) => { if (!isOpen) { setPaymentTransaction(null); setPreferenceId(null); }}}>
+        <Dialog open={!!paymentTransaction} onOpenChange={(isOpen) => { if (!isOpen) handleCloseDialog() }}>
             <DialogContent>
                  <DialogHeader>
                     <DialogTitle>Finalizar Pagamento</DialogTitle>
@@ -461,15 +490,21 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                    {isGeneratingPayment && !preferenceId && (
+                    {isGeneratingPayment && !preferenceId && !qrCodeData && (
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Loader2 className="h-5 w-5 animate-spin" />
-                            <span>Gerando link de pagamento...</span>
+                            <span>Gerando pagamento...</span>
                         </div>
                     )}
                     {preferenceId && (
                         <div id="wallet-dialog-container">
                              <Wallet key={preferenceId} initialization={{ preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                        </div>
+                    )}
+                    {qrCodeData && (
+                        <div className="flex flex-col items-center gap-4">
+                            <Image src={`data:image/png;base64,${qrCodeData.qrCode}`} alt="QR Code PIX" width={250} height={250} />
+                            <p className="text-sm text-muted-foreground">Escaneie o QR Code com o app do seu banco para pagar.</p>
                         </div>
                     )}
                 </div>
@@ -531,4 +566,4 @@ export default function BillingPage() {
     }
 }
 
-    
+      
