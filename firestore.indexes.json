@@ -24,12 +24,16 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "participants",
+          "arrayConfig": "CONTAINS"
+        },
+        {
           "fieldPath": "date",
           "order": "DESCENDING"
         },
         {
-          "fieldPath": "guests",
-          "arrayConfig": "CONTAINS"
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -38,12 +42,16 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "guests",
+          "arrayConfig": "CONTAINS"
+        },
+        {
           "fieldPath": "date",
           "order": "DESCENDING"
         },
         {
-          "fieldPath": "participants",
-          "arrayConfig": "CONTAINS"
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -80,12 +88,12 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
           "fieldPath": "userId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     },
@@ -94,12 +102,12 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
           "fieldPath": "recipientId",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
         }
       ]
     }
