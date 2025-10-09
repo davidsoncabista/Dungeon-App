@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, app } from "@/lib/firebase";
 import { getFirestore, doc, updateDoc, collection, query, orderBy, where, setDoc } from "firebase/firestore";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { getFunctions, httpsCallable, HttpsCallable } from "firebase/functions";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User, UserCategory } from "@/lib/types/user";
 import { useCollectionData, useDocumentData } from "react-firebase-hooks/firestore";
@@ -25,6 +25,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TransactionDetailsDialog } from "@/components/app/finance/transaction-details-dialog";
 import Image from "next/image";
+import { FirestorePermissionError } from "@/lib/types/Errors";
+import { errorEmitter } from "@/lib/error-emitter";
 
 // --- COMPONENTE PARA USUÁRIOS NÃO MATRICULADOS ---
 const SubscribeView = () => {
@@ -53,33 +55,52 @@ const SubscribeView = () => {
         }
     }, []);
 
-    const handleMercadoPagoSubscription = async () => {
-        if (!selectedPlan) return;
+    const callPaymentFunction = async (callable: HttpsCallable, payload: any, paymentType: 'Mercado Pago' | 'Banco do Brasil') => {
         setIsGeneratingPayment(true);
-        setPreferenceId(null);
+        setPreferenceId(null); // Limpa o ID de preferência antigo
         try {
-            const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
-            const result = await createMercadoPagoPayment({ 
-                planId: selectedPlan.id 
-            });
-            
-            const data = result.data as { preferenceId: string };
+            const result = await callable(payload);
+            const data = result.data as { preferenceId?: string, qrCode?: string };
 
-            if (data.preferenceId) {
+            if (data.preferenceId) { // Mercado Pago
                 setPreferenceId(data.preferenceId);
+            } else if(data.qrCode) { // Banco do Brasil
+                // Lógica para exibir QR Code do BB
+                console.log("QR Code BB:", data.qrCode);
+                toast({ title: "PIX Gerado (BB)", description: "Implementar exibição do QR Code." });
+                setSelectedPlan(null); // Fecha o modal após gerar
             } else {
-                throw new Error("ID de preferência não recebido.");
+                throw new Error("Resposta inesperada da função de pagamento.");
             }
         } catch (error: any) {
-            console.error("Erro ao criar pagamento de matrícula:", error);
+            console.error(`Erro ao criar pagamento com ${paymentType}:`, error);
+            const firestoreError = new FirestorePermissionError({
+                path: `/plans/${payload.planId}`,
+                operation: 'get', // A função provavelmente lê o plano
+                requestResourceData: payload
+            });
+            errorEmitter.emit('permission-error', firestoreError);
             toast({
-                title: "Erro ao Gerar Cobrança",
+                title: `Erro ao Gerar Cobrança (${paymentType})`,
                 description: error.message || 'Ocorreu um erro desconhecido.',
                 variant: 'destructive'
             });
         } finally {
             setIsGeneratingPayment(false);
         }
+    };
+    
+    const handleMercadoPagoSubscription = () => {
+        if (!selectedPlan) return;
+        const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
+        callPaymentFunction(createMercadoPagoPayment, { planId: selectedPlan.id }, 'Mercado Pago');
+    };
+    
+    const handleBancoDoBrasilSubscription = () => {
+        if (!selectedPlan) return;
+        // const createBancoDoBrasilPixPayment = httpsCallable(functions, 'createBancoDoBrasilPixPayment');
+        // callPaymentFunction(createBancoDoBrasilPixPayment, { planId: selectedPlan.id }, 'Banco do Brasil');
+        toast({ title: "Em Breve", description: "O pagamento com Banco do Brasil será habilitado em breve."});
     };
 
     const getPlanFeatures = (plan: Plan) => {
@@ -190,7 +211,7 @@ const SubscribeView = () => {
                                 {isGeneratingPayment && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                 Mercado Pago
                             </Button>
-                             <Button disabled={true} className="w-full">
+                             <Button onClick={handleBancoDoBrasilSubscription} disabled={isGeneratingPayment || true} className="w-full">
                                 <Banknote className="mr-2 h-4 w-4" />
                                 Banco do Brasil
                             </Button>
@@ -257,26 +278,43 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
         if (!transactions) return false;
         return transactions.some(t => t.type === 'Inicial' && t.status === 'Pago');
     }, [transactions]);
-
-    const handleMercadoPagoPayment = async (transaction: Transaction) => {
+    
+    const handlePayment = async (transaction: Transaction, gateway: 'Mercado Pago' | 'Banco do Brasil') => {
         setPaymentTransaction(transaction);
         setIsGeneratingPayment(true);
-        setPreferenceId(null);
-        try {
-            const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
-            const result = await createMercadoPagoPayment({ 
-                transactionId: transaction.id
-            });
-            
-            const data = result.data as { preferenceId: string };
+        setPreferenceId(null); // Sempre limpa o ID antigo
 
-            if (data.preferenceId) {
+        let callable: HttpsCallable;
+        let payload: any = { transactionId: transaction.id };
+        
+        if (gateway === 'Mercado Pago') {
+            callable = httpsCallable(functions, 'createMercadoPagoPayment');
+        } else { // Banco do Brasil
+            callable = httpsCallable(functions, 'createBancoDoBrasilPixPayment');
+        }
+
+        try {
+            const result = await callable(payload);
+            const data = result.data as { preferenceId?: string, qrCode?: string };
+
+            if (data.preferenceId) { // Mercado Pago
                 setPreferenceId(data.preferenceId);
+            } else if (data.qrCode) { // Banco do Brasil
+                // TODO: Implementar modal para exibir QR Code do BB
+                console.log("QR Code BB:", data.qrCode);
+                toast({ title: "PIX Gerado (BB)", description: "Funcionalidade de exibir QR Code em implementação." });
+                setPaymentTransaction(null); // Fecha o modal após gerar
             } else {
-                throw new Error("ID de preferência não recebido.");
+                throw new Error("Resposta inválida da função de pagamento.");
             }
         } catch (error: any) {
-            console.error("Erro ao criar pagamento com Mercado Pago:", error);
+            console.error(`Erro ao criar pagamento com ${gateway}:`, error);
+            const firestoreError = new FirestorePermissionError({
+                path: `/transactions/${transaction.id}`,
+                operation: 'update', // A função atualiza a transação com o ID do gateway
+                requestResourceData: payload,
+            });
+            errorEmitter.emit('permission-error', firestoreError);
             setPaymentTransaction(null);
             toast({
                 title: "Erro ao Gerar Cobrança",
@@ -336,8 +374,8 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                             </TransactionDetailsDialog>
                              {t.status === "Pendente" && (
                                 <>
-                                    <DropdownMenuItem onClick={() => handleMercadoPagoPayment(t)}>Pagar com Mercado Pago</DropdownMenuItem>
-                                    <DropdownMenuItem disabled>Pagar com Banco do Brasil</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePayment(t, 'Mercado Pago')}>Pagar com Mercado Pago</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePayment(t, 'Banco do Brasil')} disabled>Pagar com Banco do Brasil</DropdownMenuItem>
                                 </>
                              )}
                         </DropdownMenuContent>
@@ -492,3 +530,5 @@ export default function BillingPage() {
         return <SubscribeView />;
     }
 }
+
+    
