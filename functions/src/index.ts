@@ -513,11 +513,12 @@ export const createBancoDoBrasilPixPayment = functions
     }
     
     // 2. Configurações de Ambiente
-    const bbConfig = functions.config().bb;
-    const appKey = process.env.BB_APP_KEY; // Acessa a variável de ambiente
+    const clientId = process.env.BB_CLIENT_ID;
+    const clientSecret = process.env.BB_CLIENT_SECRET;
+    const appKey = process.env.BB_APP_KEY;
     
-    if (!bbConfig || !bbConfig.client_id || !bbConfig.client_secret || !appKey) {
-        console.error("Configurações da API do Banco do Brasil não encontradas.");
+    if (!clientId || !clientSecret || !appKey) {
+        console.error("Configurações da API do Banco do Brasil não encontradas nas variáveis de ambiente.");
         throw new functions.https.HttpsError("failed-precondition", "A funcionalidade de pagamento não está configurada.");
     }
 
@@ -531,7 +532,7 @@ export const createBancoDoBrasilPixPayment = functions
     // 4. Gerar Token de Acesso OAuth
     let accessToken;
     try {
-        const authString = Buffer.from(`${bbConfig.client_id}:${bbConfig.client_secret}`).toString("base64");
+        const authString = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
         
         const tokenResponse = await fetch("https://oauth.hm.bb.com.br/oauth/token", {
             method: "POST",
@@ -558,8 +559,8 @@ export const createBancoDoBrasilPixPayment = functions
     try {
         const userDoc = await db.collection('users').doc(transactionData.userId).get();
         const userData = userDoc.data();
-        if (!userData) {
-            throw new functions.https.HttpsError("not-found", "Dados do devedor não encontrados.");
+        if (!userData || !userData.cpf) {
+            throw new functions.https.HttpsError("not-found", "Dados do devedor (CPF) não encontrados.");
         }
         
         const pixPayload = {
@@ -573,8 +574,8 @@ export const createBancoDoBrasilPixPayment = functions
             solicitacaoPagador: transactionData.description.substring(0, 140),
         };
 
-        const pixResponse = await fetch(`https://api.hm.bb.com.br/pix/v2/cob?gw-dev-app-key=${appKey}`, {
-            method: "POST",
+        const pixResponse = await fetch(`https://api.hm.bb.com.br/pix/v2/cob/${transactionId}?gw-dev-app-key=${appKey}`, {
+            method: "PUT",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
@@ -591,7 +592,7 @@ export const createBancoDoBrasilPixPayment = functions
 
         // 6. Atualizar a transação no Firestore com o txid
         await db.collection("transactions").doc(transactionId).update({
-            paymentGatewayId: pixData.txid, // Salva o ID da transação PIX
+            paymentGatewayId: pixData.txid,
         });
 
         return {
@@ -718,8 +719,7 @@ export const createMercadoPagoPayment = functions
    try {
        let description: string;
        let amount: number;
-       const tempTransactionId = `temp_${context.auth.uid}_${Date.now()}`;
-       const finalTransactionId = transactionId || tempTransactionId;
+       const finalTransactionId = transactionId;
        const metadata: any = {
            user_id: context.auth.uid,
            transaction_id: finalTransactionId,
@@ -840,7 +840,8 @@ export const mercadoPagoWebhook = functions
            }
 
            if (paymentDetails.status === "approved") {
-                const userDoc = await db.collection('users').doc(userId).get();
+                const userRef = db.collection("users").doc(userId);
+                const userDoc = await userRef.get();
                 const userData = userDoc.data();
                 if (!userData) {
                      console.error(`[Mercado Pago Webhook] Usuário com UID ${userId} não encontrado.`);
@@ -850,7 +851,7 @@ export const mercadoPagoWebhook = functions
 
                 // Log de Auditoria
                 const auditLogRef = db.collection('auditLogs').doc();
-                auditLogRef.set({
+                await auditLogRef.set({
                     id: auditLogRef.id,
                     uid: auditLogRef.id,
                     actor: {
@@ -862,6 +863,7 @@ export const mercadoPagoWebhook = functions
                     action: 'PROCESS_PAYMENT',
                     details: {
                         paymentGateway: 'MercadoPago',
+                        transactionId: transactionId,
                         paymentId: paymentId,
                         amount: paymentDetails.transaction_amount,
                         description: paymentDetails.description,
@@ -871,7 +873,6 @@ export const mercadoPagoWebhook = functions
 
 
                const batch = db.batch();
-               const userRef = db.collection("users").doc(userId);
 
                // Se for uma nova assinatura (matrícula)
                if (metadata.is_subscription && metadata.plan_id) {
@@ -883,31 +884,20 @@ export const mercadoPagoWebhook = functions
                     }
                     const planData = planDoc.data()!;
                    
-                    // Cria a transação permanente no banco
-                    const newTransactionRef = db.collection("transactions").doc(transactionId.replace('temp_', 'txn_'));
-                    batch.set(newTransactionRef, {
-                        id: newTransactionRef.id,
-                        uid: newTransactionRef.id,
-                        userId: userId,
-                        userName: userData.name,
-                        description: `Taxa de Inscrição + 1ª Mensalidade (${planData.name})`,
-                        amount: paymentDetails.transaction_amount,
+                    const newTransactionRef = db.collection("transactions").doc(transactionId);
+                    batch.update(newTransactionRef, {
                         status: "Pago",
-                        type: "Inicial",
-                        createdAt: admin.firestore.FieldValue.serverTimestamp(),
                         paidAt: admin.firestore.FieldValue.serverTimestamp(),
                         paymentGatewayId: paymentId,
                     });
                     
-                    // Atualiza o usuário para o novo plano e status Ativo
                     const userUpdateData: any = {
                         category: planData.name,
                         status: "Ativo",
-                        role: "Membro", // Promove de 'Visitante' para 'Membro'
+                        role: "Membro", 
                     };
 
                     const today = new Date();
-                    // Regra de negócio: se o usuário se inscreveu depois do dia 15, a próxima fatura não é gerada
                     if (today.getDate() > 15) {
                         userUpdateData.skipNextBilling = true;
                     }
@@ -1042,5 +1032,4 @@ export const sendBirthdayWishes = functions
         return null;
     }
 });
-
       

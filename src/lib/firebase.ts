@@ -1,4 +1,6 @@
-// Import the functions you need from the SDKs you need
+// Import dotenv and configure it at the very top
+require('dotenv').config();
+
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
@@ -7,7 +9,7 @@ const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL, // Agora incluído
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
