@@ -1,3 +1,4 @@
+
 # Dungeon App - Sistema de Reserva de Salas da Dungeon Belém
 
 O Dungeon App é o sistema oficial para gerenciamento de reservas, comunicação e administração da **Associação Dungeon Belém**, uma comunidade de jogadores de RPG, Board Games e Card Games. A plataforma foi construída para modernizar e automatizar os processos da associação, oferecendo uma experiência integrada para membros e administradores.
@@ -32,21 +33,22 @@ Para rodar o projeto em ambiente de desenvolvimento, siga os passos abaixo:
    npm install
    ```
 
-3. **Configure as variáveis de ambiente do Firebase:**
-   - Crie um arquivo `.env.local` na raiz do projeto.
+3. **Configure as variáveis de ambiente:**
+   - Crie um arquivo `.env` na raiz do projeto.
    - Adicione as chaves de configuração do seu projeto Firebase. Você pode obtê-las no Console do Firebase > Configurações do Projeto.
+   - Adicione sua **Chave Pública (Public Key)** do Mercado Pago ao arquivo `.env`:
+     ```
+     NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+     NEXT_PUBLIC_FIREBASE_APP_ID=...
+     # ...outras chaves do Firebase
+     
+     NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY="SUA_CHAVE_PÚBLICA_AQUI"
+     ```
 
-4. **Configure a Integração com Mercado Pago (Obrigatório para testar pagamentos):**
-   - Por padrão, o sistema está configurado para usar uma conta de teste do Mercado Pago. Para testar o fluxo de ponta a ponta, você precisará de suas próprias credenciais de desenvolvedor.
-   - **Crie uma conta de desenvolvedor**: Acesse o [Dashboard de Desenvolvedores do Mercado Pago](https://www.mercadopago.com.br/developers/panel) e crie uma nova aplicação.
-   - **Obtenha suas credenciais**: Na sua aplicação, vá para a seção "Credenciais de Produção" (para testes reais) ou "Credenciais de Teste" (recomendado). Você precisará da **Chave Pública (Public Key)** e do **Token de Acesso (Access Token)**.
-   - **Adicione as chaves ao seu ambiente**: No arquivo `.env.local`, adicione a seguinte variável:
-     ```
-     NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY="SUA_CHAVE_PÚBLICA"
-     ```
-   - **Configure o Access Token nas Cloud Functions**: O Access Token é uma chave secreta e deve ser configurada diretamente no ambiente do Firebase para segurança. Rode o seguinte comando no seu terminal, substituindo os valores:
+4. **Configure o Access Token do Mercado Pago (Segredo):**
+   - O **Access Token** é uma chave secreta e deve ser configurada diretamente no ambiente do Firebase para segurança. Rode o seguinte comando no seu terminal, substituindo o valor:
      ```bash
-     firebase functions:config:set mercadopago.access_token="SEU_ACCESS_TOKEN"
+     firebase functions:config:set mercadopago.access_token="SEU_ACCESS_TOKEN_AQUI"
      ```
 
 5. **Rode o servidor de desenvolvimento:**
