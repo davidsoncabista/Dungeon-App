@@ -1,4 +1,5 @@
 
+
 # Dungeon App - Sistema de Reserva de Salas da Dungeon Belém
 
 O Dungeon App é o sistema oficial para gerenciamento de reservas, comunicação e administração da **Associação Dungeon Belém**, uma comunidade de jogadores de RPG, Board Games e Card Games. A plataforma foi construída para modernizar e automatizar os processos da associação, oferecendo uma experiência integrada para membros e administradores.

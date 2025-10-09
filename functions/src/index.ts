@@ -499,6 +499,113 @@ export const castVote = functions
 
 
 // --- FUNÇÕES DE PAGAMENTO ---
+export const createBancoDoBrasilPixPayment = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    // 1. Validações
+    if (!context.auth) {
+      throw new functions.https.HttpsError("unauthenticated", "O usuário precisa estar autenticado.");
+    }
+
+    const { transactionId } = data;
+    if (!transactionId) {
+      throw new functions.https.HttpsError("invalid-argument", "O ID da transação é obrigatório.");
+    }
+    
+    // 2. Configurações de Ambiente
+    const bbConfig = functions.config().bb;
+    const appKey = process.env.BB_APP_KEY; // Acessa a variável de ambiente
+    
+    if (!bbConfig || !bbConfig.client_id || !bbConfig.client_secret || !appKey) {
+        console.error("Configurações da API do Banco do Brasil não encontradas.");
+        throw new functions.https.HttpsError("failed-precondition", "A funcionalidade de pagamento não está configurada.");
+    }
+
+    // 3. Obter Detalhes da Transação
+    const transactionDoc = await db.collection("transactions").doc(transactionId).get();
+    if (!transactionDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "Transação não encontrada.");
+    }
+    const transactionData = transactionDoc.data()!;
+
+    // 4. Gerar Token de Acesso OAuth
+    let accessToken;
+    try {
+        const authString = Buffer.from(`${bbConfig.client_id}:${bbConfig.client_secret}`).toString("base64");
+        
+        const tokenResponse = await fetch("https://oauth.hm.bb.com.br/oauth/token", {
+            method: "POST",
+            headers: {
+                "Authorization": `Basic ${authString}`,
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: "grant_type=client_credentials&scope=cob.read cob.write",
+        });
+
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            throw new Error(`Erro ao obter token: ${errorText}`);
+        }
+        
+        const tokenData = await tokenResponse.json();
+        accessToken = tokenData.access_token;
+    } catch (error) {
+        console.error("Falha na autenticação OAuth com BB:", error);
+        throw new functions.https.HttpsError("internal", "Falha ao autenticar com o serviço de pagamento.");
+    }
+
+    // 5. Gerar Cobrança PIX
+    try {
+        const userDoc = await db.collection('users').doc(transactionData.userId).get();
+        const userData = userDoc.data();
+        if (!userData) {
+            throw new functions.https.HttpsError("not-found", "Dados do devedor não encontrados.");
+        }
+        
+        const pixPayload = {
+            calendario: { expiracao: 3600 }, // Expira em 1 hora
+            devedor: {
+                cpf: userData.cpf.replace(/\D/g, ''),
+                nome: userData.name,
+            },
+            valor: { original: transactionData.amount.toFixed(2) },
+            chave: "dungeonbelem@gmail.com", // Sua chave PIX
+            solicitacaoPagador: transactionData.description.substring(0, 140),
+        };
+
+        const pixResponse = await fetch(`https://api.hm.bb.com.br/pix/v2/cob?gw-dev-app-key=${appKey}`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(pixPayload),
+        });
+
+        if (!pixResponse.ok) {
+            const errorText = await pixResponse.text();
+            throw new Error(`Erro ao gerar PIX: ${errorText}`);
+        }
+
+        const pixData = await pixResponse.json();
+
+        // 6. Atualizar a transação no Firestore com o txid
+        await db.collection("transactions").doc(transactionId).update({
+            paymentGatewayId: pixData.txid, // Salva o ID da transação PIX
+        });
+
+        return {
+            qrCode: pixData.textoImagemQRcode,
+            location: pixData.location,
+        };
+
+    } catch (error) {
+        console.error("Falha ao gerar cobrança PIX no BB:", error);
+        throw new functions.https.HttpsError("internal", "Falha ao gerar a cobrança PIX.");
+    }
+});
+
+
 export const createMercadoPagoPayment = functions
  .region("southamerica-east1")
  .https.onCall(async (data, context) => {
