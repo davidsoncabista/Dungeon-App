@@ -1,4 +1,11 @@
 # Changelog
+## v1.8.1 - Sincronização de Índices e Correções
+* **fix(deploy): Sincroniza índices do Firestore com a produção**
+    * Atualizado o arquivo `firestore.indexes.json` para refletir os índices do ambiente de produção.
+    * Esta ação corrige um erro crítico (`HTTP Error: 400`) que impedia o deploy, causado por uma divergência entre os índices definidos localmente e os existentes no servidor do Firebase.
+* **fix(security): Adiciona regra de segurança para o conteúdo da Biblioteca**
+    * Introduzida uma nova regra no `firestore.rules` para a coleção `books`.
+    * A regra permite leitura pública para todos e restringe a escrita (criação, edição e exclusão) apenas para usuários com os papéis 'Administrador' ou 'Editor'.
 ## v1.8.0 - Implementação da Biblioteca de Conteúdo
 
 Esta versão introduz a seção "Biblioteca", um novo espaço para centralizar ferramentas e documentos importantes para a comunidade.
