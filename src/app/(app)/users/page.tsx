@@ -8,7 +8,7 @@ import { app, auth } from "@/lib/firebase"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { ArrowUpDown } from "lucide-react"
@@ -152,7 +152,7 @@ export default function UsersPage() {
                 </TableHead>
                 <TableHead className="hidden md:table-cell">Nível de Acesso</TableHead>
                 <TableHead className="hidden sm:table-cell text-center">Status</TableHead>
-                <TableHead className="text-right hidden md:table-cell">
+                <TableHead className="text-right">
                   <span className="sr-only">Ações</span>
                 </TableHead>
               </TableRow>

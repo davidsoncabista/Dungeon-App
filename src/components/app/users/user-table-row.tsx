@@ -68,6 +68,7 @@ export function UserTableRow({ user, canEdit, canDelete }: UserTableRowProps) {
     );
 
     const handleDeleteUser = () => {
+        if (!canDelete) return;
         handleAction(
             () => deleteDoc(doc(firestore, "users", user.uid)),
             "Usuário Excluído!",
@@ -76,6 +77,7 @@ export function UserTableRow({ user, canEdit, canDelete }: UserTableRowProps) {
     }
 
     const handleRoleChange = (newRole: AdminRole) => {
+         if (!canDelete) return; // Apenas Admins podem mudar roles
         handleAction(
             () => updateDoc(doc(firestore, "users", user.uid), { role: newRole }),
             "Nível de Acesso Alterado!",
@@ -101,7 +103,7 @@ export function UserTableRow({ user, canEdit, canDelete }: UserTableRowProps) {
                             </div>
                         </div>
                     </div>
-                     <div className="md:hidden">
+                    <div className="md:hidden">
                         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -116,10 +118,10 @@ export function UserTableRow({ user, canEdit, canDelete }: UserTableRowProps) {
                                          <DialogTrigger asChild>
                                             <DropdownMenuItem onSelect={e => e.preventDefault()}><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
                                         </DialogTrigger>
-                                        <EditRoleDialog user={user} onConfirm={handleRoleChange} disabled={!canDelete} />
+                                        {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} disabled={!canDelete} />}
                                         <DropdownMenuSeparator />
                                         <BlockUserDialog user={user} onConfirm={handleBlockUser} disabled={!canEdit} />
-                                        <DeleteUserDialog user={user} onConfirm={handleDeleteUser} disabled={!canDelete} />
+                                        {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} disabled={!canDelete} />}
                                     </DropdownMenuContent>
                                 )}
                             </DropdownMenu>
@@ -159,7 +161,7 @@ export function UserTableRow({ user, canEdit, canDelete }: UserTableRowProps) {
                         <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost" disabled={!canEdit}>
                                 <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Ações para {user.name}</span>
+                                <span className="sr-only">Toggle menu</span>
                             </Button>
                         </DropdownMenuTrigger>
                         {canEdit && (
@@ -168,10 +170,10 @@ export function UserTableRow({ user, canEdit, canDelete }: UserTableRowProps) {
                                 <DialogTrigger asChild>
                                     <DropdownMenuItem onSelect={e => e.preventDefault()}><UserCog className="mr-2 h-4 w-4" />Editar Perfil</DropdownMenuItem>
                                 </DialogTrigger>
-                                <EditRoleDialog user={user} onConfirm={handleRoleChange} disabled={!canDelete} />
+                                {canDelete && <EditRoleDialog user={user} onConfirm={handleRoleChange} disabled={!canDelete}/>}
                                 <DropdownMenuSeparator />
                                 <BlockUserDialog user={user} onConfirm={handleBlockUser} disabled={!canEdit} />
-                                <DeleteUserDialog user={user} onConfirm={handleDeleteUser} disabled={!canDelete} />
+                                {canDelete && <DeleteUserDialog user={user} onConfirm={handleDeleteUser} disabled={!canDelete} />}
                             </DropdownMenuContent>
                         )}
                     </DropdownMenu>
