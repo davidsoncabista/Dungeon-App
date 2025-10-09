@@ -182,7 +182,7 @@ const SubscribeView = () => {
                  <DialogFooter className="flex flex-col gap-2">
                     {preferenceId ? (
                         <div id="wallet-container">
-                            <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                            <Wallet key={preferenceId} initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                         </div>
                     ) : (
                         <Button onClick={handleMercadoPagoSubscription} disabled={isGeneratingPayment}>
@@ -422,7 +422,7 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                     )}
                     {preferenceId && (
                         <div id="wallet-dialog-container">
-                             <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                             <Wallet key={preferenceId} initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                         </div>
                     )}
                 </div>
