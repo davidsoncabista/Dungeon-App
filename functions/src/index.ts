@@ -605,6 +605,90 @@ export const createBancoDoBrasilPixPayment = functions
     }
 });
 
+export const bancoDoBrasilWebhook = functions
+  .region("southamerica-east1")
+  .https.onRequest(async (request, response) => {
+    console.log("[BB Webhook] Notificação recebida:", JSON.stringify(request.body));
+    
+    // A API do BB envia um array de notificações
+    const notifications = request.body.pix;
+    if (!notifications || !Array.isArray(notifications)) {
+      console.warn("[BB Webhook] Formato de notificação inesperado.");
+      response.status(400).send("Formato de notificação inválido.");
+      return;
+    }
+
+    // Processa cada notificação recebida
+    for (const notification of notifications) {
+      const txid = notification.txid;
+      if (!txid) continue;
+
+      console.log(`[BB Webhook] Processando txid: ${txid}`);
+      
+      try {
+        const transactionsRef = db.collection("transactions");
+        const q = transactionsRef.where("paymentGatewayId", "==", txid).limit(1);
+        const querySnapshot = await q.get();
+
+        if (querySnapshot.empty) {
+          console.warn(`[BB Webhook] Nenhuma transação encontrada para o txid: ${txid}`);
+          continue; // Pula para a próxima notificação
+        }
+        
+        const transactionDoc = querySnapshot.docs[0];
+        const transactionData = transactionDoc.data();
+        
+        if (transactionData.status === 'Pago') {
+          console.log(`[BB Webhook] Transação ${transactionDoc.id} já estava paga.`);
+          continue;
+        }
+
+        const userRef = db.collection("users").doc(transactionData.userId);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
+            console.error(`[BB Webhook] Usuário ${transactionData.userId} não encontrado para a transação ${transactionDoc.id}`);
+            continue;
+        }
+        const userData = userDoc.data()!;
+        
+        const batch = db.batch();
+        batch.update(transactionDoc.ref, { status: "Pago", paidAt: admin.firestore.FieldValue.serverTimestamp() });
+        batch.update(userRef, { status: "Ativo" });
+        
+        const auditLogRef = db.collection('auditLogs').doc();
+        batch.set(auditLogRef, {
+            id: auditLogRef.id,
+            uid: auditLogRef.id,
+            actor: {
+                uid: userData.uid,
+                displayName: userData.name,
+                email: userData.email,
+                role: userData.role,
+            },
+            action: 'PROCESS_PAYMENT',
+            details: {
+                paymentGateway: 'BancoDoBrasil',
+                transactionId: transactionDoc.id,
+                paymentId: txid,
+                amount: transactionData.amount,
+            },
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        
+        await batch.commit();
+        console.log(`[BB Webhook] Transação ${transactionDoc.id} atualizada para "Pago" com sucesso.`);
+
+      } catch (error) {
+        console.error(`[BB Webhook] Erro ao processar txid ${txid}:`, error);
+        // Não retorna erro para o BB, para que ele não tente reenviar indefinidamente.
+      }
+    }
+    
+    // Responde ao BB que recebemos a notificação
+    response.status(200).send("OK");
+  });
+
+
 
 export const createMercadoPagoPayment = functions
  .region("southamerica-east1")
@@ -777,6 +861,7 @@ export const mercadoPagoWebhook = functions
                     },
                     action: 'PROCESS_PAYMENT',
                     details: {
+                        paymentGateway: 'MercadoPago',
                         paymentId: paymentId,
                         amount: paymentDetails.transaction_amount,
                         description: paymentDetails.description,
