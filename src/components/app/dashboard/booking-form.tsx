@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
 import type { Booking } from "@/lib/types/booking"
-import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay } from "date-fns"
+import { format, parse, isBefore, addMinutes, addDays, getWeek, getMonth, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, isWithinInterval, setDate, addMonths, subMonths, endOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getBookingDurationAndEnd, FIXED_SLOTS } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -71,51 +71,32 @@ const createBookingFormSchema = (
     // 2. Validação de cotas (Apenas para o organizador)
     if (userPlan && allUserBookings && userId) {
         const bookingDate = data.date;
-
-        // Filtra apenas as reservas organizadas pelo usuário atual
         const organizedBookings = allUserBookings.filter(b => b.organizerId === userId);
-
-        // --- CÁLCULO DE USO ---
-        const startOfBookingWeek = startOfWeek(bookingDate, { weekStartsOn: 1 });
-        const endOfBookingWeek = endOfWeek(bookingDate, { weekStartsOn: 1 });
-        const startOfBookingMonth = startOfMonth(bookingDate);
-        const endOfBookingMonth = endOfMonth(bookingDate);
+        
+        // Lógica de ciclo de cobrança
+        const today = new Date();
+        const renewalDay = 15;
+        
+        let cycleStart: Date;
+        if (bookingDate.getDate() < renewalDay) {
+            cycleStart = setDate(subMonths(bookingDate, 1), renewalDay);
+        } else {
+            cycleStart = setDate(bookingDate, renewalDay);
+        }
+        
+        const bookingsInCycle = organizedBookings.filter(b => {
+            const d = parse(b.date, 'yyyy-MM-dd', new Date());
+            // isWithinInterval não é inclusivo na data final por padrão, então usamos >=
+            return d >= cycleStart && d <= bookingDate; 
+        });
 
         // Contagem para o período relevante
-        const weeklyBookings = organizedBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return d >= startOfBookingWeek && d <= endOfBookingWeek;
-        }).length;
-
-        const monthlyBookings = organizedBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return d >= startOfBookingMonth && d <= endOfBookingMonth;
-        }).length;
-
-        const corujaoBookings = organizedBookings.filter(b => {
-            const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            return b.startTime === '23:00' && d >= startOfBookingMonth && d <= endOfBookingMonth;
-        }).length;
+        const monthlyBookings = bookingsInCycle.length;
+        const corujaoBookings = bookingsInCycle.filter(b => b.startTime === '23:00').length;
         
-        // --- VALIDAÇÕES ---
-        if (userPlan.weeklyQuota > 0 && weeklyBookings >= userPlan.weeklyQuota) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você atingiu sua cota de ${userPlan.weeklyQuota} reserva(s) semanal(is).`,
-                path: ["date"],
-            });
-        }
-        
-        if (userPlan.monthlyQuota > 0 && monthlyBookings >= userPlan.monthlyQuota) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você atingiu sua cota de ${userPlan.monthlyQuota} reserva(s) mensal(is).`,
-                path: ["date"],
-            });
-        }
-        
+        // VALIDAÇÃO CORUJÃO
         if (data.startTime === '23:00') {
-            if (userPlan.corujaoQuota <= 0) {
+            if (!userPlan.corujaoQuota || userPlan.corujaoQuota <= 0) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     message: `Seu plano não permite reservas no horário Corujão.`,
@@ -128,6 +109,15 @@ const createBookingFormSchema = (
                     path: ["startTime"],
                 });
             }
+        }
+        
+        // VALIDAÇÃO MENSAL
+        if (userPlan.monthlyQuota > 0 && monthlyBookings >= userPlan.monthlyQuota) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `Você atingiu sua cota de ${userPlan.monthlyQuota} reserva(s) mensal(is).`,
+                path: ["date"],
+            });
         }
     }
 });
