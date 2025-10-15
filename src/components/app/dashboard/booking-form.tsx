@@ -86,11 +86,9 @@ const createBookingFormSchema = (
         
         const bookingsInCycle = organizedBookings.filter(b => {
             const d = parse(b.date, 'yyyy-MM-dd', new Date());
-            // isWithinInterval não é inclusivo na data final por padrão, então usamos >=
-            return d >= cycleStart && d <= bookingDate; 
+            return d >= cycleStart && d < addMonths(cycleStart, 1);
         });
 
-        // Contagem para o período relevante
         const monthlyBookings = bookingsInCycle.length;
         const corujaoBookings = bookingsInCycle.filter(b => b.startTime === '23:00').length;
         
@@ -102,10 +100,10 @@ const createBookingFormSchema = (
                     message: `Seu plano não permite reservas no horário Corujão.`,
                     path: ["startTime"],
                 });
-            } else if (corujaoBookings >= userPlan.corujaoQuota) {
+            } else if (userPlan.corujaoQuota > 0 && corujaoBookings >= userPlan.corujaoQuota) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
+                    message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste ciclo.`,
                     path: ["startTime"],
                 });
             }
@@ -149,7 +147,6 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   const [plans, loadingPlans] = useCollectionData<Plan>(plansRef, { idField: 'id' });
   const userPlan = plans?.find(p => p.name === currentUser?.category);
   
-  // Busca todas as reservas para validar cotas corretamente
   const [allUserBookings, loadingUserBookings] = useCollectionData<Booking>(collection(firestore, 'bookings'));
 
   // --- State do formulário ---
@@ -179,10 +176,10 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
   const selectedDate = form.watch('date');
   const selectedRoom = useMemo(() => allRooms?.find(r => r.id === selectedRoomId), [allRooms, selectedRoomId]);
   
-  const { availableStartTimes, availableEndTimes } = useMemo(() => {
+  const availableStartTimes = useMemo(() => {
     const selectedRoomId = form.watch('roomId');
     const selectedDate = form.watch('date');
-    if (!selectedRoomId || !selectedDate) return { availableStartTimes: [], availableEndTimes: [] };
+    if (!selectedRoomId || !selectedDate) return [];
 
     const bookingsForDayAndRoom = allBookings.filter(b => 
         b.roomId === selectedRoomId && b.date === format(selectedDate, "yyyy-MM-dd")
@@ -203,43 +200,9 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
         }
     });
 
-    const allDaySlots = FIXED_SLOTS.flatMap(slot => {
-        const baseTime = parse(slot, 'HH:mm', selectedDate);
-        const slotsInBlock = slot === '23:00' ? 16 : 9; // 8h vs 4.5h
-        return Array.from({length: slotsInBlock}, (_, i) => format(addMinutes(baseTime, i * 30), 'HH:mm'));
-    });
-    
-    const availableStarts = FIXED_SLOTS.filter(slot => !occupiedSlots.has(slot));
+    return FIXED_SLOTS.filter(slot => !occupiedSlots.has(slot));
 
-    let availableEnds: { value: string, label: string }[] = [];
-    const selectedStartTime = form.watch("startTime");
-
-    if (selectedStartTime) {
-        const startIdx = allDaySlots.indexOf(selectedStartTime);
-        if (startIdx !== -1) {
-            let nextOccupiedIdx = -1;
-            for(let i = startIdx + 1; i < allDaySlots.length; i++) {
-                if(occupiedSlots.has(allDaySlots[i])) {
-                    nextOccupiedIdx = i;
-                    break;
-                }
-            }
-            
-            const endOfRangeIdx = nextOccupiedIdx === -1 ? allDaySlots.length : nextOccupiedIdx;
-            
-            for(let i = startIdx; i < endOfRangeIdx; i++) {
-                const slotTime = allDaySlots[i];
-                const { endTime } = getBookingDurationAndEnd(slotTime);
-                const isFixedEnd = FIXED_SLOTS.some(s => getBookingDurationAndEnd(s).endTime === endTime);
-                if (isFixedEnd && !availableEnds.some(e => e.value === endTime)) {
-                   availableEnds.push({ value: endTime, label: endTime });
-                }
-            }
-        }
-    }
-    
-    return { availableStartTimes: availableStarts, availableEndTimes: availableEnds };
-  }, [form.watch("roomId"), form.watch("date"), allBookings, form.watch("startTime")]);
+  }, [form.watch("roomId"), form.watch("date"), allBookings]);
 
 
   const handleNextStep = async () => {
@@ -247,8 +210,8 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     switch (step) {
         case 0: fieldsToValidate = ["date", "roomId"]; break;
         case 1: fieldsToValidate = ["title", "startTime", "endTime", "date"]; break; // Re-valida a data por causa das cotas
-        case 2: fieldsToValidate = ["participants", "date"]; break; // Adiciona date para revalidar cotas
-        case 3: fieldsToValidate = ["participants", "guests", "date"]; break; // Adiciona date para revalidar cotas
+        case 2: fieldsToValidate = ["participants", "date"]; break;
+        case 3: fieldsToValidate = ["participants", "guests", "date"]; break;
     }
 
     const isValid = await form.trigger(fieldsToValidate);
@@ -436,56 +399,33 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                      control={form.control}
-                      name="startTime"
-                      render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Horário de Início</FormLabel>
-                              <Select onValueChange={(value) => {
-                                  field.onChange(value);
-                                  form.setValue('endTime', '');
-                              }} defaultValue={field.value}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="Selecione..." />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                      {availableStartTimes.map(time => (
-                                          <SelectItem key={time} value={time}>{time}</SelectItem>
-                                      ))}
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                          </FormItem>
-                      )}
-                  />
-                  <FormField
-                      control={form.control}
-                      name="endTime"
-                      render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Horário de Fim</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch("startTime")}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="Selecione..." />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                      {availableEndTimes.map(time => (
-                                          <SelectItem key={time.value} value={time.value}>{time.label}</SelectItem>
-                                      ))}
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                          </FormItem>
-                      )}
-                  />
-              </div>
               <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Horário de Início</FormLabel>
+                          <Select onValueChange={(value) => {
+                              field.onChange(value);
+                              const { endTime } = getBookingDurationAndEnd(value);
+                              form.setValue('endTime', endTime);
+                          }} defaultValue={field.value}>
+                              <FormControl>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o bloco de horário..." />
+                              </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                  {availableStartTimes.map(time => (
+                                      <SelectItem key={time} value={time}>{time}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
