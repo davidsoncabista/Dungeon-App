@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
-import { isPast, parseISO, setDate, addMonths, subMonths, isWithinInterval, format, parse } from "date-fns"
+import { isPast, parseISO, setDate, addMonths, subMonths, isWithinInterval, format, parse, endOfDay } from "date-fns"
 import { ptBR } from 'date-fns/locale';
 
 import { auth, app } from "@/lib/firebase"
@@ -146,13 +146,13 @@ export default function MyBookingsPage() {
     let renewalDate: Date;
 
     if (today.getDate() < renewalDay) {
-      cycleStart = setDate(subMonths(today, 1), renewalDay);
-      cycleEnd = setDate(today, renewalDay - 1);
-      renewalDate = setDate(today, renewalDay);
+        cycleStart = setDate(subMonths(today, 1), renewalDay);
+        cycleEnd = endOfDay(setDate(today, renewalDay - 1));
+        renewalDate = setDate(today, renewalDay);
     } else {
-      cycleStart = setDate(today, renewalDay);
-      cycleEnd = setDate(addMonths(today, 1), renewalDay - 1);
-      renewalDate = setDate(addMonths(today, 1), renewalDay);
+        cycleStart = setDate(today, renewalDay);
+        cycleEnd = endOfDay(setDate(addMonths(today, 1), renewalDay - 1));
+        renewalDate = setDate(addMonths(today, 1), renewalDay);
     }
 
     const bookingsInCycle = bookings.filter(b => {
@@ -367,3 +367,5 @@ export default function MyBookingsPage() {
     </div>
   )
 }
+
+    
