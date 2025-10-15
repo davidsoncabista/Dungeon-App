@@ -1,4 +1,17 @@
 # Changelog
+## v1.8.2 - Correções no Sistema de Cotas e Histórico de Reservas
+
+Esta versão foca em corrigir bugs críticos relacionados à contagem de cotas e à exibição correta de reservas que atravessam a meia-noite.
+
+* **fix(bookings): Garante que reservas "Corujão" permaneçam na lista de "Próximas Reservas"**
+    * Corrigido um bug crítico onde reservas que viravam a noite (ex: das 23h às 7h) eram movidas prematuramente para o "Histórico de Reservas" antes mesmo de acontecerem.
+    * A lógica agora calcula corretamente a data e hora de término da reserva, garantindo que ela só seja considerada "passada" após sua conclusão real.
+* **fix(bookings): Impede reserva "Corujão" para planos sem a cota**
+    * A validação no formulário de reserva foi aprimorada para bloquear agendamentos no horário "Corujão" (23h) para usuários cujos planos não incluem essa cota específica (`corujaoQuota`).
+* **fix(bookings): Garante que o contador de cotas reflita o uso no dia da renovação**
+    * Corrigido um bug que impedia que reservas feitas no dia 15 (dia da renovação do ciclo) fossem contabilizadas imediatamente no painel "Minhas Cotas".
+    * A lógica de cálculo do ciclo de uso foi ajustada para incluir o dia atual da renovação, garantindo que a exibição do saldo de cotas seja sempre precisa.
+
 ## v1.8.0 - Implementação da Biblioteca de Conteúdo
 
 Esta versão introduz a seção "Biblioteca", um novo espaço para centralizar ferramentas e documentos importantes para a comunidade.
@@ -440,3 +453,5 @@ Melhorias significativas no backend para automatizar processos e aumentar a segu
                                                                                                                                                                                   - `README.md`: Para detalhar as funcionalidades do aplicativo.
                                                                                                                                                                                     - `DAILY.md`: Para planejar e acompanhar as tarefas de desenvolvimento.
                                                                                                                                                                                       - `TEAM.md`: Para definir papéis e responsabilidades da equipe.
+
+    
