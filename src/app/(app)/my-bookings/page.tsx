@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useCollectionData } from "react-firebase-hooks/firestore"
 import { getFirestore, collection, query, where, orderBy } from "firebase/firestore"
-import { isPast, parseISO, setDate, addMonths, subMonths, isWithinInterval, format, parse, endOfDay } from "date-fns"
+import { isPast, parseISO, setDate, addMonths, subMonths, isWithinInterval, format, parse, endOfDay, isBefore, addDays } from "date-fns"
 import { ptBR } from 'date-fns/locale';
 
 import { auth, app } from "@/lib/firebase"
@@ -82,8 +82,15 @@ export default function MyBookingsPage() {
 
     const allBookings = filteredBookings.reduce(
         (acc, booking) => {
-          const bookingDate = parseISO(`${booking.date}T${booking.endTime}`);
-          if (isPast(bookingDate)) {
+          let bookingEndDateTime = parseISO(`${booking.date}T${booking.endTime}`);
+          const bookingStartDateTime = parseISO(`${booking.date}T${booking.startTime}`);
+          
+          // Corrige a data de fim para reservas que cruzam a meia-noite (Corujão)
+          if (isBefore(bookingEndDateTime, bookingStartDateTime)) {
+              bookingEndDateTime = addDays(bookingEndDateTime, 1);
+          }
+
+          if (isPast(bookingEndDateTime)) {
             acc.pastBookings.push(booking);
           } else {
             acc.upcomingBookings.push(booking);

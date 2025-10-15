@@ -1,4 +1,3 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -115,12 +114,20 @@ const createBookingFormSchema = (
             });
         }
         
-        if (data.startTime === '23:00' && userPlan.corujaoQuota > 0 && corujaoBookings >= userPlan.corujaoQuota) {
-             ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
-                path: ["startTime"],
-            });
+        if (data.startTime === '23:00') {
+            if (userPlan.corujaoQuota <= 0) {
+                 ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Seu plano não permite reservas no horário Corujão.`,
+                    path: ["startTime"],
+                });
+            } else if (corujaoBookings >= userPlan.corujaoQuota) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Você atingiu sua cota de ${userPlan.corujaoQuota} reserva(s) Corujão neste mês.`,
+                    path: ["startTime"],
+                });
+            }
         }
     }
 });
@@ -510,6 +517,14 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
                             {form.formState.errors.date.message}
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {form.formState.errors.startTime && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            {form.formState.errors.startTime.message}
                         </AlertDescription>
                     </Alert>
                 )}
