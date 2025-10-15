@@ -2,8 +2,52 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
+  # The amount of CPU to allocate to your backend.
+  # https://firebase.google.com/docs/app-hosting/reference/yaml#cpu
+  cpu: 1
+
+  # The amount of memory in MiB to allocate to your backend.
+  # https://firebase.google.com/docs/app-hosting/reference/yaml#memorymib
+  memoryMiB: 1024
+
+  # The maximum number of container instances that can be spun up.
+  # https://firebase.google.com/docs/app-hosting/reference/yaml#maxinstances
+  maxInstances: 10
+
 buildConfig:
+  # The command that builds your application.
   buildCommand: npm run build
+
+# The headers to be set for all responses.
+# https://firebase.google.com/docs/app-hosting/reference/yaml#headers
+headers:
+  - # The X-Content-Type-Options response HTTP header is a marker used by the
+    # server to indicate that the MIME types advertised in the Content-Type
+    # headers should be followed and not be changed.
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+    key: X-Content-Type-Options
+    value: nosniff
+  - # The X-Frame-Options HTTP response header can be used to indicate whether
+    # or not a browser should be allowed to render a page in a <frame>,
+    # <iframe>, <embed> or <object>.
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+    key: X-Frame-Options
+    value: SAMEORIGIN
+  - # The HTTP X-XSS-Protection response header is a feature of Internet
+    # Explorer, Chrome and Safari that stops pages from loading when they
+    # detect reflected cross-site scripting (XSS) attacks.
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+    key: X-XSS-Protection
+    value: "1; mode=block"
+  - # The Referrer-Policy HTTP header controls how much referrer
+    # information (sent in the Referer header) should be included with
+    # requests.
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+    key: Referrer-Policy
+    value: strict-origin-when-cross-origin
+  - # Cache-Control general-header field is used to specify directives for
+    # caching mechanisms in both requests and responses.
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+    glob: /_next/static/**
+    key: Cache-Control
+    value: "public, max-age=31536000, must-revalidate"
