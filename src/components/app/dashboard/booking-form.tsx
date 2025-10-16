@@ -1,4 +1,3 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -54,7 +53,7 @@ const createBookingFormSchema = (
   participants: z.array(z.string()).min(1, { message: "Você deve selecionar pelo menos um participante (você mesmo)." }),
   guests: z.array(z.string()).optional().default([]),
   startTime: z.string({ required_error: "O horário de início é obrigatório."}),
-  endTime: z.string().optional(), // Tornar opcional na UI, será definido programaticamente
+  endTime: z.string(), // O campo existe, mas não é mais editável pelo usuário
 }).superRefine((data, ctx) => {
     // 1. Validação de capacidade da sala
     const selectedRoom = allRooms.find(r => r.id === data.roomId);
