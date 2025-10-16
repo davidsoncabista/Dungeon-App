@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -74,7 +75,6 @@ const createBookingFormSchema = (
         const organizedBookings = allUserBookings.filter(b => b.organizerId === userId);
         
         // Lógica de ciclo de cobrança
-        const today = new Date();
         const renewalDay = 15;
         
         let cycleStart: Date;
@@ -572,3 +572,5 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     </Form>
   )
 }
+
+    
