@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, Calendar, AlertCircle, Search, CalendarIcon } from "lucide-react";
+import { Users, Calendar, AlertCircle, Search, CalendarIcon, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Room } from "@/lib/types/room"
@@ -174,6 +175,8 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
 
   const selectedRoomId = form.watch('roomId');
   const selectedDate = form.watch('date');
+  const selectedStartTime = form.watch("startTime");
+  const selectedEndTime = form.watch("endTime");
   const selectedRoom = useMemo(() => allRooms?.find(r => r.id === selectedRoomId), [allRooms, selectedRoomId]);
   
   const availableStartTimes = useMemo(() => {
@@ -209,7 +212,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     let fieldsToValidate: (keyof BookingFormValues)[] = [];
     switch (step) {
         case 0: fieldsToValidate = ["date", "roomId"]; break;
-        case 1: fieldsToValidate = ["title", "startTime", "endTime", "date"]; break;
+        case 1: fieldsToValidate = ["title", "startTime", "date"]; break;
         case 2: fieldsToValidate = ["participants", "date"]; break;
         case 3: fieldsToValidate = ["participants", "guests", "date"]; break;
     }
@@ -425,7 +428,13 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                       </FormItem>
                   )}
               />
-               <FormField
+             {selectedStartTime && selectedEndTime && (
+                <div className="text-sm text-muted-foreground flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <Clock className="h-4 w-4"/>
+                    <span>A reserva terminará às <strong>{selectedEndTime}</strong>.</span>
+                </div>
+             )}
+              <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
