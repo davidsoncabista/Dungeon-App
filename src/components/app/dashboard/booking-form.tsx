@@ -53,7 +53,7 @@ const createBookingFormSchema = (
   participants: z.array(z.string()).min(1, { message: "Você deve selecionar pelo menos um participante (você mesmo)." }),
   guests: z.array(z.string()).optional().default([]),
   startTime: z.string({ required_error: "O horário de início é obrigatório."}),
-  endTime: z.string({ required_error: "O horário de fim é obrigatório."}),
+  endTime: z.string().optional(), // Tornar opcional na UI, será definido programaticamente
 }).superRefine((data, ctx) => {
     // 1. Validação de capacidade da sala
     const selectedRoom = allRooms.find(r => r.id === data.roomId);
@@ -209,7 +209,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
     let fieldsToValidate: (keyof BookingFormValues)[] = [];
     switch (step) {
         case 0: fieldsToValidate = ["date", "roomId"]; break;
-        case 1: fieldsToValidate = ["title", "startTime", "endTime", "date"]; break; // Re-valida a data por causa das cotas
+        case 1: fieldsToValidate = ["title", "startTime", "endTime", "date"]; break;
         case 2: fieldsToValidate = ["participants", "date"]; break;
         case 3: fieldsToValidate = ["participants", "guests", "date"]; break;
     }
@@ -408,7 +408,7 @@ export function BookingForm({ initialDate, allBookings, onSuccess, onCancel }: B
                           <Select onValueChange={(value) => {
                               field.onChange(value);
                               const { endTime } = getBookingDurationAndEnd(value);
-                              form.setValue('endTime', endTime);
+                              form.setValue('endTime', endTime, { shouldValidate: true });
                           }} defaultValue={field.value}>
                               <FormControl>
                               <SelectTrigger>
