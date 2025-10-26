@@ -15,6 +15,8 @@ import type { Notice } from "@/lib/types/notice";
 import { WelcomeModal } from "@/components/app/welcome-modal";
 import { NoticeModal } from "@/components/app/notice-modal";
 import { createAuditLog } from "@/lib/auditLogger";
+import { useIdleTimeout } from "@/hooks/use-idle-timeout";
+import { IdleTimeoutModal } from "@/components/app/idle-timeout-modal";
 
 const adminRoutes: Record<string, string[]> = {
     'Administrador': ['/admin/system', '/admin/finance', '/admin/messages', '/admin/access-rules', '/admin/landing-editor', '/admin/rooms', '/statistics', '/users', '/admin'],
@@ -82,6 +84,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const currentUser = currentUserData?.[0];
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
   
+  // --- Lógica de Timeout por Inatividade ---
+  const { isIdle, reset: resetIdleTimer } = useIdleTimeout(900000, 60000); // 15 min timeout, 1 min warning
+
+
   // --- Lógica de Avisos ---
   const noticesRef = collection(firestore, 'notices');
   const noticesQuery = query(noticesRef, orderBy("createdAt", "desc"));
@@ -210,6 +216,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <IdleTimeoutModal
+        isOpen={isIdle}
+        onStay={() => resetIdleTimer()}
+        countdown={60}
+      />
       {currentUser && (
         <WelcomeModal 
             isOpen={isWelcomeModalOpen}
