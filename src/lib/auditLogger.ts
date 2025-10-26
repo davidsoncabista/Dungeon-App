@@ -1,8 +1,7 @@
-import { addDoc, collection, serverTimestamp, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
 import { app } from './firebase';
 import type { User } from './types/user';
-import type { AuditLog } from './types/auditLog';
 
 // Inicializa o Firestore uma vez
 const db = getFirestore(app);
@@ -21,11 +20,9 @@ export const createAuditLog = async (actor: User, action: string, details: objec
   
   try {
     const logCollectionRef = collection(db, 'auditLogs');
-    const newLogRef = doc(logCollectionRef); // Cria uma referência com ID gerado
     
-    const newLog: Omit<AuditLog, 'timestamp'> = {
-        id: newLogRef.id,
-        uid: newLogRef.id,
+    // O addDoc já cria um ID único. Não precisamos gerar um manualmente.
+    await addDoc(logCollectionRef, {
         actor: {
             uid: actor.uid,
             displayName: actor.name,
@@ -34,10 +31,6 @@ export const createAuditLog = async (actor: User, action: string, details: objec
         },
         action,
         details,
-    };
-
-    await addDoc(logCollectionRef, {
-        ...newLog,
         timestamp: serverTimestamp(),
     });
 
