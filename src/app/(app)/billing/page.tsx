@@ -253,9 +253,10 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
     }, [transactions]);
 
     const handleMercadoPagoPayment = async (transaction: Transaction) => {
-        setPaymentTransaction(transaction);
         setIsGeneratingPayment(true);
-        setPreferenceId(null);
+        setPreferenceId(null); // Garante que o preferenceId seja resetado
+        setPaymentTransaction(transaction); // Abre o modal
+
         try {
             const createMercadoPagoPayment = httpsCallable(functions, 'createMercadoPagoPayment');
             const result = await createMercadoPagoPayment({ 
@@ -413,14 +414,14 @@ const BillingView = ({ currentUser, authUser }: { currentUser: User, authUser: a
                        Cobrança: {paymentTransaction?.description} no valor de R$ {paymentTransaction?.amount.toFixed(2).replace('.',',')}.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    {isGeneratingPayment && !preferenceId && (
+                <div className="py-4 min-h-[80px] flex items-center justify-center">
+                    {isGeneratingPayment && (
                          <div className="flex items-center justify-center gap-2 text-muted-foreground">
                             <Loader2 className="h-5 w-5 animate-spin" />
                             <span>Gerando link de pagamento...</span>
                         </div>
                     )}
-                    {preferenceId && (
+                    {preferenceId && !isGeneratingPayment && (
                         <div id="wallet-dialog-container">
                              <Wallet key={preferenceId} initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
                         </div>
