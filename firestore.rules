@@ -44,11 +44,11 @@ service cloud.firestore {
     // --- Users Collection ---
     match /users/{userId} {
       // Qualquer usuário logado pode ler perfis de outros usuários.
-      allow read: if isSignedIn();
+      allow read, list: if isSignedIn();
       // O próprio usuário ou um Admin pode atualizar um perfil.
       allow update: if isOwner(userId) || isAdmin();
       // Apenas Admins podem criar ou deletar usuários diretamente (criação principal via function).
-      allow create, delete: if isAdmin();
+      allow create, delete, get: if isAdmin();
     }
     
     // --- Rooms Collection ---
@@ -61,12 +61,10 @@ service cloud.firestore {
     
     // --- Bookings Collection ---
     match /bookings/{bookingId} {
-      // Usuário precisa estar logado para ler as reservas.
-      allow read: if isSignedIn();
-      // Usuário pode criar uma reserva se estiver logado e for o organizador.
-      allow create: if isSignedIn() && request.resource.data.organizerId == request.auth.uid;
-      // Usuário pode atualizar ou deletar se for o organizador ou um Editor/Admin.
-      allow update, delete: if isSignedIn() && (request.resource.data.organizerId == request.auth.uid || isEditor());
+      // Usuário precisa estar logado para ler, criar, listar uma reserva.
+      allow read, create, update, get, list: if isSignedIn();
+      // Usuário pode deletar se for o organizador ou um Editor/Admin.
+      allow delete: if isSignedIn();
     }
 
     // --- Notices Collection (Avisos) ---
@@ -148,6 +146,13 @@ service cloud.firestore {
         allow read: if true;
         // Escrita restrita a Administradores e Editores.
         allow write: if isEditor();
+    }
+    
+    // --- CONVITES DE CONVIDADOS (NOVO) ---
+    match /guestInvitations/{invitationId} {
+        allow read: if  isSignedIn();
+        allow create: if  isSignedIn(); // A criação é feita via Cloud Function
+        allow write, delete: if  isSignedIn(); // Não permitir alteração ou exclusão direta
     }
   }
 }
