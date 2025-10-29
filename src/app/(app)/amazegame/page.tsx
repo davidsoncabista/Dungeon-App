@@ -199,14 +199,14 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
   };
 
   return (
-    <Card className={cn("text-white transition-colors duration-300", styles.bg, styles.border)}>
+    <Card className={cn("transition-colors duration-300", styles.bg, styles.border)}>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2">
             <Input 
                 value={actor.name} 
                 onChange={(e) => handleUpdate({ name: e.target.value })} 
                 placeholder="Nome do Ator"
-                className="flex-1 bg-background/20 border-white/20 font-bold text-lg" 
+                className="flex-1 bg-background/20 border-foreground/20 font-bold text-lg" 
             />
             <Button size="icon" variant="destructive" onClick={handleRemove}><X size={20}/></Button>
         </div>
@@ -221,7 +221,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                         onBlur={(e) => handleInitiativeChange(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                         onFocus={(e) => e.target.select()}
-                        className="flex-1 text-center bg-background/20 border-white/20"
+                        className="flex-1 text-center bg-background/20 border-foreground/20"
                         placeholder="Init"
                     />
             </div>
@@ -234,7 +234,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                     onBlur={(e) => handleHpChange(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                     onFocus={(e) => e.target.select()}
-                    className="w-full text-center bg-background/20 border-white/20"
+                    className="w-full text-center bg-background/20 border-foreground/20"
                 />
                 <span className="text-lg">/</span>
                 <Input 
@@ -244,13 +244,13 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                     onBlur={(e) => handleMaxHpChange(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                     onFocus={(e) => e.target.select()}
-                    className="w-full text-center bg-background/20 border-white/20"
+                    className="w-full text-center bg-background/20 border-foreground/20"
                 />
             </div>
             <div className="flex flex-1 items-center gap-2">
                 <span className="text-sm font-semibold w-20 text-center">Classe</span>
                 <Select value={actor.tier} onValueChange={(value: Tier) => handleUpdate({ tier: value })}>
-                    <SelectTrigger className="flex-1 bg-background/20 border-white/20">
+                    <SelectTrigger className="flex-1 bg-background/20 border-foreground/20">
                     <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -275,7 +275,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                 value={actor.notes}
                 onChange={(e) => handleUpdate({ notes: e.target.value })}
                 placeholder="Anotações..."
-                className="flex-1 bg-background/20 border-white/20"
+                className="flex-1 bg-background/20 border-foreground/20"
             />
             <Button size="icon" variant="ghost" onClick={addStatus} className="hover:bg-green-500/20"><PlusCircle className="text-green-400" /></Button>
         </div>
@@ -288,7 +288,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                         value={status.name}
                         onChange={(e) => updateStatusName(status.id, e.target.value)}
                         placeholder="Status..."
-                        className="flex-1 bg-background/10 border-white/10 h-8"
+                        className="flex-1 bg-background/10 border-foreground/10 h-8"
                     />
                     <Input 
                         type="text"
@@ -298,7 +298,7 @@ function ActorCard({ actor, sessionId, addLogEntry }: { actor: Actor; sessionId:
                         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                         onFocus={(e) => e.target.select()}
                         placeholder="Duração"
-                        className="w-24 text-center bg-background/10 border-white/10 h-8"
+                        className="w-24 text-center bg-background/10 border-foreground/10 h-8"
                     />
                     <Button size="icon" variant="ghost" onClick={() => removeStatus(status.id)} className="h-8 w-8 hover:bg-red-500/20">
                         <MinusCircle className="text-red-400" />
@@ -319,15 +319,15 @@ function HistoryLog({ sessionId }: { sessionId: string }) {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     return (
-        <Card className="bg-black/50 h-full">
+        <Card className="h-full">
             <CardHeader><CardTitle>Histórico de Rolagens</CardTitle></CardHeader>
             <CardContent>
                 <ScrollArea className="h-[620px] text-sm font-mono" ref={scrollAreaRef}>
                     <div className="p-4 space-y-2">
                         {loadingLogs && <p className="text-muted-foreground">Carregando histórico...</p>}
                         {logs.map((log) => (
-                            <p key={log.id} className="text-gray-300">
-                                <span className="text-gray-500">[{log.timestamp ? format(log.timestamp.seconds * 1000, 'HH:mm:ss', { locale: ptBR }) : '...enviando'}]</span> {log.message}
+                            <p key={log.id} className="text-muted-foreground">
+                                <span className="text-foreground/50">[{log.timestamp ? format(log.timestamp.seconds * 1000, 'HH:mm:ss', { locale: ptBR }) : '...enviando'}]</span> {log.message}
                             </p>
                         ))}
                         {!loadingLogs && logs.length === 0 && <p className="text-center text-muted-foreground pt-10">Nenhuma rolagem ainda.</p>}
@@ -508,19 +508,19 @@ function AmazegameContent() {
 
     if (!sessionId) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-900">
+            <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-16 w-16 text-primary animate-spin"/>
             </div>
         )
     }
 
     return (
-        <div className="bg-gray-900 min-h-screen text-white p-4 md:p-8">
+        <div className="p-4 md:p-8">
             <h1 className="text-4xl font-bold text-center mb-8 font-headline">Maze Tracker</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                 <div className="space-y-4 lg:col-span-2">
-                    <Card className="bg-black/50">
+                    <Card>
                         <CardHeader>
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <CardTitle>Controle de Iniciativa</CardTitle>
@@ -580,7 +580,7 @@ function AmazegameContent() {
 export default function AmazegamePage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-gray-900">
+            <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-16 w-16 text-primary animate-spin"/>
             </div>
         }>
