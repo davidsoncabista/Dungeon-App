@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, Suspense, useRef } from 'react';
@@ -579,12 +580,14 @@ function AmazegameContent() {
 
 export default function AmazegamePage() {
     return (
-        <Suspense fallback={
-            <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-16 w-16 text-primary animate-spin"/>
-            </div>
-        }>
-            <AmazegameContent />
-        </Suspense>
+        <div className="bg-gray-900 text-white min-h-full">
+            <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-16 w-16 text-primary animate-spin"/>
+                </div>
+            }>
+                <AmazegameContent />
+            </Suspense>
+        </div>
     )
 }

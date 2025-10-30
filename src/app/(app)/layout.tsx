@@ -47,12 +47,12 @@ const checkAccess = (pathname: string, user: User | null): { allowed: boolean, r
     const publicLoggedInRoutes = ["/profile", "/billing", "/my-bookings", "/messages", "/notices", "/books"];
     
     // REGRA 2: MATRÍCULA PENDENTE (VISITANTE)
-    if (category === 'Visitante' && !publicLoggedInRoutes.includes(pathname)) {
+    if (category === 'Visitante' && !publicLoggedInRoutes.includes(pathname) && !pathname.startsWith('/amazegame')) {
         return { allowed: false, redirect: '/billing' };
     }
 
     // REGRA 3: USUÁRIO NÃO-ATIVO (Pendente de pagamento ou Bloqueado)
-    if (status !== 'Ativo' && category !== 'Visitante' && !publicLoggedInRoutes.includes(pathname)) {
+    if (status !== 'Ativo' && category !== 'Visitante' && !publicLoggedInRoutes.includes(pathname) && !pathname.startsWith('/amazegame')) {
         return { allowed: false, redirect: '/billing' };
     }
     
@@ -216,11 +216,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <IdleTimeoutModal
-        isOpen={isIdle}
-        onStay={() => resetIdleTimer()}
-        countdown={60}
-      />
+      <div className="z-[100]">
+        <IdleTimeoutModal
+          isOpen={isIdle}
+          onStay={() => resetIdleTimer()}
+          countdown={60}
+        />
+      </div>
       {currentUser && (
         <WelcomeModal 
             isOpen={isWelcomeModalOpen}
