@@ -6,7 +6,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -41,26 +41,17 @@ export default function LoginPage() {
         setIsSigningIn(true);
         const provider = new GoogleAuthProvider();
         try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-            toast({
-                title: `Bem-vindo, ${user.displayName}!`,
-                description: "Login realizado com sucesso. Redirecionando...",
-            });
-            // O useEffect cuidará do redirecionamento
+            await signInWithRedirect(auth, provider);
+            // The page will redirect, so we don't need to handle the result here.
+            // The useAuthState hook will pick up the user on the next page load.
         } catch (error: any) {
-            if (error.code === 'auth/popup-closed-by-user') {
-                console.log("Login cancelado pelo usuário.");
-            } else {
-                console.error("Erro na autenticação com Google:", error);
-                toast({
-                    title: "Erro no Login",
-                    description: "Não foi possível autenticar com o Google. Tente novamente.",
-                    variant: "destructive",
-                });
-            }
-        } finally {
-            setIsSigningIn(false);
+            console.error("Erro na autenticação com Google:", error);
+            toast({
+                title: "Erro no Login",
+                description: "Não foi possível iniciar a autenticação com o Google. Tente novamente.",
+                variant: "destructive",
+            });
+            setIsSigningIn(false); // Only set to false on error before redirect
         }
     };
     

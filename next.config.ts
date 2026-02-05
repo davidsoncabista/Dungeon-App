@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  transpilePackages: ['lucide-react'],
   images: {
     remotePatterns: [
       // Firebase Storage (essencial)
