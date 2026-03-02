@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import "@/app/globals.css"
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://adbelm.web.app'), // Substitua pela sua URL de produção
+  metadataBase: new URL('https://studio--adbelm.us-central1.hosted.app'), // Substitua pela sua URL de produção
   title: {
     default: 'Dungeon App',
     template: '%s | Dungeon App',
@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-br" suppressHydrationWarning>
        <head>
-        <link rel="preconnect" href="https://adbelm.firebaseapp.com" />
+        <link rel="preconnect" href="https://studio--adbelm.us-central1.hosted.app" />
         <link rel="preconnect" href="https://apis.google.com" />
         <link rel="preconnect" href="https://firestore.googleapis.com" />
       </head>

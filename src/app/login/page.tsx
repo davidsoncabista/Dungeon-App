@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +54,28 @@ export default function LoginPage() {
                 variant: "destructive",
             });
             setIsSigningIn(false); // Only set to false on error before redirect
+        }
+    };
+    
+    const [showEmailForm, setShowEmailForm] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleEmailLogin = async () => {
+        if (isSigningIn) return;
+        setIsSigningIn(true);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // on success the auth state hook will redirect; additionally push
+            router.push('/online-schedule');
+        } catch (err: any) {
+            console.error('Erro no login por email:', err);
+            toast({
+                title: 'Erro no Login',
+                description: err?.message || 'Não foi possível efetuar login. Verifique seu email e senha.',
+                variant: 'destructive',
+            });
+            setIsSigningIn(false);
         }
     };
     
@@ -101,13 +125,26 @@ export default function LoginPage() {
                     )}
                 </Button>
                 <div className="text-center">
-                    <Button asChild variant="link">
-                        <Link href="/landing">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Voltar para a página inicial
-                        </Link>
+                    <Button onClick={() => setShowEmailForm(v => !v)} className="w-full py-3 text-md font-medium" variant="ghost">
+                        Entrar com Email e Senha
                     </Button>
                 </div>
+
+                {showEmailForm && (
+                    <div className="space-y-3">
+                        <div>
+                            <Label className="mb-1 text-sm">Email</Label>
+                            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="seu@exemplo.com" />
+                        </div>
+                        <div>
+                            <Label className="mb-1 text-sm">Senha</Label>
+                            <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Senha" />
+                        </div>
+                        <Button onClick={handleEmailLogin} className="w-full py-3 text-lg font-bold" disabled={isSigningIn}>
+                            {isSigningIn ? <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Autenticando...</> : 'Entrar'}
+                        </Button>
+                    </div>
+                )}
             </div>
              {error && (
                 <p className="mt-4 text-center text-sm text-destructive">
