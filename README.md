@@ -94,8 +94,8 @@ Uma área de administração robusta e organizada, acessível através do menu p
 
 ## Equipe do Projeto
 
-- **Davidson Santos Conceição**: Project Lead & FullCircle Engineer
-- **Heydrigh Leão Ribeiro**: Full Stack Developer 
+- **Davidson Santos Conceição**: Project Lead & FullCircle Engineer.
+- **Heydrigh Leão Ribeiro**: Full Stack Developer
 - **Caio de Oliveira Bastos**: Tesoureiro & Front-end Developer
 - **Thyago Costa (@thyagobib)**: UI/UX Designer
 - **Luiz Pedro Reis Pinheiro (@luizprp)**: UI/UX Designer 
